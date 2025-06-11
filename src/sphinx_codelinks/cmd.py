@@ -157,7 +157,7 @@ def vdoc(
         typer.echo(cached_file)
 
 
-def load_config_from_toml(  # type: ignore[misc]
+def load_config_from_toml(  # type: ignore[explicit-any]
     toml_file: Path, project: str | None = None
 ) -> dict[str, Any]:
     try:

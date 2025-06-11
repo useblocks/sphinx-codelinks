@@ -34,7 +34,7 @@ class OneLineCommentStyleType(TypedDict):
 
 @dataclass
 class OneLineCommentStyle:
-    def __setattr__(self, name: str, value: Any) -> None:  # type: ignore[misc]
+    def __setattr__(self, name: str, value: Any) -> None:  # type: ignore[explicit-any]
         if name == "needs_fields":
             # apply default to fields
             self.apply_needs_field_default(value)
@@ -134,10 +134,10 @@ class OneLineCommentStyle:
         return None
 
     @classmethod
-    def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[misc]
+    def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
         _field = next(_field for _field in fields(cls) if _field.name is name)
         if _field.metadata is not MISSING and "schema" in _field.metadata:
-            return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[misc]
+            return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[explicit-any]
         return None
 
     def check_schema(self) -> list[str]:

@@ -35,7 +35,7 @@ from sphinx_codelinks.virtual_docs.virtual_docs import VirtualDocs
 logger = logging.getLogger(__name__)
 
 
-def setup(app: Sphinx) -> dict[str, Any]:  # type: ignore[misc]
+def setup(app: Sphinx) -> dict[str, Any]:  # type: ignore[explicit-any]
     app.add_node(SourceTracing)
     app.add_directive("src-trace", SourceTracingDirective)
     SrcTraceSphinxConfig.add_config_values(app)
@@ -64,7 +64,7 @@ def builder_inited(app: Sphinx) -> None:
     copy_asset(custom_css, Path(app.outdir) / "_static" / "source_tracing")
 
 
-def add_custom_css(  # type: ignore[misc]
+def add_custom_css(  # type: ignore[explicit-any]
     app: Sphinx,
     pagename: str,
     templatename: str,

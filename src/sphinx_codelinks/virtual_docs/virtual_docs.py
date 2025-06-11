@@ -4,7 +4,7 @@ import logging
 import os
 from pathlib import Path
 
-from comment_parser.parsers.common import Comment
+from comment_parser.parsers.common import Comment  # type: ignore[import-untyped]
 
 from sphinx_codelinks.virtual_docs.config import (
     SUPPORTED_COMMENT_TYPES,
@@ -87,7 +87,7 @@ class VirtualDocs:
             for comment in ml_comments:
                 single_lines = comment.text().splitlines()
                 for idx, line in enumerate(single_lines):
-                    oneline_comments.append(Comment(line, comment.line_number() + idx))  # type: ignore[call-arg]
+                    oneline_comments.append(Comment(line, comment.line_number() + idx))
 
             ubt_comments: list[UBTComment] = []
 

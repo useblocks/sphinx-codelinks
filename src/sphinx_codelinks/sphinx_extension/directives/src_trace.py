@@ -322,7 +322,7 @@ class SourceTracingDirective(SphinxDirective):
                         title=str(
                             comment.resolved_marker["title"]
                         ),  # The title of the need
-                        **cast(dict[str, Any], kwargs),  # type: ignore[misc]
+                        **cast(dict[str, Any], kwargs),  # type: ignore[explicit-any]
                     )
                     rendered_needs.extend(marker_needs)
                     if local_url_field:

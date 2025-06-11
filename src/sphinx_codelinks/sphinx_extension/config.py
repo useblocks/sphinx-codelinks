@@ -38,12 +38,12 @@ class SrcTraceSphinxConfig:
     def __init__(self, config: _SphinxConfig) -> None:
         super().__setattr__("_config", config)
 
-    def __getattribute__(self, name: str) -> Any:  # type: ignore[misc]
+    def __getattribute__(self, name: str) -> Any:  # type: ignore[explicit-any]
         if name.startswith("__") or name == "_config":
             return super().__getattribute__(name)
         return getattr(super().__getattribute__("_config"), f"src_trace_{name}")
 
-    def __setattr__(self, name: str, value: Any) -> None:  # type: ignore[misc]
+    def __setattr__(self, name: str, value: Any) -> None:  # type: ignore[explicit-any]
         if name == "_config" and "src_trace_projects" in value:
             src_trace_projects: dict[str, SrcTraceProjectConfigType] = value[
                 "src_trace_projects"
