@@ -10,17 +10,18 @@ import sphinx
 from sphinx.util.docutils import SphinxDirective
 from sphinx_needs.api import add_need  # type: ignore[import-untyped]
 from sphinx_needs.utils import add_doc  # type: ignore[import-untyped]
-from ubt_source_tracing.source_discover import SourceDiscover
-from ubt_source_tracing.sphinx_extension.config import (
+
+from sphinx_codelinks.source_discover import SourceDiscover
+from sphinx_codelinks.sphinx_extension.config import (
     SRC_TRACE_CACHE,
     SrcTraceProjectConfigType,
     SrcTraceSphinxConfig,
     file_lineno_href,
 )
-from ubt_source_tracing.sphinx_extension.debug import measure_time
-from ubt_source_tracing.virtual_docs.ubt_models import UBTComment
-from ubt_source_tracing.virtual_docs.utils import get_file_types
-from ubt_source_tracing.virtual_docs.virtual_docs import VirtualDocs
+from sphinx_codelinks.sphinx_extension.debug import measure_time
+from sphinx_codelinks.virtual_docs.ubt_models import UBTComment
+from sphinx_codelinks.virtual_docs.utils import get_file_types
+from sphinx_codelinks.virtual_docs.virtual_docs import VirtualDocs
 
 sphinx_version = sphinx.__version__
 

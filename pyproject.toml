@@ -156,7 +156,7 @@ module = ["ublicense.*"]
 disallow_any_expr = false
 
 [[tool.mypy.overrides]]
-module = "ubt_source_tracing.*"
+module = "sphinx_codelinks.*"
 disallow_any_unimported = false
 disallow_untyped_defs = false
 disallow_any_expr = false

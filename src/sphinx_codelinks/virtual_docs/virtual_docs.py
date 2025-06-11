@@ -5,16 +5,13 @@ import os
 from pathlib import Path
 
 from comment_parser.parsers.common import Comment
-from ubt_source_tracing.virtual_docs.config import (
+
+from sphinx_codelinks.virtual_docs.config import (
     SUPPORTED_COMMENT_TYPES,
     OneLineCommentStyle,
 )
-from ubt_source_tracing.virtual_docs.ubt_models import (
-    UBTCache,
-    UBTComment,
-    UBTSourceFile,
-)
-from ubt_source_tracing.virtual_docs.utils import (
+from sphinx_codelinks.virtual_docs.ubt_models import UBTCache, UBTComment, UBTSourceFile
+from sphinx_codelinks.virtual_docs.utils import (
     OnelineParserInvalidWarning,
     oneline_parser,
 )

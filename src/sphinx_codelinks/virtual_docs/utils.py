@@ -3,7 +3,7 @@ from enum import Enum
 import logging
 import os
 
-from ubt_source_tracing.virtual_docs.config import (
+from sphinx_codelinks.virtual_docs.config import (
     ESCAPE,
     SUPPORTED_COMMENT_TYPES,
     OneLineCommentStyle,

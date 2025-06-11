@@ -23,7 +23,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "alabaster"
 # html_static_path = ["_static"]
 
-extensions = ["sphinx_needs", "ubt_source_tracing"]
+extensions = ["sphinx_needs", "sphinx_codelinks"]
 
 needs_types = [
     {

@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
-from ubt_source_tracing.cmd import app
+
+from sphinx_codelinks.cmd import app
 
 from .conftest import (
     BASIC_VDOC_TOML,

@@ -14,22 +14,23 @@ from sphinx_needs.api import (  # type: ignore[import-untyped]
     add_extra_option,
     add_need_type,
 )
-from ubt_source_tracing.sphinx_extension import debug
-from ubt_source_tracing.sphinx_extension.config import (
+
+from sphinx_codelinks.sphinx_extension import debug
+from sphinx_codelinks.sphinx_extension.config import (
     SRC_TRACE_CACHE,
     SrcTraceSphinxConfig,
     file_lineno_href,
 )
-from ubt_source_tracing.sphinx_extension.directives.src_trace import (
+from sphinx_codelinks.sphinx_extension.directives.src_trace import (
     SourceTracing,
     SourceTracingDirective,
 )
-from ubt_source_tracing.sphinx_extension.html_wrapper import html_wrapper
-from ubt_source_tracing.virtual_docs.config import (
+from sphinx_codelinks.sphinx_extension.html_wrapper import html_wrapper
+from sphinx_codelinks.virtual_docs.config import (
     OneLineCommentStyle,
     OneLineCommentStyleType,
 )
-from ubt_source_tracing.virtual_docs.virtual_docs import VirtualDocs
+from sphinx_codelinks.virtual_docs.virtual_docs import VirtualDocs
 
 logger = logging.getLogger(__name__)
 

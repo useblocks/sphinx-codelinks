@@ -3,7 +3,8 @@ from typing import Any, Literal, TypedDict, cast
 
 from sphinx.application import Sphinx
 from sphinx.config import Config as _SphinxConfig
-from ubt_source_tracing.virtual_docs.config import (
+
+from sphinx_codelinks.virtual_docs.config import (
     OneLineCommentStyle,
     OneLineCommentStyleType,
 )

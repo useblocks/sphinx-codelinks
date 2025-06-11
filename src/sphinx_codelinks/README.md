@@ -17,9 +17,10 @@ The project consists of the following three components:
 - Source Tracing: Sphinx extension to represent the collected the needs in the documentation
 
 `Source Discovery` and `Virtual Docs` can be used as `APIs` or `CLI tools`.
-The detail usages can be found in the [test cases](./python/ubt_source_tracing/tests).
+The detail usages can be found in the [test cases](./python/sphinx_codelinks/tests).
 
 The library is built to be
+
 - ⚡ fast for large code bases and
 - 📃 support a multitude of languages.
 

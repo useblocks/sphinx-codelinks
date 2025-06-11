@@ -52,7 +52,7 @@ def discover(
     ] = None,
 ) -> None:
     """Discover the filepaths from the given root directory."""
-    from ubt_source_tracing.source_discover import SourceDiscover
+    from sphinx_codelinks.source_discover import SourceDiscover
 
     source_discover = SourceDiscover(
         root_dir=root_dir,
@@ -92,7 +92,7 @@ def vdoc(
 ) -> None:
     """Generate virtual documents for caching and extract the oneline comments."""
 
-    from ubt_source_tracing.virtual_docs.config import OneLineCommentStyle
+    from sphinx_codelinks.virtual_docs.config import OneLineCommentStyle
 
     data = load_config_from_toml(config, project)
     # src_dir = Path(data["src_dir"])
@@ -116,8 +116,8 @@ def vdoc(
         raise typer.BadParameter(
             f"Invalid oneline comment style configuration: {linesep.join(errors)}"
         )
-    from ubt_source_tracing.source_discover import SourceDiscover
-    from ubt_source_tracing.virtual_docs.utils import get_file_types
+    from sphinx_codelinks.source_discover import SourceDiscover
+    from sphinx_codelinks.virtual_docs.utils import get_file_types
 
     file_types = get_file_types(comment_type)
 
@@ -129,7 +129,7 @@ def vdoc(
         gitignore=gitignore,
     )
 
-    from ubt_source_tracing.virtual_docs.virtual_docs import VirtualDocs
+    from sphinx_codelinks.virtual_docs.virtual_docs import VirtualDocs
 
     virtual_docs = VirtualDocs(
         src_files=source_discover.source_paths,

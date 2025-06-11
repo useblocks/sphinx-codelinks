@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ubt_source_tracing.source_discover import SourceDiscover
+from sphinx_codelinks.source_discover import SourceDiscover
 
 
 def test_source_discover_all_files(source_directory: Path):

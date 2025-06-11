@@ -1,13 +1,14 @@
 import os
 
 import pytest
-from ubt_source_tracing.virtual_docs.config import ESCAPE, OneLineCommentStyle
-from ubt_source_tracing.virtual_docs.utils import (
+
+from sphinx_codelinks.virtual_docs.config import ESCAPE, OneLineCommentStyle
+from sphinx_codelinks.virtual_docs.utils import (
     OnelineParserInvalidWarning,
     WarningSubTypeEnum,
     oneline_parser,
 )
-from ubt_source_tracing.virtual_docs.virtual_docs import VirtualDocs
+from sphinx_codelinks.virtual_docs.virtual_docs import VirtualDocs
 
 from .conftest import TEST_DIR
 
