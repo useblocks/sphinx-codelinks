@@ -57,5 +57,5 @@ In the case where the config is introduced in ``toml`` file, the config path nee
 
 **Example Config**
 
- .. literalinclude:: ./../src_trace.toml
+.. literalinclude:: ./../src_trace.toml
    :language: toml
