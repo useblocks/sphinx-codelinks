@@ -78,7 +78,7 @@ src_trace_config_from_toml = "src_trace.toml"
 #     "dcdc": {
 #         "type": "cpp",
 #         "src_dir": "../../dcdc",  # relative to confdir
-#         "remote_url_pattern": "https://github.com/useblocks/ubtrace/blob/{commit}/{path}#L{line}",  # optional
+#         "remote_url_pattern": "https://github.com/useblocks/sphinx-codelinks/blob/{commit}/{path}#L{line}",  # optional
 #         "exclude": ["dcdc/src/ubt/ubt.cpp"],
 #         "include": ["**/*.cpp", "**/*.hpp"],  # has default for each type
 #         "gitignore": True,  # default is True
