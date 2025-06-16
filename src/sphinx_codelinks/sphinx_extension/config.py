@@ -6,7 +6,10 @@ from jsonschema import ValidationError, validate
 from sphinx.application import Sphinx
 from sphinx.config import Config as _SphinxConfig
 
-from sphinx_codelinks.source_discovery.config import SourceDiscoveryConfig
+from sphinx_codelinks.source_discovery.config import (
+    SourceDiscoveryConfig,
+    SourceDiscoveryConfigType,
+)
 from sphinx_codelinks.virtual_docs.config import (
     SUPPORTED_COMMENT_TYPES,
     OneLineCommentStyle,
@@ -35,6 +38,17 @@ class SrcTraceProjectConfigType(TypedDict):
     include: list[str]
     gitignore: bool
     oneline_comment_style: OneLineCommentStyle
+
+
+class SrcTraceConfigType(TypedDict):
+    config_from_toml: str | None
+    set_local_url: bool
+    local_url_field: str
+    set_remote_url: bool
+    remote_url_field: str
+    projects: dict[str, SrcTraceProjectConfigType]
+    debug_measurement: bool
+    debug_filters: bool
 
 
 @dataclass
@@ -93,11 +107,11 @@ class SrcTraceSphinxConfig:
         return {item.name for item in fields(cls)}
 
     @classmethod
-    def get_schema(cls, name: str) -> dict | None:
+    def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
         """Get the schema for a config item."""
         _field = next(field for field in fields(cls) if field.name is name)
         if _field.metadata is not MISSING and "schema" in _field.metadata:
-            return _field.metadata["schema"]
+            return _field.metadata["schema"]  # type: ignore[no-any-return]
         return None
 
     config_from_toml: str | None = field(
@@ -213,13 +227,19 @@ def check_schema(config: SrcTraceSphinxConfig) -> list[str]:
 def check_project_configuration(config: SrcTraceSphinxConfig) -> list[str]:
     errors = []
 
-    def validate_oneline_comment_style(project_config):
+    def validate_oneline_comment_style(
+        project_config: SrcTraceProjectConfigType,
+    ) -> list[str]:
         if "oneline_comment_style" in project_config:
-            return project_config["oneline_comment_style"].check_fields_configuration()
+            style = project_config["oneline_comment_style"]
+            if isinstance(style, OneLineCommentStyle):
+                return style.check_fields_configuration()
         return []
 
-    def build_src_discovery_dict(project_config):
-        src_discovery_dict: dict[str, Any] = {}
+    def build_src_discovery_dict(
+        project_config: SrcTraceProjectConfigType,
+    ) -> tuple[SourceDiscoveryConfigType | None, list[str]]:
+        src_discovery_dict = cast(SourceDiscoveryConfigType, {})
         src_discovery_errors = []
         if "src_dir" in project_config:
             if isinstance(project_config["src_dir"], str):
@@ -239,7 +259,7 @@ def check_project_configuration(config: SrcTraceSphinxConfig) -> list[str]:
         return src_discovery_dict, src_discovery_errors
 
     for project_name, project_config in config.projects.items():
-        project_errors = []
+        project_errors: list[str] = []
         oneline_errors = validate_oneline_comment_style(project_config)
         src_discovery_dict, src_discovery_errors = build_src_discovery_dict(
             project_config

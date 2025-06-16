@@ -5,10 +5,10 @@ from typing import Any, TypedDict, cast
 from jsonschema import ValidationError, validate
 
 
-class SourceDiscoveryConfigType(TypedDict):
+class SourceDiscoveryConfigType(TypedDict, total=False):
     root_dir: Path
-    excludes: list[str]
-    includes: list[str]
+    exclude: list[str]
+    include: list[str]
     gitignore: bool
     file_types: list[str]
 

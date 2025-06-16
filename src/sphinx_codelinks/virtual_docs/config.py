@@ -63,9 +63,10 @@ class VirtualDocsConfig:
             value = getattr(self, _field_name)
             if _field_name == "src_files":  # adapt to json schema restriction
                 if isinstance(value, list):
-                    value: list[str] = [str(src_file) for src_file in value]
+                    value: list[str] = [str(src_file) for src_file in value]  # type: ignore[no-redef] # only for value adaptation
             elif isinstance(value, Path):  # adapt to json schema restriction
                 value = str(value)
+
             try:
                 validate(instance=value, schema=schema)  # type: ignore[arg-type]  # validate has no type specified
             except ValidationError as e:

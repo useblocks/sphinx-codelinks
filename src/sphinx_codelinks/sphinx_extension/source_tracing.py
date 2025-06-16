@@ -3,7 +3,7 @@ import contextlib
 from pathlib import Path
 from timeit import default_timer as timer  # Used for timing measurements
 import tomllib
-from typing import Any
+from typing import Any, cast
 
 from sphinx.application import Sphinx
 from sphinx.config import Config as _SphinxConfig
@@ -18,6 +18,8 @@ from sphinx_needs.api import (  # type: ignore[import-untyped]
 from sphinx_codelinks.sphinx_extension import debug
 from sphinx_codelinks.sphinx_extension.config import (
     SRC_TRACE_CACHE,
+    SrcTraceConfigType,
+    SrcTraceProjectConfigType,
     SrcTraceSphinxConfig,
     check_configuration,
     file_lineno_href,
@@ -121,8 +123,7 @@ def load_config_from_toml(app: Sphinx, config: _SphinxConfig) -> None:
 
     if not toml_file.exists():
         logger.warning(
-            f"Source tracing configuration file {toml_file} does not exist. "
-            "Using configuration from conf.py."
+            f"Source tracing configuration file {toml_file} does not exist. Using configuration from conf.py."
         )
         return
     try:
@@ -138,24 +139,31 @@ def load_config_from_toml(app: Sphinx, config: _SphinxConfig) -> None:
         )
         return
 
-    set_config_to_sphinx(toml_data, config)
+    set_config_to_sphinx(
+        src_trace_config=cast(SrcTraceConfigType, toml_data), config=config
+    )
 
 
 def set_config_to_sphinx(
-    src_trace_config: dict[str, Any], config: _SphinxConfig
+    src_trace_config: SrcTraceConfigType, config: _SphinxConfig
 ) -> None:
     allowed_keys = SrcTraceSphinxConfig.field_names()
     for key, value in src_trace_config.items():
         if key not in allowed_keys:
             continue
         if key == "projects":
-            for project_config in value.values():
-                oneline_comment_style: OneLineCommentStyleType | None = (
-                    project_config.get("oneline_comment_style")
+            for project_config in cast(
+                dict[str, SrcTraceProjectConfigType], value
+            ).values():
+                oneline_comment_style: OneLineCommentStyleType | None = cast(
+                    OneLineCommentStyleType, project_config.get("oneline_comment_style")
                 )
                 if oneline_comment_style:
                     project_config["oneline_comment_style"] = OneLineCommentStyle(
-                        **project_config["oneline_comment_style"]
+                        **cast(
+                            OneLineCommentStyleType,
+                            project_config["oneline_comment_style"],
+                        )
                     )
 
         config[f"src_trace_{key}"] = value
