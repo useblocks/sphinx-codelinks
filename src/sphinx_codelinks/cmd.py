@@ -52,7 +52,7 @@ def discover(
     ] = None,
 ) -> None:
     """Discover the filepaths from the given root directory."""
-    from sphinx_codelinks.source_discover import SourceDiscover
+    from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
 
     source_discover = SourceDiscover(
         root_dir=root_dir,
@@ -116,7 +116,7 @@ def vdoc(
         raise typer.BadParameter(
             f"Invalid oneline comment style configuration: {linesep.join(errors)}"
         )
-    from sphinx_codelinks.source_discover import SourceDiscover
+    from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
     from sphinx_codelinks.virtual_docs.utils import get_file_types
 
     file_types = get_file_types(comment_type)

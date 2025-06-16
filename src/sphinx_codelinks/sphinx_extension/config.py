@@ -1,10 +1,14 @@
 from dataclasses import MISSING, dataclass, field, fields
+from pathlib import Path
 from typing import Any, Literal, TypedDict, cast
 
+from jsonschema import ValidationError, validate
 from sphinx.application import Sphinx
 from sphinx.config import Config as _SphinxConfig
 
+from sphinx_codelinks.source_discovery.config import SourceDiscoveryConfig
 from sphinx_codelinks.virtual_docs.config import (
+    SUPPORTED_COMMENT_TYPES,
     OneLineCommentStyle,
     OneLineCommentStyleType,
 )
@@ -88,6 +92,14 @@ class SrcTraceSphinxConfig:
     def field_names(cls) -> set[str]:
         return {item.name for item in fields(cls)}
 
+    @classmethod
+    def get_schema(cls, name: str) -> dict | None:
+        """Get the schema for a config item."""
+        _field = next(field for field in fields(cls) if field.name is name)
+        if _field.metadata is not MISSING and "schema" in _field.metadata:
+            return _field.metadata["schema"]
+        return None
+
     config_from_toml: str | None = field(
         default=None,
         metadata={
@@ -106,13 +118,22 @@ class SrcTraceSphinxConfig:
         metadata={
             "rebuild": "env",
             "types": (bool,),
+            "schema": {
+                "type": "boolean",
+            },
         },
     )
     """Set the file URL in the extracted need."""
 
     local_url_field: str = field(
         default="local-url",
-        metadata={"rebuild": "env", "types": (str,)},
+        metadata={
+            "rebuild": "env",
+            "types": (str,),
+            "schema": {
+                "type": "string",
+            },
+        },
     )
     """The field name for the file URL in the extracted need."""
 
@@ -121,17 +142,45 @@ class SrcTraceSphinxConfig:
         metadata={
             "rebuild": "env",
             "types": (bool,),
+            "schema": {
+                "type": "boolean",
+            },
         },
     )
     remote_url_field: str = field(
         default="remote-url",
-        metadata={"rebuild": "env", "types": (str,)},
+        metadata={
+            "rebuild": "env",
+            "types": (str,),
+            "schema": {
+                "type": "string",
+            },
+        },
     )
     """The field name for the remote URL in the extracted need."""
 
     projects: dict[str, SrcTraceProjectConfigType] = field(
         default_factory=dict,
-        metadata={"rebuild": "env", "types": ()},
+        metadata={
+            "rebuild": "env",
+            "types": (),
+            "schema": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                        "comment_type": {},
+                        "src_dir": {},
+                        "remote_url_pattern": {},
+                        "exclude": {},
+                        "include": {},
+                        "gitignore": {},
+                        "oneline_comment_style": {},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+        },
     )
     """The configuration for the source tracing projects."""
 
@@ -143,3 +192,83 @@ class SrcTraceSphinxConfig:
         default=False, metadata={"rebuild": "html", "types": (bool,)}
     )
     """If True, log filter processing runtime information."""
+
+
+def check_schema(config: SrcTraceSphinxConfig) -> list[str]:
+    errors = []
+    for _field_name in SrcTraceSphinxConfig.field_names():
+        schema = SrcTraceSphinxConfig.get_schema(_field_name)
+        value = getattr(config, _field_name)
+        if not schema:
+            continue
+        try:
+            validate(instance=value, schema=schema)
+        except ValidationError as e:
+            errors.append(
+                f"Schema validation error in filed '{_field_name}': {e.message}"
+            )
+    return errors
+
+
+def check_project_configuration(config: SrcTraceSphinxConfig) -> list[str]:
+    errors = []
+
+    def validate_oneline_comment_style(project_config):
+        if "oneline_comment_style" in project_config:
+            return project_config["oneline_comment_style"].check_fields_configuration()
+        return []
+
+    def build_src_discovery_dict(project_config):
+        src_discovery_dict: dict[str, Any] = {}
+        src_discovery_errors = []
+        if "src_dir" in project_config:
+            if isinstance(project_config["src_dir"], str):
+                src_discovery_dict["root_dir"] = Path(project_config["src_dir"])
+            else:
+                src_discovery_errors.append("src_dir must be a string")
+        for key in ("exclude", "include", "gitignore"):
+            if key in project_config:
+                src_discovery_dict[key] = project_config[key]
+        if "comment_type" in project_config:
+            if project_config["comment_type"] not in SUPPORTED_COMMENT_TYPES:
+                src_discovery_errors.append(
+                    f"comment_type must be one of {sorted(SUPPORTED_COMMENT_TYPES)}"
+                )
+            else:
+                src_discovery_dict["file_types"] = list(SUPPORTED_COMMENT_TYPES)
+        return src_discovery_dict, src_discovery_errors
+
+    for project_name, project_config in config.projects.items():
+        project_errors = []
+        oneline_errors = validate_oneline_comment_style(project_config)
+        src_discovery_dict, src_discovery_errors = build_src_discovery_dict(
+            project_config
+        )
+        if src_discovery_dict is not None:
+            src_discovery_config = SourceDiscoveryConfig(**src_discovery_dict)
+            src_discovery_errors.extend(src_discovery_config.check_schema())
+
+        if config.set_remote_url and "remote_url_pattern" not in project_config:
+            project_errors.append(
+                "remote_url_pattern must be given, as set_remote_url is enabled"
+            )
+
+        if "remote_url_pattern" in project_config and not isinstance(
+            project_config["remote_url_pattern"], str
+        ):
+            project_errors.append("remote_url_pattern must be a string")
+
+        if oneline_errors or src_discovery_errors or project_errors:
+            errors.append(f"Project '{project_name}' has the following errors:")
+            errors.extend(oneline_errors)
+            errors.extend(src_discovery_errors)
+            errors.extend(project_errors)
+
+    return errors
+
+
+def check_configuration(config: SrcTraceSphinxConfig) -> list[str]:
+    errors = []
+    errors.extend(check_schema(config))
+    errors.extend(check_project_configuration(config))
+    return errors

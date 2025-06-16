@@ -1,6 +1,7 @@
 from dataclasses import MISSING, dataclass, field, fields
 import logging
 import os
+from pathlib import Path
 from typing import Any, Literal, TypedDict, cast
 
 from jsonschema import ValidationError, validate
@@ -17,10 +18,65 @@ ESCAPE = "\\"
 SUPPORTED_COMMENT_TYPES = {"c", "h", "cpp", "hpp"}
 
 
+class VirtualDocsConfigType(TypedDict):
+    src_files: list[Path] | None
+    src_dir: Path
+    output_dir: Path
+    comment_type: str
+
+
+@dataclass
+class VirtualDocsConfig:
+    @classmethod
+    def field_names(cls) -> set[str]:
+        return {item.name for item in fields(cls)}
+
+    src_files: list[Path] = field(
+        metadata={"schema": {"type": "array", "items": {"type": "string"}}},
+    )
+    """A list of source files to be  processed."""
+
+    src_dir: Path = field(
+        default_factory=lambda: Path.cwd(), metadata={"schema": {"type": "string"}}
+    )
+    """The root of the source directory."""
+
+    output_dir: Path = field(
+        default=Path("output"), metadata={"schema": {"type": "string"}}
+    )
+    """The directory where  the virtual documents and their caches will be stored."""
+
+    comment_type: str = field(default="c", metadata={"schema": {"type": "string"}})
+    """The type of comment to be processed."""
+
+    @classmethod
+    def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
+        _field = next(_field for _field in fields(cls) if _field.name is name)
+        if _field.metadata is not MISSING and "schema" in _field.metadata:
+            return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[explicit-any]
+        return None
+
+    def check_schema(self) -> list[str]:
+        errors = []
+        for _field_name in self.field_names():
+            schema = self.get_schema(_field_name)
+            value = getattr(self, _field_name)
+            if _field_name == "src_files":  # adapt to json schema restriction
+                if isinstance(value, list):
+                    value: list[str] = [str(src_file) for src_file in value]
+            elif isinstance(value, Path):  # adapt to json schema restriction
+                value = str(value)
+            try:
+                validate(instance=value, schema=schema)  # type: ignore[arg-type]  # validate has no type specified
+            except ValidationError as e:
+                errors.append(
+                    f"Schema validation error in field '{_field_name}': {e.message}"
+                )
+        return errors
+
+
 class FieldConfig(TypedDict, total=False):
     name: str
-    quoted: bool
-    named: bool
     type: Literal["str", "list[str]"]
     default: str | list[str] | None
 
@@ -66,8 +122,6 @@ class OneLineCommentStyle:
             "required_fields": ["title", "type"],
             "field_default": {
                 "type": "str",
-                "quoted": False,
-                "named": False,
             },
             "schema": {
                 "type": "array",
@@ -75,8 +129,6 @@ class OneLineCommentStyle:
                     "type": "object",
                     "properties": {
                         "name": {"type": "string"},
-                        "quoted": {"type": "boolean", "default": False},
-                        "named": {"type": "boolean", "default": False},
                         "type": {
                             "type": "string",
                             "enum": ["str", "list[str]"],
@@ -165,11 +217,10 @@ class OneLineCommentStyle:
         if required_fields is None:
             errors.append("No required fields specified.")
             return errors
-        for _field in self.needs_fields:
-            if _field["name"] in required_fields:
-                required_fields.remove(_field["name"])
-        if len(required_fields) != 0:
-            errors.append(f"Missing required fields: {required_fields}")
+        given_field_names = [_field["name"] for _field in self.needs_fields]
+        missing_fields = set(required_fields) - set(given_field_names)
+        if len(missing_fields) != 0:
+            errors.append(f"Missing required fields: {sorted(missing_fields)}")
 
         return errors
 

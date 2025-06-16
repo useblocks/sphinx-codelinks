@@ -6,7 +6,7 @@ import tomllib
 from typing import Any
 
 from sphinx.application import Sphinx
-from sphinx.config import Config
+from sphinx.config import Config as _SphinxConfig
 from sphinx.environment import BuildEnvironment
 from sphinx.util import logging
 from sphinx.util.fileutil import copy_asset
@@ -107,7 +107,7 @@ def generate_code_page(
     return None
 
 
-def load_config_from_toml(app: Sphinx, config: Config) -> None:
+def load_config_from_toml(app: Sphinx, config: _SphinxConfig) -> None:
     """Load the configuration from a TOML file, if defined in conf.py."""
     src_trc_sphinx_config = SrcTraceSphinxConfig(config)
     if src_trc_sphinx_config.config_from_toml is None:
@@ -136,8 +136,14 @@ def load_config_from_toml(app: Sphinx, config: Config) -> None:
         )
         return
 
+    set_config_to_sphinx(toml_data, config)
+
+
+def set_config_to_sphinx(
+    src_trace_config: dict[str, Any], config: _SphinxConfig
+) -> None:
     allowed_keys = SrcTraceSphinxConfig.field_names()
-    for key, value in toml_data.items():
+    for key, value in src_trace_config.items():
         if key not in allowed_keys:
             continue
         if key == "projects":
@@ -149,10 +155,11 @@ def load_config_from_toml(app: Sphinx, config: Config) -> None:
                     project_config["oneline_comment_style"] = OneLineCommentStyle(
                         **project_config["oneline_comment_style"]
                     )
+
         config[f"src_trace_{key}"] = value
 
 
-def update_sn_extra_options(app: Sphinx, config: Config) -> None:
+def update_sn_extra_options(app: Sphinx, config: _SphinxConfig) -> None:
     src_trace_sphinx_config = SrcTraceSphinxConfig(config)
     add_extra_option(app, "project")
     add_extra_option(app, "file")
@@ -163,7 +170,7 @@ def update_sn_extra_options(app: Sphinx, config: Config) -> None:
         add_extra_option(app, src_trace_sphinx_config.remote_url_field)
 
 
-def update_sn_types(app: Sphinx, _config: Config) -> None:
+def update_sn_types(app: Sphinx, _config: _SphinxConfig) -> None:
     add_need_type(app, "srctrace", "Src-Trace", "ST_", "#ffffff", "node")
 
 

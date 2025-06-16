@@ -2,7 +2,11 @@ import os
 
 import pytest
 
-from sphinx_codelinks.virtual_docs.config import ESCAPE, OneLineCommentStyle
+from sphinx_codelinks.virtual_docs.config import (
+    ESCAPE,
+    OneLineCommentStyle,
+    VirtualDocsConfig,
+)
 from sphinx_codelinks.virtual_docs.utils import (
     OnelineParserInvalidWarning,
     WarningSubTypeEnum,
@@ -27,6 +31,41 @@ ONELINE_COMMENT_STYLE = OneLineCommentStyle(
 )
 
 ONELINE_COMMENT_STYLE_DEFAULT = OneLineCommentStyle()
+
+
+@pytest.mark.parametrize(
+    ("vdocs_config", "result"),
+    [
+        (
+            VirtualDocsConfig(
+                src_files=[
+                    TEST_DIR / "data" / "dcdc" / "charge" / "demo_1.cpp",
+                ],
+                src_dir=TEST_DIR / "data" / "dcdc",
+                output_dir=TEST_DIR / "output",
+                comment_type=123,
+            ),
+            [
+                "Schema validation error in field 'comment_type': 123 is not of type 'string'",
+            ],
+        ),
+        (
+            VirtualDocsConfig(
+                src_files=None,
+                src_dir=TEST_DIR / "data" / "dcdc",
+                output_dir=TEST_DIR / "output",
+                comment_type=123,
+            ),
+            [
+                "Schema validation error in field 'comment_type': 123 is not of type 'string'",
+                "Schema validation error in field 'src_files': None is not of type 'array'",
+            ],
+        ),
+    ],
+)
+def test_config_schema_validator_negative(vdocs_config, result):
+    errors = vdocs_config.check_schema()
+    assert sorted(errors) == sorted(result)
 
 
 @pytest.mark.parametrize(
@@ -144,9 +183,9 @@ ONELINE_COMMENT_STYLE_DEFAULT = OneLineCommentStyle()
         ),
     ],
 )
-def test_schema_validator_negative(oneline_config, result):
+def test_oneline_schema_validator_negative(oneline_config, result):
     errors = oneline_config.check_fields_configuration()
-    assert errors.sort() == result.sort()
+    assert sorted(errors) == sorted(result)
 
 
 @pytest.mark.parametrize(
@@ -180,7 +219,7 @@ def test_schema_validator_negative(oneline_config, result):
         ),
     ],
 )
-def test_schema_validator_positive(oneline_config):
+def test_oneline_schema_validator_positive(oneline_config):
     assert len(oneline_config.check_fields_configuration()) == 0
 
 

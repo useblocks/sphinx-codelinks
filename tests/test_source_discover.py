@@ -1,6 +1,63 @@
 from pathlib import Path
 
-from sphinx_codelinks.source_discover import SourceDiscover
+import pytest
+
+from sphinx_codelinks.source_discovery.config import SourceDiscoveryConfig
+from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
+
+
+@pytest.mark.parametrize(
+    ("config", "msgs"),
+    [
+        (
+            {
+                "root_dir": 123,
+                "exclude": ["exclude1", "exclude2"],
+                "include": ["include1", "include2"],
+                "gitignore": True,
+                "file_types": ["cpp", "hpp"],
+            },
+            [
+                "Schema validation error in field 'root_dir': 123 is not of type 'string'"
+            ],
+        ),
+        (
+            {
+                "root_dir": "/path/to/root",
+                "exclude": ["exclude1", "exclude2"],
+                "include": ["include1", "include2"],
+                "gitignore": "TrueAsString",
+                "file_types": ["cpp", "hpp"],
+            },
+            [
+                "Schema validation error in field 'gitignore': 'TrueAsString' is not of type 'boolean'"
+            ],
+        ),
+    ],
+)
+def test_schema_negative(config, msgs):
+    source_discovery_config = SourceDiscoveryConfig(**config)
+    errors = source_discovery_config.check_schema()
+    assert errors.sort() == msgs.sort()
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {},
+        {
+            "root_dir": "/path/to/root",
+            "exclude": ["exclude1", "exclude2"],
+            "include": ["include1", "include2"],
+            "gitignore": True,
+            "file_types": ["cpp", "hpp"],
+        },
+    ],
+)
+def test_schema_positive(config):
+    source_discovery_config = SourceDiscoveryConfig(**config)
+    errors = source_discovery_config.check_schema()
+    assert len(errors) == 0
 
 
 def test_source_discover_all_files(source_directory: Path):

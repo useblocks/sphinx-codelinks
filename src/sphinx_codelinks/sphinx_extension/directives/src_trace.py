@@ -11,7 +11,7 @@ from sphinx.util.docutils import SphinxDirective
 from sphinx_needs.api import add_need  # type: ignore[import-untyped]
 from sphinx_needs.utils import add_doc  # type: ignore[import-untyped]
 
-from sphinx_codelinks.source_discover import SourceDiscover
+from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
 from sphinx_codelinks.sphinx_extension.config import (
     SRC_TRACE_CACHE,
     SrcTraceProjectConfigType,
