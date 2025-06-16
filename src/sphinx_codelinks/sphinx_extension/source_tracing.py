@@ -19,6 +19,7 @@ from sphinx_codelinks.sphinx_extension import debug
 from sphinx_codelinks.sphinx_extension.config import (
     SRC_TRACE_CACHE,
     SrcTraceSphinxConfig,
+    check_configuration,
     file_lineno_href,
 )
 from sphinx_codelinks.sphinx_extension.directives.src_trace import (
@@ -45,6 +46,7 @@ def setup(app: Sphinx) -> dict[str, Any]:  # type: ignore[explicit-any]
         "config-inited", update_sn_extra_options, priority=11
     )  # run early otherwise, extra options are not set for nested_parse
     app.connect("config-inited", update_sn_types)
+    app.connect("config-inited", check_sphinx_configuration)
 
     app.connect("env-before-read-docs", prepare_env)
     app.connect("html-collect-pages", generate_code_page)
@@ -188,6 +190,13 @@ def prepare_env(app: Sphinx, env: BuildEnvironment, _docnames: list[str]) -> Non
     if src_trace_sphinx_config.debug_filters:
         with contextlib.suppress(FileNotFoundError):
             Path(str(app.outdir), "debug_filters.jsonl").unlink()
+
+
+def check_sphinx_configuration(app: Sphinx, _config: _SphinxConfig) -> None:
+    config = SrcTraceSphinxConfig(app.config)
+    errors = check_configuration(config)
+    if errors:
+        raise Exception("\n".join(errors))
 
 
 def emit_warnings(
