@@ -10,14 +10,14 @@ class SourceDiscover:
     def __init__(
         self,
         root_dir: Path,
-        excludes: list[str] | None = None,
-        includes: list[str] | None = None,
+        exclude: list[str] | None = None,
+        include: list[str] | None = None,
         gitignore: bool = True,
         file_types: list[str] | None = None,
     ):
         self.root_path = root_dir
-        self.excludes = excludes
-        self.includes = includes
+        self.exclude = exclude
+        self.include = include
         # Only gitignore at source root is considered.
         # TODO: Support nested gitignore files
         gitignore_path = self.root_path / ".gitignore"
@@ -48,7 +48,7 @@ class SourceDiscover:
                 if self.file_types and filepath.suffix.lower() not in self.file_types:
                     continue
                 rel_filepath = str(filepath.relative_to(self.root_path))
-                if self.includes and self._matches_any(rel_filepath, self.includes):
+                if self.include and self._matches_any(rel_filepath, self.include):
                     # "includes" has the highest priority over "gitignore" and "excludes"
                     discovered_files.append(filepath)
                     continue
@@ -56,7 +56,7 @@ class SourceDiscover:
                     str(filepath.absolute())
                 ):
                     continue
-                if self.excludes and self._matches_any(rel_filepath, self.excludes):
+                if self.exclude and self._matches_any(rel_filepath, self.exclude):
                     continue
                 discovered_files.append(filepath)
         sorted_filepaths = sorted(

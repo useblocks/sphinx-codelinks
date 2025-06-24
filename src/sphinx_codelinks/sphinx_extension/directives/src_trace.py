@@ -238,8 +238,8 @@ class SourceTracingDirective(SphinxDirective):
             source_discover = SourceDiscover(
                 dir_path,
                 gitignore=src_trace_conf["gitignore"],
-                includes=src_trace_conf["include"],
-                excludes=src_trace_conf["exclude"],
+                include=src_trace_conf["include"],
+                exclude=src_trace_conf["exclude"],
                 file_types=file_types,
             )
             source_files.extend(source_discover.source_paths)

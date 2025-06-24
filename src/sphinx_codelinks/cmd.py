@@ -1,10 +1,19 @@
+from collections import deque
 from os import linesep
 from pathlib import Path
 import tempfile
 import tomllib
-from typing import Annotated, Any
+from typing import Annotated, cast
 
 import typer
+
+from sphinx_codelinks.source_discovery.config import SourceDiscoveryConfig
+from sphinx_codelinks.sphinx_extension.config import (
+    SrcTraceProjectConfigType,
+    build_src_discovery_dict,
+    validate_oneline_comment_style,
+)
+from sphinx_codelinks.virtual_docs.config import OneLineCommentStyle
 
 app = typer.Typer(
     no_args_is_help=True, context_settings={"help_option_names": ["-h", "--help"]}
@@ -25,7 +34,7 @@ def discover(
             resolve_path=True,
         ),
     ],
-    excludes: Annotated[
+    exclude: Annotated[
         list[str] | None,
         typer.Option(
             "--excludes",
@@ -33,7 +42,7 @@ def discover(
             help="Glob patterns to be excluded.",
         ),
     ] = None,
-    includes: Annotated[
+    include: Annotated[
         list[str] | None,
         typer.Option(
             "--includes",
@@ -56,8 +65,8 @@ def discover(
 
     source_discover = SourceDiscover(
         root_dir=root_dir,
-        excludes=excludes,
-        includes=includes,
+        exclude=exclude,
+        include=include,
         file_types=file_types,
         gitignore=gitignore,
     )
@@ -92,51 +101,53 @@ def vdoc(
 ) -> None:
     """Generate virtual documents for caching and extract the oneline comments."""
 
-    from sphinx_codelinks.virtual_docs.config import OneLineCommentStyle
-
     data = load_config_from_toml(config, project)
-    # src_dir = Path(data["src_dir"])
-    # # if not project:
-    #     # src_tracing extension assume root_dir as the config
-    root_dir = config.parent
-    src_dir = (root_dir / Path(data["src_dir"])).resolve()
 
-    comment_type = data["comment_type"]
-    gitignore = data["gitignore"]
-    excludes = data["exclude"]
-    includes = data["include"]
+    errors: deque[str] = deque()
+    oneline_errors = validate_oneline_comment_style(data)
+
+    if oneline_errors:
+        errors.appendleft("Invalid oneline comment style configuration:")
+        errors.extend(oneline_errors)
+
+    src_discovery_dict, src_discovery_errors = build_src_discovery_dict(data)
+    src_discovery_config = SourceDiscoveryConfig(**src_discovery_dict)
+    src_discovery_errors.extend(src_discovery_config.check_schema())
+
+    if src_discovery_errors:
+        errors.appendleft("Invalid source discovery configuration:")
+        errors.extend(src_discovery_errors)
+
+    if errors:
+        raise typer.BadParameter(f"{linesep.join(errors)}")
+
+    from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
+
+    src_root_dir = (config.parent / src_discovery_config.root_dir).resolve()
+    source_discover = SourceDiscover(
+        root_dir=src_root_dir,
+        exclude=src_discovery_config.exclude,
+        include=src_discovery_config.include,
+        file_types=src_discovery_config.file_types,
+        gitignore=src_discovery_config.gitignore,
+    )
+
+    from sphinx_codelinks.virtual_docs.virtual_docs import VirtualDocs
+
     oneline_comment_style = data.get("oneline_comment_style")
     if oneline_comment_style is None:
         oneline_comment_style = OneLineCommentStyle()
     else:
         oneline_comment_style = OneLineCommentStyle(**oneline_comment_style)
 
-    errors = oneline_comment_style.check_fields_configuration()
-    if errors:
-        raise typer.BadParameter(
-            f"Invalid oneline comment style configuration: {linesep.join(errors)}"
-        )
-    from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
-    from sphinx_codelinks.virtual_docs.utils import get_file_types
-
-    file_types = get_file_types(comment_type)
-
-    source_discover = SourceDiscover(
-        root_dir=src_dir,
-        excludes=excludes,
-        includes=includes,
-        file_types=file_types,
-        gitignore=gitignore,
-    )
-
-    from sphinx_codelinks.virtual_docs.virtual_docs import VirtualDocs
-
     virtual_docs = VirtualDocs(
         src_files=source_discover.source_paths,
-        src_dir=str(src_dir),
+        src_dir=str(src_root_dir),
         output_dir=str(output_dir),
         oneline_comment_style=oneline_comment_style,
-        comment_type=comment_type,
+        comment_type=src_discovery_config.file_types[0]
+        if src_discovery_config.file_types
+        else "c",
     )
     virtual_docs.collect()
     virtual_docs.dump_virtual_docs()
@@ -145,7 +156,7 @@ def vdoc(
         typer.echo("The virtual documents are generated:")
         for v_doc in virtual_docs.virtual_docs:
             json_path = output_dir / v_doc.filepath.with_suffix(".json").relative_to(
-                src_dir
+                src_root_dir
             )
             typer.echo(json_path)
     else:
@@ -157,9 +168,9 @@ def vdoc(
         typer.echo(cached_file)
 
 
-def load_config_from_toml(  # type: ignore[explicit-any]
+def load_config_from_toml(
     toml_file: Path, project: str | None = None
-) -> dict[str, Any]:
+) -> SrcTraceProjectConfigType:
     try:
         with toml_file.open("rb") as f:
             toml_data = tomllib.load(f)
@@ -172,7 +183,7 @@ def load_config_from_toml(  # type: ignore[explicit-any]
             f"Failed to load source tracing configuration from {toml_file}"
         ) from e
 
-    return toml_data
+    return cast(SrcTraceProjectConfigType, toml_data)
 
 
 if __name__ == "__main__":

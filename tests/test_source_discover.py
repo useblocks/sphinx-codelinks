@@ -74,15 +74,15 @@ def test_source_discover_includes(source_directory: Path):
     source_discover = SourceDiscover(
         source_directory,
         gitignore=True,
-        excludes=["charge/*.cpp"],
-        includes=["**/*.cpp"],
+        exclude=["charge/*.cpp"],
+        include=["**/*.cpp"],
     )
     assert len(source_discover.source_paths) == 5
 
 
 def test_source_discover_excludes(source_directory: Path):
     source_discover = SourceDiscover(
-        source_directory, gitignore=True, excludes=["charge/*.cpp"]
+        source_directory, gitignore=True, exclude=["charge/*.cpp"]
     )
     assert len(source_discover.source_paths) == 3
 

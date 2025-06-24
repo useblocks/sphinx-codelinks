@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import toml
 from typer.testing import CliRunner
 
 from sphinx_codelinks.cmd import app
@@ -12,6 +13,27 @@ from .conftest import (
     SRC_TRACE_TOML,
     TEST_DIR,
 )
+
+ONELINE_COMMENT_TEMPLATE = {
+    "start_sequence": "[[",
+    "end_sequence": "]]",
+    "field_split_char": ",",
+    "needs_fields": [
+        {"name": "id"},
+        {"name": "title"},
+        {"name": "type"},
+    ],
+}
+
+VDOC_CONFIG_TEMPLATE = {
+    "src_dir": str(TEST_DIR / "data" / "dcdc"),
+    "exclude": ["**/charge/demo_1.cpp", "**/discharge/demo_3.cpp"],
+    "include": ["**/charge/demo_2.cpp", "**/supercharge.cpp"],
+    "gitignore": True,
+    "file_types": ["cpp"],
+    "oneline_comment_style": ONELINE_COMMENT_TEMPLATE,
+}
+
 
 runner = CliRunner()
 
@@ -143,3 +165,70 @@ def test_vdoc(options, lines, tmp_path):
 
     assert result.exit_code == 0
     assert result.stdout.splitlines() == lines
+
+
+@pytest.mark.parametrize(
+    ("config_dict", "output"),
+    [
+        (
+            {
+                key: (123 if key == "exclude" else value)
+                for key, value in VDOC_CONFIG_TEMPLATE.items()
+            },
+            [
+                "Usage: root vdoc [OPTIONS]",
+                "Try 'root vdoc -h' for help.",
+                "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
+                "│ Invalid value: Invalid source discovery configuration:                       │",
+                "│ Schema validation error in field 'exclude': 123 is not of type 'array'       │",
+                "╰──────────────────────────────────────────────────────────────────────────────╯",
+            ],
+        ),
+        (
+            {
+                key: (123 if key == "include" else value)
+                for key, value in VDOC_CONFIG_TEMPLATE.items()
+            },
+            [
+                "Usage: root vdoc [OPTIONS]",
+                "Try 'root vdoc -h' for help.",
+                "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
+                "│ Invalid value: Invalid source discovery configuration:                       │",
+                "│ Schema validation error in field 'include': 123 is not of type 'array'       │",
+                "╰──────────────────────────────────────────────────────────────────────────────╯",
+            ],
+        ),
+        (
+            {
+                key: (123 if key in ("exclude", "include", "src_dir") else value)
+                for key, value in VDOC_CONFIG_TEMPLATE.items()
+            },
+            [
+                "Usage: root vdoc [OPTIONS]",
+                "Try 'root vdoc -h' for help.",
+                "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
+                "│ Invalid value: Invalid source discovery configuration:                       │",
+                "│ src_dir must be a string                                                     │",
+                "│ Schema validation error in field 'exclude': 123 is not of type 'array'       │",
+                "│ Schema validation error in field 'include': 123 is not of type 'array'       │",
+                "╰──────────────────────────────────────────────────────────────────────────────╯",
+            ],
+        ),
+    ],
+)
+def test_vdoc_config_negative(config_dict, output, tmp_path: Path) -> None:
+    config_file = tmp_path / "vdoc_config.toml"
+    with config_file.open("w", encoding="utf-8") as f:
+        toml.dump(config_dict, f)
+
+    options = [
+        "vdoc",
+        "--config",
+        str(config_file),
+    ]
+    result = runner.invoke(
+        app,
+        options,
+    )
+    stderr = result.stderr.splitlines()
+    assert stderr == output

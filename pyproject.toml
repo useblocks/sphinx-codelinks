@@ -49,7 +49,11 @@ dev-dependencies = [
   "shiv>=1.0.8",
   "insta-science>=0.2.1",
   "types-jsonschema>=4.23.0.20241208",
+  "toml>=0.10.2",
 ]
+
+[project.scripts]
+cl = "sphinx_codelinks.cmd:app"
 
 [tool.rye.scripts]
 # linting and formatting

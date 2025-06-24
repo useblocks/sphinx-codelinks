@@ -227,37 +227,6 @@ def check_schema(config: SrcTraceSphinxConfig) -> list[str]:
 def check_project_configuration(config: SrcTraceSphinxConfig) -> list[str]:
     errors = []
 
-    def validate_oneline_comment_style(
-        project_config: SrcTraceProjectConfigType,
-    ) -> list[str]:
-        if "oneline_comment_style" in project_config:
-            style = project_config["oneline_comment_style"]
-            if isinstance(style, OneLineCommentStyle):
-                return style.check_fields_configuration()
-        return []
-
-    def build_src_discovery_dict(
-        project_config: SrcTraceProjectConfigType,
-    ) -> tuple[SourceDiscoveryConfigType | None, list[str]]:
-        src_discovery_dict = cast(SourceDiscoveryConfigType, {})
-        src_discovery_errors = []
-        if "src_dir" in project_config:
-            if isinstance(project_config["src_dir"], str):
-                src_discovery_dict["root_dir"] = Path(project_config["src_dir"])
-            else:
-                src_discovery_errors.append("src_dir must be a string")
-        for key in ("exclude", "include", "gitignore"):
-            if key in project_config:
-                src_discovery_dict[key] = project_config[key]
-        if "comment_type" in project_config:
-            if project_config["comment_type"] not in SUPPORTED_COMMENT_TYPES:
-                src_discovery_errors.append(
-                    f"comment_type must be one of {sorted(SUPPORTED_COMMENT_TYPES)}"
-                )
-            else:
-                src_discovery_dict["file_types"] = list(SUPPORTED_COMMENT_TYPES)
-        return src_discovery_dict, src_discovery_errors
-
     for project_name, project_config in config.projects.items():
         project_errors: list[str] = []
         oneline_errors = validate_oneline_comment_style(project_config)
@@ -292,3 +261,36 @@ def check_configuration(config: SrcTraceSphinxConfig) -> list[str]:
     errors.extend(check_schema(config))
     errors.extend(check_project_configuration(config))
     return errors
+
+
+def validate_oneline_comment_style(
+    project_config: SrcTraceProjectConfigType,
+) -> list[str]:
+    if "oneline_comment_style" in project_config:
+        style = project_config["oneline_comment_style"]
+        if isinstance(style, OneLineCommentStyle):
+            return style.check_fields_configuration()
+    return []
+
+
+def build_src_discovery_dict(
+    project_config: SrcTraceProjectConfigType,
+) -> tuple[SourceDiscoveryConfigType | None, list[str]]:
+    src_discovery_dict = cast(SourceDiscoveryConfigType, {})
+    src_discovery_errors = []
+    if "src_dir" in project_config:
+        if isinstance(project_config["src_dir"], str):
+            src_discovery_dict["root_dir"] = Path(project_config["src_dir"])
+        else:
+            src_discovery_errors.append("src_dir must be a string")
+    for key in ("exclude", "include", "gitignore"):
+        if key in project_config:
+            src_discovery_dict[key] = project_config[key]
+    if "comment_type" in project_config:
+        if project_config["comment_type"] not in SUPPORTED_COMMENT_TYPES:
+            src_discovery_errors.append(
+                f"comment_type must be one of {sorted(SUPPORTED_COMMENT_TYPES)}"
+            )
+        else:
+            src_discovery_dict["file_types"] = list(SUPPORTED_COMMENT_TYPES)
+    return src_discovery_dict, src_discovery_errors
