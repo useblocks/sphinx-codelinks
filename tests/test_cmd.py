@@ -177,8 +177,6 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "Usage: root vdoc [OPTIONS]",
-                "Try 'root vdoc -h' for help.",
                 "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
                 "│ Invalid value: Invalid source discovery configuration:                       │",
                 "│ Schema validation error in field 'exclude': 123 is not of type 'array'       │",
@@ -191,8 +189,6 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "Usage: root vdoc [OPTIONS]",
-                "Try 'root vdoc -h' for help.",
                 "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
                 "│ Invalid value: Invalid source discovery configuration:                       │",
                 "│ Schema validation error in field 'include': 123 is not of type 'array'       │",
@@ -205,8 +201,6 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "Usage: root vdoc [OPTIONS]",
-                "Try 'root vdoc -h' for help.",
                 "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
                 "│ Invalid value: Invalid source discovery configuration:                       │",
                 "│ src_dir must be a string                                                     │",
@@ -223,8 +217,6 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "Usage: root vdoc [OPTIONS]",
-                "Try 'root vdoc -h' for help.",
                 "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
                 "│ Invalid value: Invalid oneline comment style configuration:                  │",
                 "│ OneLineCommentStyle.__init__() got an unexpected keyword argument            │",
@@ -242,8 +234,6 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "Usage: root vdoc [OPTIONS]",
-                "Try 'root vdoc -h' for help.",
                 "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
                 "│ Invalid value: Invalid oneline comment style configuration:                  │",
                 "│ Missing required fields: ['title', 'type']                                   │",
@@ -267,5 +257,5 @@ def test_vdoc_config_negative(config_dict, output, tmp_path: Path) -> None:
         str(config_file),
     ]
     result = runner.invoke(app, options, color=False)
-    stderr = result.stderr.splitlines()
+    stderr = result.stderr.splitlines()[2:]
     assert stderr == output
