@@ -9,11 +9,15 @@ import typer
 
 from sphinx_codelinks.source_discovery.config import SourceDiscoveryConfig
 from sphinx_codelinks.sphinx_extension.config import (
+    SrcTraceProjectConfigFileType,
     SrcTraceProjectConfigType,
     build_src_discovery_dict,
     validate_oneline_comment_style,
 )
-from sphinx_codelinks.virtual_docs.config import OneLineCommentStyle
+from sphinx_codelinks.virtual_docs.config import (
+    OneLineCommentStyle,
+    OneLineCommentStyleType,
+)
 
 app = typer.Typer(
     no_args_is_help=True, context_settings={"help_option_names": ["-h", "--help"]}
@@ -104,14 +108,33 @@ def vdoc(
     data = load_config_from_toml(config, project)
 
     errors: deque[str] = deque()
-    oneline_errors = validate_oneline_comment_style(data)
+
+    oneline_comment_style_dict: OneLineCommentStyleType | None = data.get(
+        "oneline_comment_style"
+    )
+    if oneline_comment_style_dict is None:
+        oneline_comment_style = OneLineCommentStyle()
+    else:
+        oneline_comment_style = OneLineCommentStyle(**oneline_comment_style_dict)
+    project_config = cast(
+        SrcTraceProjectConfigType,
+        {
+            key: value if key != "oneline_comment_style" else oneline_comment_style
+            for key, value in data.items()
+            if key != "oneline_comment_style"
+        },
+    )
+    oneline_errors = validate_oneline_comment_style(project_config)
 
     if oneline_errors:
         errors.appendleft("Invalid oneline comment style configuration:")
         errors.extend(oneline_errors)
 
-    src_discovery_dict, src_discovery_errors = build_src_discovery_dict(data)
-    src_discovery_config = SourceDiscoveryConfig(**src_discovery_dict)
+    src_discovery_dict, src_discovery_errors = build_src_discovery_dict(project_config)
+    if src_discovery_dict:
+        src_discovery_config = SourceDiscoveryConfig(**src_discovery_dict)
+    else:
+        src_discovery_config = SourceDiscoveryConfig()
     src_discovery_errors.extend(src_discovery_config.check_schema())
 
     if src_discovery_errors:
@@ -133,12 +156,6 @@ def vdoc(
     )
 
     from sphinx_codelinks.virtual_docs.virtual_docs import VirtualDocs
-
-    oneline_comment_style = data.get("oneline_comment_style")
-    if oneline_comment_style is None:
-        oneline_comment_style = OneLineCommentStyle()
-    else:
-        oneline_comment_style = OneLineCommentStyle(**oneline_comment_style)
 
     virtual_docs = VirtualDocs(
         src_files=source_discover.source_paths,
@@ -170,7 +187,7 @@ def vdoc(
 
 def load_config_from_toml(
     toml_file: Path, project: str | None = None
-) -> SrcTraceProjectConfigType:
+) -> SrcTraceProjectConfigFileType:
     try:
         with toml_file.open("rb") as f:
             toml_data = tomllib.load(f)
@@ -183,7 +200,7 @@ def load_config_from_toml(
             f"Failed to load source tracing configuration from {toml_file}"
         ) from e
 
-    return cast(SrcTraceProjectConfigType, toml_data)
+    return cast(SrcTraceProjectConfigFileType, toml_data)
 
 
 if __name__ == "__main__":

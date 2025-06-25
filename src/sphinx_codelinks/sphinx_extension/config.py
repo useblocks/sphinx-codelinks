@@ -29,6 +29,17 @@ class SourceTracingLineHref:
 file_lineno_href = SourceTracingLineHref()
 
 
+class SrcTraceProjectConfigFileType(TypedDict):
+    # only support C/C++ for now
+    comment_type: Literal["cpp", "hpp", "c", "h"]
+    src_dir: str
+    remote_url_pattern: str
+    exclude: list[str]
+    include: list[str]
+    gitignore: bool
+    oneline_comment_style: OneLineCommentStyleType
+
+
 class SrcTraceProjectConfigType(TypedDict):
     # only support C/C++ for now
     comment_type: Literal["cpp", "hpp", "c", "h"]
