@@ -1,6 +1,6 @@
 from pathlib import Path
-import re
 
+from _pytest.monkeypatch import MonkeyPatch
 import pytest
 import toml
 from typer.testing import CliRunner
@@ -254,6 +254,9 @@ def test_vdoc(options, lines, tmp_path):
     ],
 )
 def test_vdoc_config_negative(config_dict, output, tmp_path: Path) -> None:
+    # Force disable Rich styling
+    monkeypatch = MonkeyPatch()
+    monkeypatch.setenv("NO_COLOR", "1")
     config_file = tmp_path / "vdoc_config.toml"
     with config_file.open("w", encoding="utf-8") as f:
         toml.dump(config_dict, f)
@@ -264,9 +267,5 @@ def test_vdoc_config_negative(config_dict, output, tmp_path: Path) -> None:
         str(config_file),
     ]
     result = runner.invoke(app, options, color=False)
-    stderr = strip_ansi(result.stderr).splitlines()
+    stderr = result.stderr.splitlines()
     assert stderr == output
-
-
-def strip_ansi(text):
-    return re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
