@@ -115,13 +115,18 @@ def vdoc(
     if oneline_comment_style_dict is None:
         oneline_comment_style = OneLineCommentStyle()
     else:
-        oneline_comment_style = OneLineCommentStyle(**oneline_comment_style_dict)
+        try:
+            oneline_comment_style = OneLineCommentStyle(**oneline_comment_style_dict)
+        except TypeError as e:
+            raise typer.BadParameter(
+                f"Invalid oneline comment style configuration: {e}"
+            ) from e
+
     project_config = cast(
         SrcTraceProjectConfigType,
         {
             key: value if key != "oneline_comment_style" else oneline_comment_style
             for key, value in data.items()
-            if key != "oneline_comment_style"
         },
     )
     oneline_errors = validate_oneline_comment_style(project_config)
