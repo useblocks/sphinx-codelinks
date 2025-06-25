@@ -262,9 +262,6 @@ def test_vdoc_config_negative(config_dict, output, tmp_path: Path) -> None:
         "--config",
         str(config_file),
     ]
-    result = runner.invoke(
-        app,
-        options,
-    )
+    result = runner.invoke(app, options, color=False)
     stderr = result.stderr.splitlines()
     assert stderr == output
