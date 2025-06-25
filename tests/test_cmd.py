@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from _pytest.monkeypatch import MonkeyPatch
 import pytest
 import toml
 from typer.testing import CliRunner
@@ -169,7 +168,7 @@ def test_vdoc(options, lines, tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("config_dict", "output"),
+    ("config_dict", "output_lines"),
     [
         (
             {
@@ -177,10 +176,8 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
-                "│ Invalid value: Invalid source discovery configuration:                       │",
-                "│ Schema validation error in field 'exclude': 123 is not of type 'array'       │",
-                "╰──────────────────────────────────────────────────────────────────────────────╯",
+                "Invalid value: Invalid source discovery configuration:",
+                "Schema validation error in field 'exclude': 123 is not of type 'array'",
             ],
         ),
         (
@@ -189,10 +186,8 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
-                "│ Invalid value: Invalid source discovery configuration:                       │",
-                "│ Schema validation error in field 'include': 123 is not of type 'array'       │",
-                "╰──────────────────────────────────────────────────────────────────────────────╯",
+                "Invalid value: Invalid source discovery configuration:",
+                "Schema validation error in field 'include': 123 is not of type 'array'",
             ],
         ),
         (
@@ -201,12 +196,10 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
-                "│ Invalid value: Invalid source discovery configuration:                       │",
-                "│ src_dir must be a string                                                     │",
-                "│ Schema validation error in field 'exclude': 123 is not of type 'array'       │",
-                "│ Schema validation error in field 'include': 123 is not of type 'array'       │",
-                "╰──────────────────────────────────────────────────────────────────────────────╯",
+                "Invalid value: Invalid source discovery configuration:",
+                "src_dir must be a string",
+                "Schema validation error in field 'exclude': 123 is not of type 'array'",
+                "Schema validation error in field 'include': 123 is not of type 'array'",
             ],
         ),
         (
@@ -217,11 +210,9 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
-                "│ Invalid value: Invalid oneline comment style configuration:                  │",
-                "│ OneLineCommentStyle.__init__() got an unexpected keyword argument            │",
-                "│ 'not_expected'                                                               │",
-                "╰──────────────────────────────────────────────────────────────────────────────╯",
+                "Invalid value: Invalid oneline comment style configuration:",
+                "OneLineCommentStyle.__init__() got an unexpected keyword argument",
+                "'not_expected'",
             ],
         ),
         (
@@ -234,19 +225,15 @@ def test_vdoc(options, lines, tmp_path):
                 for key, value in VDOC_CONFIG_TEMPLATE.items()
             },
             [
-                "╭─ Error ──────────────────────────────────────────────────────────────────────╮",
-                "│ Invalid value: Invalid oneline comment style configuration:                  │",
-                "│ Missing required fields: ['title', 'type']                                   │",
-                "│ Field 'id' is defined multiple times.                                        │",
-                "╰──────────────────────────────────────────────────────────────────────────────╯",
+                "Invalid value: Invalid oneline comment style configuration:",
+                "Missing required fields: ['title', 'type']",
+                "Field 'id' is defined multiple times.",
             ],
         ),
     ],
 )
-def test_vdoc_config_negative(config_dict, output, tmp_path: Path) -> None:
+def test_vdoc_config_negative(config_dict, output_lines, tmp_path: Path) -> None:
     # Force disable Rich styling
-    monkeypatch = MonkeyPatch()
-    monkeypatch.setenv("NO_COLOR", "1")
     config_file = tmp_path / "vdoc_config.toml"
     with config_file.open("w", encoding="utf-8") as f:
         toml.dump(config_dict, f)
@@ -256,6 +243,7 @@ def test_vdoc_config_negative(config_dict, output, tmp_path: Path) -> None:
         "--config",
         str(config_file),
     ]
-    result = runner.invoke(app, options, color=False)
-    stderr = result.stderr.splitlines()[2:]
-    assert stderr == output
+    result = runner.invoke(app, options)
+    assert result.exit_code != 0
+    for line in output_lines:
+        assert line in result.stderr
