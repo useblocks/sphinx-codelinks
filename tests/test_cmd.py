@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 import pytest
 import toml
@@ -263,5 +264,9 @@ def test_vdoc_config_negative(config_dict, output, tmp_path: Path) -> None:
         str(config_file),
     ]
     result = runner.invoke(app, options, color=False)
-    stderr = result.stderr.splitlines()
+    stderr = strip_ansi(result.stderr).splitlines()
     assert stderr == output
+
+
+def strip_ansi(text):
+    return re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
