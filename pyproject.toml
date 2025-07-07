@@ -15,6 +15,7 @@ dependencies = [
   "typer>=0.16.0",
   "jsonschema",
   "sphinx>=7.4,<9",
+  "sphinx-needs>=4.2.0",
   # unconstrained versions, to be pinned by user or Sphinx
   "jinja2",
   "pygments",
@@ -42,7 +43,6 @@ dev-dependencies = [
   "pytest>=8.2.2",
   "simple-build>=0.0.2",
   "sphinx-design>=0.5.0",
-  "sphinx-needs>=4.2.0",
   "types-psutil>=7.0.0.20250218",
   "uv>=0.5.5",
   "pytest-docker>=3.1.2",
@@ -62,9 +62,9 @@ cl = "sphinx_codelinks.cmd:app"
 "rye:format" = "rye format"
 "check" = { chain = ["rye:format", "rye:lint", "mypy:all"] }
 # docs html
-"docs_html:rm" = "rm -rf docs/_build/html"
-"docs_html" = "sphinx-build -nW --keep-going -b html -T -c docs docs/source docs/_build/html"
-"docs_html:clean" = { chain = ["docs_html:rm", "docs_html"] }
+"docs:rm" = "rm -rf docs/_build/html"
+"docs" = "sphinx-build -nW --keep-going -b html -T -c docs docs/source docs/_build/html"
+"docs:clean" = { chain = ["docs:rm", "docs"] }
 # pytest prod
 "pytest:prod" = { cmd = "uv run --with-requirements requirements.lock --no-editable --refresh pytest tests/" }
 
