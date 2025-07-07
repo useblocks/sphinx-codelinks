@@ -22,7 +22,13 @@ version = release = _project_data["version"]
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx_needs", "sphinx_codelinks", "sphinx.ext.intersphinx"]
+extensions = [
+    "sphinx_design",
+    "sphinx_needs",
+    "sphinx_codelinks",
+    "sphinx.ext.intersphinx",
+    "sphinx_code_tabs",
+]
 
 # exclude_patterns = []
 templates_path = ["_templates"]
@@ -34,6 +40,7 @@ todo_include_todos = True
 
 intersphinx_mapping = {
     "needs": ("https://sphinx-needs.readthedocs.io/en/latest/", None),
+    "sphinx": ("https://www.sphinx-doc.org/en/master", None),
 }
 
 # -- Options for HTML output -------------------------------------------------
