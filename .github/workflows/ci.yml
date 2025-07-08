@@ -97,7 +97,7 @@ jobs:
         run: sudo apt-get --yes install graphviz
       - uses: ./.github/actions/setup_rye
       - name: Run documentation build
-        run: rye run docs_html
+        run: rye run docs
 
   all_good:
     # This job does nothing and is only used for the branch protection
