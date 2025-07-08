@@ -69,3 +69,4 @@ Contents
 
    development/roadmap
    development/change_log
+   development/contributing
