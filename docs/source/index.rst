@@ -54,5 +54,17 @@ Contents
 
    basics/introduction
    basics/installation
-   basics/usage
-   configuration
+   basics/quickstart
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Components
+
+   components/configuration
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Development
+
+   development/roadmap
+   development/change_log
