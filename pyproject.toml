@@ -42,7 +42,7 @@ dev-dependencies = [
   "pytest-cov>=5.0.0",
   "pytest>=8.2.2",
   "simple-build>=0.0.2",
-  "sphinx-design>=0.5.0",
+  "sphinx-design>=0.6.1",
   "types-psutil>=7.0.0.20250218",
   "uv>=0.5.5",
   "pytest-docker>=3.1.2",
@@ -50,10 +50,12 @@ dev-dependencies = [
   "insta-science>=0.2.1",
   "types-jsonschema>=4.23.0.20241208",
   "toml>=0.10.2",
+  "sphinx-code-tabs>=0.5.5",
+  "sphinxcontrib-typer>=0.5.1",
 ]
 
 [project.scripts]
-cl = "sphinx_codelinks.cmd:app"
+codelinks = "sphinx_codelinks.cmd:app"
 
 [tool.rye.scripts]
 # linting and formatting

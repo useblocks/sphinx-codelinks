@@ -28,6 +28,7 @@ extensions = [
     "sphinx_codelinks",
     "sphinx.ext.intersphinx",
     "sphinx_code_tabs",
+    "sphinxcontrib.typer",
 ]
 
 # exclude_patterns = []
