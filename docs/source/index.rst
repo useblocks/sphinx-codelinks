@@ -61,6 +61,7 @@ Contents
    :caption: Components
 
    components/configuration
+   components/cli
 
 .. toctree::
    :maxdepth: 1

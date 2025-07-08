@@ -28,7 +28,7 @@ but with the ``src_trace_`` prefix removed.
 
 For example:
 
-.. literalinclude:: ./../src_trace.toml
+.. literalinclude:: ./../../src_trace.toml
    :language: toml
 
 .. caution:: Any configuration specifying relative paths in the toml file will be resolved relatively to the directory containing the :file:`conf.py` file.

@@ -1,5 +1,5 @@
-Usage
-=====
+Quick Start
+===========
 
 .. code-block:: rst
 
