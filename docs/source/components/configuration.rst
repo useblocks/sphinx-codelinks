@@ -1,3 +1,5 @@
+.. _configuration:
+
 Configuration
 =============
 
@@ -16,7 +18,9 @@ The options starts with the prefix ``src_trace_`` are globally applied in the sc
 src_trace_config_from_toml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This configuration takes the (relative) path to a `toml file <https://toml.io>`__ which contains some or all of the ``CodeLinks`` configuration (configuration in the toml will override that in the :file:`conf.py`).
+This configuration takes the (relative) path to a `toml file <https://toml.io>`__
+which contains some or all of the ``CodeLinks`` configuration
+(configuration in the toml will override that in the :file:`conf.py`).
 
 .. code-block:: python
 
@@ -25,11 +29,6 @@ This configuration takes the (relative) path to a `toml file <https://toml.io>`_
 
 Configuration in the toml can contain any of the following options, under a ``[src_trace]`` section,
 but with the ``src_trace_`` prefix removed.
-
-For example:
-
-.. literalinclude:: ./../../src_trace.toml
-   :language: toml
 
 .. caution:: Any configuration specifying relative paths in the toml file will be resolved relatively to the directory containing the :file:`conf.py` file.
 
@@ -297,6 +296,8 @@ Default: **True**
       gitignore = false
 
 .. attention:: The option currently do NOT support nested .gitignore
+
+.. _oneline_comment_style:
 
 oneline_comment_style
 ~~~~~~~~~~~~~~~~~~~~~
