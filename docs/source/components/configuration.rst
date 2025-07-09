@@ -356,4 +356,6 @@ it is equivalent to the following RST
          :id: IMPL_4
          :links: [SPEC_1, SPEC_2]
 
+.. caution:: **type** and **title** must be configured in **needs_fields** as they are mandatory for Sphinx-Needs
+
 More uses cases can be found in `tests <https://github.com/useblocks/sphinx-codelinks/tests>`__
