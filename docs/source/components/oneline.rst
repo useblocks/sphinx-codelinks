@@ -7,7 +7,7 @@ Many users raised the concerns about the complication of defining Sphinx-Needs w
 Therefore, ``CodeLinks`` provides  a customizable one-line comment style pattern to define ``Sphinx-Needs``
 in order to simplify the efforts to create a need in source code.
 
-`Here <oneline_comment_style>`_ is the default one-line comment style.
+:ref:`Here <oneline_comment_style>` is the default one-line comment style.
 
 Start and End sequences
 -----------------------
@@ -37,11 +37,15 @@ It's where **needs_fields** comes in.
 
 **needs_fields** contains the fields that is required for needs:
 
-Each field defines its:
+Each need field defines its:
 
 - name
 - data type (Optional)
 - default value (Optional)
+
+The examples in the following sections use :ref:`the default <oneline_comment_style>` to
+explain the syntax of the one-line comment.
+
 
 DataType
 ~~~~~~~~
@@ -52,32 +56,122 @@ For example, if the field definition is as follows:
 
 .. code-block:: python
 
-    {
-        "name": "title
-    }
+   {
+       "name": "title
+   }
 
 It's equivalent to:
 
 .. code-block:: python
 
-    {
-        "name": "title",
-        "type": "str"
-    }
+   {
+       "name": "title",
+       "type": "str"
+   }
 
 If the field is expected to have a list of strings, it shall be defined as the following:
 
 .. code-block:: python
 
-    {
-        "name": "links",
-        "type": "list[str]"
-    }
+   {
+       "name": "links",
+       "type": "list[str]"
+   }
 
-Default
-~~~~~~~
+When the field has data type as ``list[str]``,
+
+- ``[`` and ``]`` shall be used to wrap the multiple strings
+- ``,`` shall be used as the separator.
+
+For example, with the following **needs_fields** configuration:
+
+.. code-block:: python
+
+        needs_fields=[
+            {"name": "title"},
+            {"name": "id"},
+            {"name": "type", "default": "impl"},
+            {"name": "links", "type": "list[str]", "default": []},
+        ],
+
+the online line comment shall be defined as the following
+
+.. tabs::
+
+    .. code-tab:: c
+
+        // @ title, id_123, implementation, [link1, link2]
+
+    .. code-tab:: rst
+
+        .. implementation:: title
+            :id: id_123
+            :links: link1, link2
 
 
 
+Default value
+~~~~~~~~~~~~~
 
-The ``order of needs_fields`` is important because it determines ``the position of the field`` in the one-line comment.
+The value mapped to the key ``default`` in a need field definition is the default value of a need field,
+when it is not given in the need definition.
+
+For example, with the following needs_fields definition,
+
+.. code-block:: python
+
+    needs_fields = [
+        {
+            "name": "title"
+        },
+        {
+            "name": "type",
+            "default": "implementation"
+        },
+    ]
+
+the following need definition in source code is equivalent to RST shown below:
+
+.. tabs::
+
+    .. code-tab:: c
+
+        // @ title here and default is used for type
+
+    .. code-tab:: rst
+
+        .. implementation:: title here and default is used for type
+
+Positional Fields
+~~~~~~~~~~~~~~~~~
+
+All of the fields defined in ``needs_fields`` are positional fields.
+It means the ``order of needs_fields`` determines ``the position of the field`` in the one-line comment.
+
+For example, with the following **needs_fields** definition,
+
+.. code-block:: python
+
+        needs_fields=[
+            {"name": "title"},
+            {"name": "id"},
+            {"name": "type", "default": "impl"},
+            {"name": "links", "type": "list[str]", "default": []},
+        ],
+
+field ``title`` is the first element is the list, so the string of the title must be
+the first field in the one-line comment
+
+.. tabs::
+
+    .. code-tab:: c
+
+        // @ this is title, this is id, this_type, [link1, link2]
+
+    .. code-tab:: rst
+
+        .. this_type:: this is title
+            :id: this is id
+            :links: link1, link2
+
+.. note:: A field without default can NOT follow a field that has default set.
