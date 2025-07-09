@@ -16,7 +16,7 @@
 
 
          ``Sphinx-CodeLinks`` is designed for Engineering-as-Code workflow to facilitate ALM.
-         It enables users to defined ``Sphinx-Needs`` within source code and automatically extract them
+         It enables users to defined ``Sphinx-Needs`` within source code in one-line and automatically extract them
          into the documentation during the Sphinx build process.
 
       .. grid:: 1 1 2 2
