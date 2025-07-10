@@ -9,6 +9,8 @@ jobs:
     name: Publish to PyPi
     # if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
     runs-on: [self-hosted, linux, x64]
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -16,7 +18,6 @@ jobs:
       - name: Build package
         run: rye build
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: ./dist/
