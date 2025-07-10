@@ -4,13 +4,16 @@ on:
     # tags:
     #   - '[0-9].[0-9]+.[0-9]+'
 
+permissions:
+    id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+    contents: read
+
 jobs:
   publish:
     name: Publish to PyPi
     # if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
     runs-on: [self-hosted, linux, x64]
-    permissions:
-      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
