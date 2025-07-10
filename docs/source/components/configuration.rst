@@ -30,7 +30,7 @@ which contains some or all of the ``CodeLinks`` configuration
 Configuration in the toml can contain any of the following options, under a ``[src_trace]`` section,
 but with the ``src_trace_`` prefix removed.
 
-.. caution:: Any configuration specifying relative paths in the toml file will be resolved relatively to the directory containing the :file:`conf.py` file.
+.. caution:: Any configuration specifying relative paths in the toml file will be resolved relatively to the directory containing the ``toml`` file.
 
 .. _`src_trace_set_local_url`:
 
@@ -167,7 +167,7 @@ Default: **cpp**
 src_dir
 ~~~~~~~
 
-The relative path from the ``conf.py`` file to the source code's root directory
+The relative path from the ``conf.py`` or ``.toml`` file to the source code's root directory
 
 Default: **./**
 
