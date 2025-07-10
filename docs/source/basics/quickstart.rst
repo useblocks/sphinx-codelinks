@@ -19,14 +19,14 @@ or
 
 ``src-trace`` directive has the following options:
 
-* **project**: the project config specified in ``conf.py`` or ``toml`` to be used for source tracing.
+* **project**: the project config specified in ``conf.py`` or ``toml`` file to be used for source tracing.
 * **file**: the source file to be traced.
 * **directory**: the source files in the directory to be traced recursively.
 
-Regarding the options **file** and **directory**:
+Regarding the **file** and **directory** options:
 
 - they are optional and mutually exclusive.
-- the given paths of them are relative to ``src_dir`` defined in the source tracing configuration
+- the given paths are relative to ``src_dir`` defined in the source tracing configuration
 - if not given, the whole project will be examined.
 
 Example
@@ -71,4 +71,4 @@ The needs defined in source code are extracted and rendered to:
    :project: dcdc
    :directory: ./discharge
 
-To have more customized configuration of ``CodeLinks``, please refer to :ref:`configuration <configuration>`
+To have a more customized configuration of ``CodeLinks``, please refer to :ref:`configuration <configuration>`.

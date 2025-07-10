@@ -13,7 +13,7 @@ Using Pip
 Activation
 ----------
 
-For activation, please add ``sphinx_needs`` and ``sphinx-codelinks`` to the projects's extension list of your **conf.py** file
+For activation, please add ``sphinx_needs`` and ``sphinx_codelinks`` to the project's extension list in your **conf.py** file
 
 .. code-block:: python
 

@@ -3,9 +3,9 @@
 One Line Comment Style
 ======================
 
-Many users raised the concerns about the complication of defining Sphinx-Needs with RST in source code.
-Therefore, ``CodeLinks`` provides  a customizable one-line comment style pattern to define ``Sphinx-Needs``
-in order to simplify the efforts to create a need in source code.
+Many users have raised concerns about the complexity of defining Sphinx-Needs with RST in source code.
+Therefore, ``CodeLinks`` provides a customizable one-line comment style pattern to define ``Sphinx-Needs``
+to simplify the effort required to create a need in source code.
 
 :ref:`Here <oneline_comment_style>` is the default one-line comment style.
 
@@ -17,25 +17,25 @@ To have better understanding of its the syntax of one-line comment, we will brea
 **start_sequence** defines the characters where the one-line comment starts.
 **end_sequence** defines the characters where the one-line comment ends.
 
-The text between **start_sequence** and **end_sequence** are fields of ``Sphinx-Needs``
+The text between **start_sequence** and **end_sequence** contains the fields of ``Sphinx-Needs``
 
 field_split_char
 ----------------
 
-There are always multiple fields for a need. Therefore,
+Since there are always multiple fields for a need,
 
 **field_split_char** defines the character to split the text into multiple ``pieces/fields``.
 
 needs_fields
 ------------
 
-Each fields in a need may have different data types.
+Each field in a need may have different data types.
 It could be a string if it is a field for ``id`` or ``title``. On the other hand,
-it could be a list of string as well, if the field requires to have a list of string to represent ``links``
+it could be a list of strings as well, if the field requires a list of strings to represent ``links``.
 
-It's where **needs_fields** comes in.
+This is where **needs_fields** comes in.
 
-**needs_fields** contains the fields that is required for needs:
+**needs_fields** contains the fields that are required for needs:
 
 Each need field defines its:
 
@@ -49,7 +49,7 @@ explain the syntax of the one-line comment.
 DataType
 ~~~~~~~~
 
-By default, a field has the datatype of ``str``.
+By default, a field has the data type of ``str``.
 
 For example, if the field definition is as follows:
 
@@ -77,7 +77,7 @@ If the field is expected to have a list of strings, it shall be defined as the f
        "type": "list[str]"
    }
 
-When the field has data type as ``list[str]``,
+When the field has data type ``list[str]``:
 
 - the strings must be given within ``[`` and ``]`` brackets
 - ``,`` shall be used as the separator.
@@ -112,7 +112,7 @@ the online line comment shall be defined as the following
 Default value
 ~~~~~~~~~~~~~
 
-The value mapped to the key ``default`` in a need field definition is the default value of a need field,
+The value mapped to the key ``default`` in a need field definition is the default value of a need field
 when it is not given in the need definition.
 
 For example, with the following needs_fields definition,
@@ -145,7 +145,7 @@ Positional Fields
 ~~~~~~~~~~~~~~~~~
 
 All of the fields defined in ``needs_fields`` are positional fields.
-It means the ``order of needs_fields`` determines ``the position of the field`` in the one-line comment.
+This means the ``order of needs_fields`` determines ``the position of the field`` in the one-line comment.
 
 For example, with the mentioned :ref:`needs_fields definition <fields_config>`
 
@@ -164,14 +164,14 @@ the first field in the one-line comment
          :id: this is id
          :links: link1, link2
 
-.. note:: A field without default can NOT follow a field that has default set.
+.. note:: A field without a default value cannot follow a field that has a default value set.
 
 Escaping Characters
 ~~~~~~~~~~~~~~~~~~~
 
-If the value of the field contains the characters which is ``field_split_char`` or angular brackets ``[`` and ``]``,
+If the value of the field contains characters that are ``field_split_char`` or angular brackets ``[`` and ``]``,
 
-leading character ``\`` must be used to escape them.
+a leading character ``\`` must be used to escape them.
 
 For example, with the mentioned :ref:`needs_fields definition <fields_config>`,
 ``,`` is escaped with ``\`` and is not considered as a separator.
@@ -187,7 +187,7 @@ For example, with the mentioned :ref:`needs_fields definition <fields_config>`,
       .. impl:: title, 3
          :id: IMPL_3
 
-The other example, the angular brackets ``[`` and ``]`` and comma  are escaped
+The other example shows the angular brackets ``[`` and ``]`` and comma being escaped:
 
 .. tabs:: 
 
@@ -201,7 +201,7 @@ The other example, the angular brackets ``[`` and ``]`` and comma  are escaped
          :id: IMPL_3
          :links: [SPEC,_1]
 
-To have backwards slash ``\`` as a literal in the value, use ``\\`` as shown the following:
+To have a backslash ``\`` as a literal in the value, use ``\\`` as shown in the following:
 
 .. tabs:: 
 
@@ -215,4 +215,4 @@ To have backwards slash ``\`` as a literal in the value, use ``\\`` as shown the
          :id: IMPL_3
          :links: [SPEC,_1]
 
-.. caution:: Field values can never have any newline chars ``\r`` ``\n``
+.. caution:: Field values can never contain any newline characters ``\r`` or ``\n``.

@@ -55,7 +55,7 @@ Default: **True**
 src_trace_set_local_field
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:: This option is only optionally required, if :ref:`src_trace_set_local_url` is set to **True**.
+.. note:: This option is only required if :ref:`src_trace_set_local_url` is set to **True**.
 
 Set the desired custom field name for the local link to the source code.
 
@@ -98,7 +98,7 @@ Default: **True**
 src_trace_set_remote_field
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:: This option is only optionally required, if :ref:`src_trace_set_remote_url` is set to **True**.
+.. note:: This option is only required if :ref:`src_trace_set_remote_url` is set to **True**.
 
 Set the desired custom field name for the remote link to the source code.
 
@@ -167,7 +167,7 @@ Default: **cpp**
 src_dir
 ~~~~~~~
 
-The relative path based on ``conf.py`` file (NOT SURE) to the source code's root directory
+The relative path from the ``conf.py`` file to the source code's root directory
 
 Default: **./**
 
@@ -277,7 +277,7 @@ Default: **[]**
 gitignore
 ~~~~~~~~~
 
-The option to respect .gitignore :file
+The option to respect the .gitignore file.
 
 Default: **True**
 
@@ -295,7 +295,7 @@ Default: **True**
       [src_trace.projects.project_name]
       gitignore = false
 
-.. attention:: The option currently do NOT support nested .gitignore
+.. attention:: This option currently does NOT support nested .gitignore files
 
 .. _`oneline_comment_style`:
 

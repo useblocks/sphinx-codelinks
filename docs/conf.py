@@ -14,7 +14,7 @@ _project_data = tomllib.loads(
     (Path(__file__).parent.parent / "pyproject.toml").read_text("utf8")
 )["project"]
 
-project = "ubtrace"
+project = _project_data['name']
 author = _project_data["authors"][0]["name"]
 copyright = f"{datetime.now().year}, {author}"
 version = release = _project_data["version"]
