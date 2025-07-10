@@ -16,8 +16,9 @@ pip install sphinx-codelinks
 ```
 
 Add to your `conf.py`:
+
 ```python
-extensions = ['sphinx_codelinks']
+extensions = ['sphinx_needs', 'sphinx_codelinks']
 ```
 
 ## Documentation

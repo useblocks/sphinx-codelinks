@@ -62,39 +62,12 @@ jobs:
       - uses: ./.github/actions/setup_rye
       - run: rye test -a
 
-  pytest-prod:
-    # pytest against packages installed as they would be in production
-    # i.e. as wheels that may contain obfuscated code
-
-    name: Pytest prod (${{ matrix.os }}-${{ matrix.arch }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: linux
-            arch: x64
-          - os: linux
-            arch: arm64
-          - os: windows
-            arch: x64
-          - os: macos
-            arch: arm64
-
-    runs-on: [self-hosted, "${{ matrix.os }}", "${{ matrix.arch }}"]
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup_rye
-      - run: rye run pytest:prod
-
   docs:
     name: Documentation build
     runs-on: [self-hosted, linux, x64]
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install graphviz
-        run: sudo apt-get --yes install graphviz
       - uses: ./.github/actions/setup_rye
       - name: Run documentation build
         run: rye run docs
@@ -109,7 +82,6 @@ jobs:
       - pre-commit
       - mypy
       - pytest
-      - pytest-prod
       - docs
 
     runs-on: [self-hosted, linux, x64]

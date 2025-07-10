@@ -14,4 +14,4 @@ This version features:
 
 - Sphinx Directive ``src-trace``
 - Virtual Docs and Source Discovery CLI
-- One-line comment to define ``Sphinx-Needs``
+- One-line comment to define a ``Sphinx-Needs`` need item

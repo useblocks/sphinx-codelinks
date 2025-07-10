@@ -31,8 +31,6 @@ jobs:
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
-      - name: Install graphviz
-        run: sudo apt-get --yes install graphviz
       - uses: eifinger/setup-rye@v4
       - run: rye sync
       - name: Run documentation build

@@ -67,8 +67,6 @@ codelinks = "sphinx_codelinks.cmd:app"
 "docs:rm" = "rm -rf docs/_build/html"
 "docs" = "sphinx-build -nW --keep-going -b html -T -c docs docs/source docs/_build/html"
 "docs:clean" = { chain = ["docs:rm", "docs"] }
-# pytest prod
-"pytest:prod" = { cmd = "uv run --with-requirements requirements.lock --no-editable --refresh pytest tests/" }
 
 [tool.ruff.lint]
 extend-select = [

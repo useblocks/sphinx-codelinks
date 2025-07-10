@@ -62,7 +62,7 @@ To run test cases locally:
 
 .. code-block:: bash
 
-   rye run pytest:prod
+   rye test -a
 
 Note some tests use `syrupy <https://github.com/tophat/syrupy>`__ to perform snapshot testing.
 These snapshots can be updated by running:

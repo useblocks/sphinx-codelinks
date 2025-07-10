@@ -41,7 +41,7 @@ Set this option to ``False``, if the local link between a need to the local sour
 
 Default: **True**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -61,7 +61,7 @@ Set the desired custom field name for the local link to the source code.
 
 Default: **local-url**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -84,7 +84,7 @@ The remote means where the source code is hosted such as GitHub.
 
 Default: **True**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -104,7 +104,7 @@ Set the desired custom field name for the remote link to the source code.
 
 Default: **remote-url**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -126,7 +126,7 @@ src_trace_projects
 This option contains multiple sets of project-specific options. The project name is defined as the key in a dictionary
 and its corresponding value is a dictionary containing the options specific to that project.
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -149,7 +149,7 @@ Default: **cpp**
 
 .. note:: Currently, only C/C++ is supported
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -171,7 +171,7 @@ The relative path from the ``conf.py`` file to the source code's root directory
 
 Default: **./**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -194,7 +194,7 @@ The pattern to access the source code to the remote repositories such as GitHub.
 
 Default: **Not set**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -234,7 +234,7 @@ The option is a list of glob patterns to exclude the files which are not require
 
 Default: **[]**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -256,7 +256,7 @@ The option is a list of glob patterns to include the files which are required to
 
 Default: **[]**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -281,7 +281,7 @@ The option to respect the .gitignore file.
 
 Default: **True**
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -303,11 +303,11 @@ oneline_comment_style
 ~~~~~~~~~~~~~~~~~~~~~
 
 This option enables users to simply define a customized one-line-pattern comment to represent
-``Sphinx-Needs`` instead of using RST.
+``Sphinx-Needs`` need items instead of using RST.
 
 Default:
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: python
 
@@ -344,7 +344,7 @@ Default:
 With the default, the following one-line comment will be extracted by ``CodeLinks`` and
 it is equivalent to the following RST
 
-.. tabs:: 
+.. tabs::
 
    .. code-tab:: c
 

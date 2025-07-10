@@ -1,4 +1,4 @@
-"""ubTrace source code analyzer"""
+"""CodeLinks source code analyzer"""
 
 from sphinx_codelinks.sphinx_extension.source_tracing import setup
 

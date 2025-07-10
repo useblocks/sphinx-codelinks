@@ -14,7 +14,7 @@ _project_data = tomllib.loads(
     (Path(__file__).parent.parent / "pyproject.toml").read_text("utf8")
 )["project"]
 
-project = _project_data['name']
+project = _project_data["name"]
 author = _project_data["authors"][0]["name"]
 copyright = f"{datetime.now().year}, {author}"
 version = release = _project_data["version"]
@@ -65,13 +65,3 @@ html_theme_options = {
 html_css_files = ["furo.css"]
 
 src_trace_config_from_toml = "./src_trace.toml"
-
-needs_types = [
-    {
-        "directive": "impl",
-        "title": "Implementation",
-        "prefix": "IMPL_",
-        "color": "#DF744A",
-        "style": "node",
-    },
-]

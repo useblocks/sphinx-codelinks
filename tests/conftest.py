@@ -4,6 +4,8 @@ from docutils.nodes import document
 import pytest
 from syrupy.extensions.single_file import SingleFileSnapshotExtension, WriteMode
 
+pytest_plugins = "sphinx.testing.fixtures"
+
 TEST_DIR = Path(__file__).parent
 SRC_TRACE_TOML = TEST_DIR / "data" / "sphinx" / "src_trace.toml"
 BASIC_VDOC_TOML = TEST_DIR / "data" / "oneline_comment_basic" / "vdoc_config.toml"
