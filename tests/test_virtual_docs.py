@@ -336,6 +336,17 @@ def test_oneline_schema_validator_positive(oneline_config):
                 "priority": "low",
             },
         ),
+        (
+            "[[IMPL_13, title\\ 13, impl, [\[SPEC\,_1\]], open]]",
+            {
+                "id": "IMPL_13",
+                "title": "title\ 13",
+                "type": "impl",
+                "links": ["[SPEC,_1]"],
+                "status": "open",
+                "priority": "low",
+            },
+        ),
     ],
 )
 def test_oneline_parser_custom_config_positive(oneline: str, result):

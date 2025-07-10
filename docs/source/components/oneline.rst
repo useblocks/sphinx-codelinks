@@ -80,10 +80,12 @@ If the field is expected to have a list of strings, it shall be defined as the f
 
 When the field has data type as ``list[str]``,
 
-- ``[`` and ``]`` shall be used to wrap the multiple strings
+- the strings must be given within ``[`` and ``]`` brackets
 - ``,`` shall be used as the separator.
 
 For example, with the following **needs_fields** configuration:
+
+.. _fields_config:
 
 .. code-block:: python
 
@@ -148,16 +150,8 @@ Positional Fields
 All of the fields defined in ``needs_fields`` are positional fields.
 It means the ``order of needs_fields`` determines ``the position of the field`` in the one-line comment.
 
-For example, with the following **needs_fields** definition,
 
-.. code-block:: python
-
-        needs_fields=[
-            {"name": "title"},
-            {"name": "id"},
-            {"name": "type", "default": "impl"},
-            {"name": "links", "type": "list[str]", "default": []},
-        ],
+For example, with the mentioned :ref:`needs_fields definition <fields_config>`
 
 field ``title`` is the first element is the list, so the string of the title must be
 the first field in the one-line comment
@@ -175,3 +169,54 @@ the first field in the one-line comment
             :links: link1, link2
 
 .. note:: A field without default can NOT follow a field that has default set.
+
+Escaping Characters
+~~~~~~~~~~~~~~~~~~~~
+
+If the value of the field contains the characters which is ``field_split_char`` or angular brackets ``[`` and ``]``,
+
+leading character ``\`` must be used to escape them.
+
+For example, with the mentioned :ref:`needs_fields definition <fields_config>`,
+``,`` is escaped with ``\`` and is not considered as a separator.
+
+.. tabs::
+
+    .. code-tab:: c
+
+        // @ title\, 3, IMPL_3 , impl, []
+
+    .. code-tab:: rst
+
+        .. impl:: title, 3
+            :id: IMPL_3
+
+The other example, the angular brackets ``[`` and ``]`` and comma  are escaped
+
+.. tabs::
+
+    .. code-tab:: c
+
+        // @ title 3, IMPL_3 , impl, [\[SPEC\,_1\]]
+
+    .. code-tab:: rst
+
+        .. impl:: title 3
+            :id: IMPL_3
+            :links: [SPEC,_1]
+
+To have backwards slash ``\`` as a literal in the value, use ``\\`` as shown the following:
+
+.. tabs::
+
+    .. code-tab:: c
+
+        // @ title\\ 3, IMPL_3 , impl, [\[SPEC\,_1\]]
+
+    .. code-tab:: rst
+
+        .. impl:: title\ 3
+            :id: IMPL_3
+            :links: [SPEC,_1]
+
+.. caution:: Field values can never have any newline chars ``\r`` ``\n``
