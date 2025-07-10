@@ -1,5 +1,3 @@
-
-
 .. grid::
    :class-row: sd-w-100
 
@@ -13,7 +11,6 @@
          The portal to your source code
 
       .. div:: sd-fs-5 sd-font-italic
-
 
          ``Sphinx-CodeLinks`` is designed for Engineering-as-Code workflow to facilitate ALM.
          It enables users to defined ``Sphinx-Needs`` within source code in one-line and automatically extract them

@@ -9,7 +9,6 @@ Quick Start
       :project: project_config
       :file: example.cpp
 
-
 or
 
 .. code-block:: rst
@@ -17,7 +16,6 @@ or
    .. src-trace:: example_with_directory
       :project: project_config
       :directory: ./example
-
 
 ``src-trace`` directive has the following options:
 

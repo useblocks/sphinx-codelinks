@@ -40,12 +40,11 @@ To run the formatting and linting, pre-commit is used:
    pre-commit install # to auto-run on every commit
    pre-commit run --all-files # to run manually
 
-
 The CI also checks typing, use the following command locally to see if your code is well-typed
 
 .. code-block:: bash
 
-    rye run mypy:all
+   rye run mypy:all
 
 Build docs
 ----------

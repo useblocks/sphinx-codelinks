@@ -4,7 +4,7 @@ Installation
 ============
 
 Using Pip
-----------
+---------
 
 .. code-block:: bash
 
@@ -17,7 +17,7 @@ For activation, please add ``sphinx_needs`` and ``sphinx-codelinks`` to the proj
 
 .. code-block:: python
 
-    extensions = [
-        'sphinx_needs',
-        'sphinx_codelinks'
-    ]
+   extensions = [
+       'sphinx_needs',
+       'sphinx_codelinks'
+   ]
