@@ -4,10 +4,6 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
-      - id: pretty-format-json
-        args: [--autofix, --no-sort-keys]
-        files: (package\.json|tsconfig\.json)$
-        types: [file]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.2

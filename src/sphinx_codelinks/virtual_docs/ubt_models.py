@@ -36,6 +36,9 @@ class UBTComment:
             return self.__dict__ == value.__dict__
         return False
 
+    def __hash__(self) -> int:
+        return hash(self.__dict__)
+
     def to_dict(self) -> dict[str, dict[str, str | list[str]] | str | int]:
         return {
             "text": self.text,
@@ -66,6 +69,9 @@ class UBTSourceFile:
         if isinstance(value, UBTSourceFile):
             return self.__dict__ == value.__dict__
         return False
+
+    def __hash__(self) -> int:
+        return hash(self.__dict__)
 
     def add_comment(self, comment: UBTComment) -> None:
         self.comments.append(comment)

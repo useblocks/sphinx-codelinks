@@ -49,7 +49,7 @@ def generate_str_link_name(
 def get_git_commit_id(src_dir: Path) -> str:
     try:
         commit_id = (
-            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=src_dir)  # noqa: S607, S603
+            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=src_dir)  # noqa: S607
             .decode("utf-8")
             .strip()
         )
@@ -63,7 +63,7 @@ def get_git_commit_id(src_dir: Path) -> str:
 def get_git_root(cwd: Path = Path()) -> Path | None:
     try:
         # Run the git command to get the root directory
-        git_root = subprocess.check_output(  # noqa: S603
+        git_root = subprocess.check_output(
             ["git", "rev-parse", "--show-toplevel"],  # noqa: S607
             cwd=cwd,
             text=True,  # Ensures the output is a string

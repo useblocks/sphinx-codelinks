@@ -4,6 +4,9 @@ import logging
 import os
 from pathlib import Path
 
+from comment_parser.parsers.c_parser import (  # type: ignore[import-untyped]
+    extract_comments,
+)
 from comment_parser.parsers.common import Comment  # type: ignore[import-untyped]
 
 from sphinx_codelinks.virtual_docs.config import (
@@ -63,9 +66,6 @@ class VirtualDocs:
             raise Exception(
                 f"Unsupported comment type: {self.comment_type}. Supported types are: {SUPPORTED_COMMENT_TYPES}."
             )
-        from comment_parser.parsers.c_parser import (  # type: ignore[import-untyped]
-            extract_comments,
-        )
 
         virtual_docs = []
         self.load_virtual_docs()

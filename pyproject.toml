@@ -116,7 +116,11 @@ force-sort-within-sections = true
   "S603", # subprocess-without-shell-equals-true - build scripts
 ]
 "src/sphinx_codelinks/sphinx_extension/debug.py" = [
-  "T201", # print - used for output
+  "T201",  # print - used for output
+  "UP047", # on-pep695-generic-function - it's generic
+]
+"src/sphinx_codelinks/cmd.py" = [
+  "PLC0415", # import on top - only import relevant modules by use cases
 ]
 
 [tool.mypy]
