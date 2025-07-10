@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: install flit
-        run: pip install flit~=3.4
       - name: Build and publish
         run: flit publish
         env:
