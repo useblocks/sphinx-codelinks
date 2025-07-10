@@ -12,8 +12,8 @@
 
       .. div:: sd-fs-5 sd-font-italic
 
-         ``Sphinx-CodeLinks`` is designed for Engineering-as-Code workflows to facilitate ALM.
-         It enables users to define ``Sphinx-Needs`` within source code in one line and automatically extract them
+         ``Sphinx-CodeLinks`` is designed for Engineering-as-Code workflows to facilitate Application Lifecycle Management (ALM).
+         It enables users to define ``Sphinx-Needs`` need items within source code using a single line and automatically extract them
          into the documentation during the Sphinx build process.
 
       .. grid:: 1 1 2 2
