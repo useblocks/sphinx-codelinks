@@ -97,7 +97,7 @@ For example, with the following **needs_fields** configuration:
 
 the online line comment shall be defined as the following
 
-.. tabs::
+.. tabs:: 
 
    .. code-tab:: c
 
@@ -131,7 +131,7 @@ For example, with the following needs_fields definition,
 
 the following need definition in source code is equivalent to RST shown below:
 
-.. tabs::
+.. tabs:: 
 
    .. code-tab:: c
 
@@ -152,7 +152,7 @@ For example, with the mentioned :ref:`needs_fields definition <fields_config>`
 field ``title`` is the first element is the list, so the string of the title must be
 the first field in the one-line comment
 
-.. tabs::
+.. tabs:: 
 
    .. code-tab:: c
 
@@ -176,7 +176,7 @@ a leading character ``\`` must be used to escape them.
 For example, with the mentioned :ref:`needs_fields definition <fields_config>`,
 ``,`` is escaped with ``\`` and is not considered as a separator.
 
-.. tabs::
+.. tabs:: 
 
    .. code-tab:: c
 
@@ -189,7 +189,7 @@ For example, with the mentioned :ref:`needs_fields definition <fields_config>`,
 
 The other example shows the angular brackets ``[`` and ``]`` and comma being escaped:
 
-.. tabs::
+.. tabs:: 
 
    .. code-tab:: c
 
@@ -203,7 +203,7 @@ The other example shows the angular brackets ``[`` and ``]`` and comma being esc
 
 To have a backslash ``\`` as a literal in the value, use ``\\`` as shown in the following:
 
-.. tabs::
+.. tabs:: 
 
    .. code-tab:: c
 
