@@ -1,4 +1,4 @@
-from collections.abc import ByteString, Callable
+from collections.abc import ByteString
 import configparser
 import logging
 from pathlib import Path
@@ -12,7 +12,7 @@ console.setLevel(logging.INFO)
 logger.addHandler(console)
 
 
-def wrap_read_callable_point(src_string: ByteString) -> Callable[int, str]:
+def wrap_read_callable_point(src_string: ByteString):
     def read_callable_byte_offset(byte_offset, _):
         return src_string[byte_offset : byte_offset + 1]
 
