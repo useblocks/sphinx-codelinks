@@ -1,4 +1,5 @@
 from collections.abc import ByteString, Generator
+import json
 import logging
 from pathlib import Path
 from typing import Any, Literal, TypedDict
@@ -33,10 +34,13 @@ class SourceAnalyzer:
         src_dir: Path,
         markers: list[str] | None = None,
         language: Literal["python", "cpp"] = "cpp",
-    ):
+        outdir: Path | None = None,
+    ) -> None:
         self.src_dir = src_dir
         self.markers = markers if markers else ["@"]
         self.language = language
+        self.outdir = outdir if outdir else src_dir
+
         # init tree-sitter
 
         if language == "cpp":
@@ -92,13 +96,14 @@ class SourceAnalyzer:
         )
         return captures["comment"]
 
-    def create_src_objects(self):
+    def create_src_objects(self) -> None:
         for src_path, src_string in self.get_src_strings():
             comments: list[TreeSitterNode] = self.extract_comments(src_string)
             src_comments: list[SourceComment] = [
                 SourceComment(node) for node in comments
             ]
-            src_file = SourceFile(src_path.relative_to(self.src_dir))
+            project_path: Path = self.git_root if self.git_root else self.src_dir
+            src_file = SourceFile(src_path.relative_to(project_path))
             src_file.add_comments(src_comments)
             self.src_files.append(src_file)
             self.src_comments.extend(src_comments)
@@ -119,7 +124,7 @@ class SourceAnalyzer:
                 yield marker, need_ids, row_offset
             row_offset += 1
 
-    def extract_markers(self):
+    def extract_markers(self) -> None:
         for src_comment in self.src_comments:
             text = (
                 src_comment.node.text.decode("utf-8") if src_comment.node.text else None
@@ -133,14 +138,34 @@ class SourceAnalyzer:
                 continue
 
             for marker, need_ids, row_offset in self.extract_marker(text):
+                lineno = src_comment.node.start_point.row + row_offset + 1
+                remote_url = self.git_remote_url
+                if self.git_remote_url and self.git_commit_rev:
+                    remote_url = utils.form_https_url(
+                        self.git_remote_url,
+                        self.git_commit_rev,
+                        filepath,
+                        lineno,
+                    )
                 self.anchors.append(
                     SourceAnchor(
                         filepath,
-                        self.git_remote_url,
-                        src_comment.node.start_point.row + row_offset + 1,
+                        remote_url,
+                        lineno,
                         marker,
                         need_ids,
                     )
                 )
 
-    # TODO: dump these locations into option specified in needextend
+    def dump_anchors(self) -> None:
+        output_path = self.outdir / "anchors.json"
+        if not output_path.parent.exists():
+            output_path.parent.mkdir(parents=True)
+        anchors = [anchor.to_dict() for anchor in self.anchors]
+        with output_path.open("w") as f:
+            json.dump(anchors, f)
+
+    def run(self) -> None:
+        self.create_src_objects()
+        self.extract_markers()
+        self.dump_anchors()

@@ -4,6 +4,7 @@ import pytest
 from tree_sitter import Node as TreeSitterNode
 
 from sphinx_codelinks.analyzer.analyzer import SourceAnalyzer
+from sphinx_codelinks.analyzer.utils import form_https_url
 
 
 @pytest.mark.parametrize(
@@ -122,10 +123,26 @@ def test_extract_marker(comment, result, tmp_path):
         assert (marker, need_ids, row_offset) == result[i]
 
 
-def test_analyzer():
+@pytest.mark.parametrize(
+    ("git_url", "rev", "filepath", "lineno", "result"),
+    [
+        (
+            "git@github.com:useblocks/sphinx-codelinks.git",
+            "beef1234",
+            Path("example") / "to" / "here",
+            3,
+            "https://github.com/useblocks/sphinx-codelinks/blob/123/example/to/here#L3",
+        )
+    ],
+)
+def test_form_https_url(git_url, rev, filepath, lineno, result):
+    url = form_https_url(git_url, "123", Path("to/here"), lineno=3)
+    assert url == result
+
+
+def test_analyzer(tmp_path):
     src_dir = Path(__file__).parent.parent / "tests" / "data" / "s_core"
-    anaylzer = SourceAnalyzer(src_dir, ["@req-id:"])
-    anaylzer.create_src_objects()
-    anaylzer.extract_markers()
+    anaylzer = SourceAnalyzer(src_dir, ["@req-id:"], outdir=tmp_path)
+    anaylzer.run()
 
     assert True
