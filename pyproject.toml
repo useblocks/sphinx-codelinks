@@ -20,7 +20,12 @@ dependencies = [
   # unconstrained versions, to be pinned by user or Sphinx
   "jinja2",
   "pygments",
-  "docutils", # constrained by user or Sphinx
+  "docutils",
+  "tree-sitter>=0.25.0",
+  "tree-sitter-cpp>=0.23.4",
+  "tree-sitter-python>=0.23.6",
+  "giturlparse>=0.12.0",
+  # constrained by user or Sphinx
 ]
 
 [build-system]
