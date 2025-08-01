@@ -103,22 +103,23 @@ class SourceAnalyzer:
             self.src_files.append(src_file)
             self.src_comments.extend(src_comments)
 
-    def extract_markers(self):
-        def _extract_marker(
-            text: str,
-        ) -> Generator[tuple[str, list[str], int], Any, None]:  # type: ignore[explicit-any]
-            lines = text.splitlines()
-            row_offset = 0
-            for line in lines:
-                for marker in self.markers:
-                    marker_idx = line.find(marker)
-                    if marker_idx == -1:
-                        continue
-                    markered_text = line[marker_idx + len(marker) :].strip()
-                    need_ids = markered_text.replace(",", " ").split()
-                    yield marker, need_ids, row_offset
-                row_offset += 1
+    def extract_marker(
+        self,
+        text: str,
+    ) -> Generator[tuple[str, list[str], int], None, None]:
+        lines = text.splitlines()
+        row_offset = 0
+        for line in lines:
+            for marker in self.markers:
+                marker_idx = line.find(marker)
+                if marker_idx == -1:
+                    continue
+                markered_text = line[marker_idx + len(marker) :].strip()
+                need_ids = markered_text.replace(",", " ").split()
+                yield marker, need_ids, row_offset
+            row_offset += 1
 
+    def extract_markers(self):
         for src_comment in self.src_comments:
             text = (
                 src_comment.node.text.decode("utf-8") if src_comment.node.text else None
@@ -131,7 +132,7 @@ class SourceAnalyzer:
             if not filepath:
                 continue
 
-            for marker, need_ids, row_offset in _extract_marker(text):
+            for marker, need_ids, row_offset in self.extract_marker(text):
                 self.anchors.append(
                     SourceAnchor(
                         filepath,
@@ -142,5 +143,4 @@ class SourceAnalyzer:
                     )
                 )
 
-    # TODO: find the locations of the string that meet the pattern
     # TODO: dump these locations into option specified in needextend
