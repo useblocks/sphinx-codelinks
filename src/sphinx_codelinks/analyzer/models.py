@@ -12,6 +12,11 @@ class SourceAnchor:
     marker: str
     need_ids: list[str]
 
+    def to_dict(self) -> dict[str, str | int | list[str]]:
+        obj = self.__dict__.copy()
+        obj["filepath"] = str(self.filepath)
+        return obj
+
 
 class SourceComment:
     def __init__(self, node: TreeSitterNode) -> None:

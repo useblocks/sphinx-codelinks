@@ -3,6 +3,8 @@ import configparser
 import logging
 from pathlib import Path
 
+from giturlparse import parse
+
 # initialize logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -10,6 +12,11 @@ logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logger.addHandler(console)
+
+GIT_HOST_URL_TEMPLATE = {
+    "github": "https://github.com/{owner}/{repo}/blob/{rev}/{path}#L{lineno}",
+    "gitlab": "https://gitlab.com/{owner}/{repo}/-/blob/{rev}/{path}#L{lineno}",
+}
 
 
 def wrap_read_callable_point(src_string: ByteString):
@@ -63,3 +70,19 @@ def get_current_rev(git_root: Path) -> str | None:
         logging.warning(f"{ref_path} does not exist")
         return None
     return ref_path.read_text().strip()
+
+
+def form_https_url(git_url: str, rev: str, filepath: Path, lineno: int) -> str | None:
+    parsed_url = parse(git_url)
+    template = GIT_HOST_URL_TEMPLATE.get(parsed_url.platform)
+    if not template:
+        logging.warning(f"Unsupported Git host: {parsed_url.platform}")
+        return git_url
+    https_url = template.format(
+        owner=parsed_url.owner,
+        repo=parsed_url.repo,
+        rev=rev,
+        path=str(filepath),
+        lineno=str(lineno),
+    )
+    return https_url
