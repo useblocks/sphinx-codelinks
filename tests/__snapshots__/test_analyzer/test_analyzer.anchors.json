@@ -1,6 +1,6 @@
 [
   {
-    "filepath": "tests/data/s_core/dummy_1.cpp",
+    "filepath": "tests/data/anchors/dummy_1.cpp",
     "remote_url": null,
     "lineno": 3,
     "marker": "@req-id:",
@@ -12,7 +12,7 @@
     ]
   },
   {
-    "filepath": "tests/data/s_core/dummy_1.cpp",
+    "filepath": "tests/data/anchors/dummy_1.cpp",
     "remote_url": null,
     "lineno": 8,
     "marker": "@req-id:",
