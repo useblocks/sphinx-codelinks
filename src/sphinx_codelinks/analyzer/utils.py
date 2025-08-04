@@ -2,6 +2,7 @@ from collections.abc import ByteString
 import configparser
 import logging
 from pathlib import Path
+from urllib.request import pathname2url
 
 from giturlparse import parse
 
@@ -82,7 +83,7 @@ def form_https_url(git_url: str, rev: str, filepath: Path, lineno: int) -> str |
         owner=parsed_url.owner,
         repo=parsed_url.repo,
         rev=rev,
-        path=str(filepath),
+        path=pathname2url(str(filepath)),
         lineno=str(lineno),
     )
     return https_url
