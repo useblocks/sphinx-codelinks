@@ -95,7 +95,7 @@ def test_cpp_comment(code, result, tmp_path):
 @pytest.mark.parametrize(
     ("comment", "result"),
     [
-        ("""// @req-id: need_001""", ("@req-id:", ["need_001"], 0)),
+        ("""// @req-id: need_001""", [("@req-id:", ["need_001"], 0)]),
         (
             """// @req-id: need_001 need_002""",
             [("@req-id:", ["need_001", "need_002"], 0)],
@@ -131,12 +131,12 @@ def test_extract_marker(comment, result, tmp_path):
             "beef1234",
             Path("example") / "to" / "here",
             3,
-            "https://github.com/useblocks/sphinx-codelinks/blob/123/example/to/here#L3",
+            "https://github.com/useblocks/sphinx-codelinks/blob/beef1234/example/to/here#L3",
         )
     ],
 )
 def test_form_https_url(git_url, rev, filepath, lineno, result):
-    url = form_https_url(git_url, "123", Path("to/here"), lineno=3)
+    url = form_https_url(git_url, rev, filepath, lineno=lineno)
     assert url == result
 
 
