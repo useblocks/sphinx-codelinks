@@ -1,10 +1,16 @@
 from pathlib import Path
+import shutil
+import subprocess
 
 import pytest
 from tree_sitter import Node as TreeSitterNode
 
 from sphinx_codelinks.analyzer.analyzer import SourceAnalyzer
-from sphinx_codelinks.analyzer.utils import form_https_url
+from sphinx_codelinks.analyzer.utils import (
+    form_https_url,
+    get_remote_url,
+    locate_git_root,
+)
 
 
 @pytest.mark.parametrize(
@@ -138,6 +144,72 @@ def test_extract_marker(comment, result, tmp_path):
 def test_form_https_url(git_url, rev, filepath, lineno, result):
     url = form_https_url(git_url, rev, filepath, lineno=lineno)
     assert url == result
+
+
+def init_git_repo(repo_path: Path, remote_url: str) -> Path:
+    """Initialize a git repository for testing."""
+    git_dir = repo_path / "test_repo"
+    src_dir = git_dir / "src"
+    src_dir.mkdir(parents=True)
+
+    git_path = shutil.which("git")
+    if not git_path:
+        raise FileNotFoundError("Git executable not found")
+    if not Path(git_path).is_file():
+        raise FileNotFoundError("Git executable path is invalid")
+
+    # Initialize git repo
+    subprocess.run([git_path, "init"], cwd=git_dir, check=True, capture_output=True)  # noqa: S603
+    subprocess.run(  # noqa: S603
+        [git_path, "config", "user.email", "test@example.com"], cwd=git_dir, check=True
+    )
+    subprocess.run(  # noqa: S603
+        [git_path, "config", "user.name", "Test User"], cwd=git_dir, check=True
+    )
+
+    # Create a test file and commit
+    test_file = src_dir / "test_file.py"
+    test_file.write_text("# Test file\nprint('hello')\n")
+    subprocess.run([git_path, "add", "."], cwd=git_dir, check=True)  # noqa: S603
+    subprocess.run(  # noqa: S603
+        [git_path, "commit", "-m", "Initial commit"], cwd=git_dir, check=True
+    )
+
+    # Add a remote
+    subprocess.run(  # noqa: S603
+        [git_path, "remote", "add", "origin", remote_url],
+        cwd=git_dir,
+        check=True,
+    )
+
+    return git_dir
+
+
+@pytest.fixture(
+    params=[
+        ("test_repo_git", "git@github.com:test-user/test-repo.git"),
+        ("test_repo_https", "https://github.com/test-user/test-repo.git"),
+    ]
+)
+def git_repo(tmp_path: str, request: pytest.FixtureRequest) -> tuple[Path, str]:
+    """Create git repos for testing."""
+    repo_name, remote_url = request.param
+    repo_path = Path(tmp_path) / repo_name
+    repo_path = init_git_repo(repo_path, remote_url)
+    return repo_path, remote_url
+
+
+def test_locate_git_root(git_repo: tuple[Path, str]) -> None:
+    repo_path = git_repo[0]
+    src_dir = repo_path / "src"
+    git_root = locate_git_root(src_dir)
+    assert git_root == repo_path
+
+
+def test_get_remote_url(git_repo: tuple[Path, str]) -> None:
+    repo_path, expected_url = git_repo
+    remote_url = get_remote_url(repo_path)
+    assert remote_url == expected_url
 
 
 def test_analyzer(tmp_path):
