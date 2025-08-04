@@ -8,6 +8,7 @@ from tree_sitter import Node as TreeSitterNode
 from sphinx_codelinks.analyzer.analyzer import SourceAnalyzer
 from sphinx_codelinks.analyzer.utils import (
     form_https_url,
+    get_current_rev,
     get_remote_url,
     locate_git_root,
 )
@@ -146,13 +147,23 @@ def test_form_https_url(git_url, rev, filepath, lineno, result):
     assert url == result
 
 
+def get_git_path() -> str:
+    """Get the path to the git executable."""
+    git_path = shutil.which("git")
+    if not git_path:
+        raise FileNotFoundError("Git executable not found")
+    if not Path(git_path).is_file():
+        raise FileNotFoundError("Git executable path is invalid")
+    return git_path
+
+
 def init_git_repo(repo_path: Path, remote_url: str) -> Path:
     """Initialize a git repository for testing."""
     git_dir = repo_path / "test_repo"
     src_dir = git_dir / "src"
     src_dir.mkdir(parents=True)
 
-    git_path = shutil.which("git")
+    git_path = get_git_path()
     if not git_path:
         raise FileNotFoundError("Git executable not found")
     if not Path(git_path).is_file():
@@ -199,6 +210,20 @@ def git_repo(tmp_path: str, request: pytest.FixtureRequest) -> tuple[Path, str]:
     return repo_path, remote_url
 
 
+def get_current_commit_hash(git_dir: Path) -> str:
+    """Get the current commit hash of the git repository."""
+    git_path = get_git_path()
+    result = subprocess.run(  # noqa: S603
+        [git_path, "rev-parse", "HEAD"],
+        cwd=git_dir,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    return str(result.stdout.strip())
+
+
 def test_locate_git_root(git_repo: tuple[Path, str]) -> None:
     repo_path = git_repo[0]
     src_dir = repo_path / "src"
@@ -210,6 +235,12 @@ def test_get_remote_url(git_repo: tuple[Path, str]) -> None:
     repo_path, expected_url = git_repo
     remote_url = get_remote_url(repo_path)
     assert remote_url == expected_url
+
+
+def test_get_current_rev(git_repo: tuple[Path, str]) -> None:
+    repo_path, _ = git_repo
+    current_rev = get_current_commit_hash(repo_path)
+    assert current_rev == get_current_rev(repo_path)
 
 
 def test_analyzer(tmp_path):
