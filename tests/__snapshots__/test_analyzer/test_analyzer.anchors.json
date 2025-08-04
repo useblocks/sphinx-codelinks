@@ -1,0 +1,23 @@
+[
+  {
+    "filepath": "tests/data/s_core/dummy_1.cpp",
+    "remote_url": "https://github.com/useblocks/sphinx-codelinks/blob/43f79726c9626d779f26fc3e6fe50a4888e1c3ed/tests/data/s_core/dummy_1.cpp#L3",
+    "lineno": 3,
+    "marker": "@req-id:",
+    "need_ids": [
+      "need_001",
+      "need_002",
+      "need_003",
+      "need_004"
+    ]
+  },
+  {
+    "filepath": "tests/data/s_core/dummy_1.cpp",
+    "remote_url": "https://github.com/useblocks/sphinx-codelinks/blob/43f79726c9626d779f26fc3e6fe50a4888e1c3ed/tests/data/s_core/dummy_1.cpp#L8",
+    "lineno": 8,
+    "marker": "@req-id:",
+    "need_ids": [
+      "need_003"
+    ]
+  }
+]

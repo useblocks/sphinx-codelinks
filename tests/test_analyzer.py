@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -243,9 +244,11 @@ def test_get_current_rev(git_repo: tuple[Path, str]) -> None:
     assert current_rev == get_current_rev(repo_path)
 
 
-def test_analyzer(tmp_path):
+def test_analyzer(tmp_path, snapshot_anchors):
     src_dir = Path(__file__).parent.parent / "tests" / "data" / "s_core"
     anaylzer = SourceAnalyzer(src_dir, ["@req-id:"], outdir=tmp_path)
     anaylzer.run()
-
-    assert True
+    dumped_anchors = tmp_path / "anchors.json"
+    with dumped_anchors.open("r") as f:
+        anchors = json.load(f)
+    assert anchors == snapshot_anchors
