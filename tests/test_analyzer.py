@@ -245,7 +245,7 @@ def test_get_current_rev(git_repo: tuple[Path, str]) -> None:
 
 
 def test_analyzer(tmp_path, snapshot_anchors):
-    src_dir = Path(__file__).parent.parent / "tests" / "data" / "s_core"
+    src_dir = Path(__file__).parent.parent / "tests" / "data" / "anchors"
     anaylzer = SourceAnalyzer(src_dir, ["@req-id:"], outdir=tmp_path)
     anaylzer.git_remote_url = None
     anaylzer.git_commit_rev = None

@@ -2,12 +2,14 @@ from collections.abc import ByteString, Generator
 import json
 import logging
 from pathlib import Path
-from typing import Any, Literal, TypedDict
+from typing import Any
 
 from tree_sitter import Language, Parser, Query, QueryCursor
 from tree_sitter import Node as TreeSitterNode
 
 from sphinx_codelinks.analyzer import utils
+from sphinx_codelinks.analyzer.config import LANGUAGE_FILETYPE
+from sphinx_codelinks.analyzer.config import Language as Supported_Language
 from sphinx_codelinks.analyzer.models import SourceAnchor, SourceComment, SourceFile
 from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
 
@@ -20,20 +22,12 @@ console.setLevel(logging.INFO)
 logger.addHandler(console)
 
 
-class SourceAnalyzerConfig(TypedDict, total=False):
-    src_dir: Path
-    markers: list[str]
-
-
-LANGUAGE_FILETYPE = {"cpp": ["c", "cpp", "h", "hpp"], "python": ["py"]}
-
-
 class SourceAnalyzer:
     def __init__(
         self,
         src_dir: Path,
         markers: list[str] | None = None,
-        language: Literal["python", "cpp"] = "cpp",
+        language: Supported_Language = Supported_Language.cpp,
         outdir: Path | None = None,
     ) -> None:
         self.src_dir = src_dir
@@ -108,6 +102,9 @@ class SourceAnalyzer:
             self.src_files.append(src_file)
             self.src_comments.extend(src_comments)
 
+        logger.info(f"Source files loaded: {len(self.src_files)}")
+        logger.info(f"Source comments extracted: {len(self.src_comments)}")
+
     def extract_marker(
         self,
         text: str,
@@ -157,6 +154,8 @@ class SourceAnalyzer:
                     )
                 )
 
+        logger.info(f"Source anchors extracted: {len(self.anchors)}")
+
     def dump_anchors(self) -> None:
         output_path = self.outdir / "anchors.json"
         if not output_path.parent.exists():
@@ -164,6 +163,7 @@ class SourceAnalyzer:
         anchors = [anchor.to_dict() for anchor in self.anchors]
         with output_path.open("w") as f:
             json.dump(anchors, f)
+        logger.info(f"Source anchors dumped to {output_path}")
 
     def run(self) -> None:
         self.create_src_objects()

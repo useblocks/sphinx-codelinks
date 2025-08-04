@@ -7,6 +7,7 @@ from typing import Annotated, cast
 
 import typer
 
+from sphinx_codelinks.analyzer.config import Language
 from sphinx_codelinks.source_discovery.config import SourceDiscoveryConfig
 from sphinx_codelinks.sphinx_extension.config import (
     SrcTraceProjectConfigFileType,
@@ -22,6 +23,58 @@ from sphinx_codelinks.virtual_docs.config import (
 app = typer.Typer(
     no_args_is_help=True, context_settings={"help_option_names": ["-h", "--help"]}
 )
+
+
+@app.command(no_args_is_help=True)
+def analyzer(
+    src_dir: Annotated[
+        Path,
+        typer.Argument(
+            ...,
+            help="Root directory to analyze source anchors",
+            show_default=False,
+            dir_okay=True,
+            file_okay=False,
+            exists=True,
+            resolve_path=True,
+        ),
+    ],
+    markers: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--markers",
+            "-m",
+            help="The markers to extract need ids from",
+        ),
+    ] = ["@"],  # noqa: B006 # for typer to show the default
+    language: Annotated[
+        Language,
+        typer.Option(
+            "--language",
+            "-l",
+            help="The language of the source files",
+        ),
+    ] = Language.cpp,
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            "-o",
+            help="The output directory",
+            show_default=True,
+        ),
+    ] = Path.cwd(),  # noqa: B008 # for typer to show the default
+) -> None:
+    """Analyze source anchors."""
+    from sphinx_codelinks.analyzer.analyzer import SourceAnalyzer
+
+    analyzer = SourceAnalyzer(
+        src_dir=src_dir,
+        markers=markers,
+        language=language,
+        outdir=outdir,
+    )
+    analyzer.run()
 
 
 @app.command(no_args_is_help=True)
