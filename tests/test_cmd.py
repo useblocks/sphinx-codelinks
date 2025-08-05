@@ -265,4 +265,4 @@ def test_vdoc_config_negative(config_dict, output_lines, tmp_path: Path) -> None
     result = runner.invoke(app, options)
     assert result.exit_code != 0
     for line in output_lines:
-        assert line in result.stderr
+        assert line in result.stdout
