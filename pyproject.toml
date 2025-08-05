@@ -14,6 +14,7 @@ dependencies = [
   "comment-parser>=1.2.4",
   "gitignore-parser>=0.1.11",
   "typer>=0.16.0",
+  "click < 8.2",           # click 8.2.* produces empty errors if no args are given
   "jsonschema",
   "sphinx>=7.4,<9",
   "sphinx-needs>=4.2.0",        # unconstrained versions, to be pinned by user or Sphinx
