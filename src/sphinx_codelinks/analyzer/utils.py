@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.request import pathname2url
 
 from giturlparse import parse  # type: ignore[import-untyped]
+from tree_sitter import Point
 
 # initialize logger
 logger = logging.getLogger(__name__)
@@ -22,8 +23,8 @@ GIT_HOST_URL_TEMPLATE = {
 
 def wrap_read_callable_point(
     src_string: ByteString,
-) -> Callable[[int, int], ByteString]:
-    def read_callable_byte_offset(byte_offset: int, _: int) -> ByteString:
+) -> Callable[[int, Point], ByteString]:
+    def read_callable_byte_offset(byte_offset: int, _: Point) -> ByteString:
         return src_string[byte_offset : byte_offset + 1]
 
     return read_callable_byte_offset
