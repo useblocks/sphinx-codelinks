@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from tree_sitter import Language, Parser, Query, QueryCursor
+from tree_sitter import Language, Parser, Point, Query, QueryCursor
 from tree_sitter import Node as TreeSitterNode
 
 from sphinx_codelinks.analyzer import utils
@@ -82,8 +82,12 @@ class SourceAnalyzer:
 
     def extract_comments(self, src_string: ByteString) -> list[TreeSitterNode]:
         """Get all comments from source files by tree-sitter."""
-        read_point_fn = utils.wrap_read_callable_point(src_string)
-        tree = self.parser.parse(read_point_fn)
+
+        # read_point_fn = utils.wrap_read_callable_point(src_string)
+        def read_callable_byte_offset(byte_offset: int, _: Point) -> ByteString:
+            return src_string[byte_offset : byte_offset + 1]
+
+        tree = self.parser.parse(read_callable_byte_offset)
         query_cursor = QueryCursor(self.query)
         captures: dict[str, list[TreeSitterNode]] = query_cursor.captures(
             tree.root_node
