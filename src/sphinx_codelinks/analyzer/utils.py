@@ -48,7 +48,7 @@ def get_remote_url(git_root: Path, remote_name: str = "origin") -> str | None:
         logging.warning(f"{config_path} does not exist")
         return None
 
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(allow_no_value=True, strict=False)
     config.read(config_path)
     section = f'remote "{remote_name}"'
     if section in config and "url" in config[section]:
