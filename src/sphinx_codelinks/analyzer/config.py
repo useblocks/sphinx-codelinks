@@ -14,6 +14,11 @@ class CommentType(str, Enum):
     cpp = "cpp"
 
 
+class CommentElement(str, Enum):
+    comment = "comment"
+    docstring = "expression_statement"
+
+
 class SourceAnalyzerConfigType(TypedDict, total=False):
     src_dir: Path
     markers: list[str]

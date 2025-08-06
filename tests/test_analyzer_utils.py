@@ -28,11 +28,175 @@ def init_python_tree_sitter() -> tuple[Parser, Query]:
 
 
 @pytest.mark.parametrize(
-    ("code, result"),
+    ("code", "result"),
+    [
+        (
+            b"""
+                def dummy_func1():
+                    # @req-id: need_001
+                    pass
+            """,
+            "def dummy_func1()",
+        ),
+        (
+            b"""
+                def dummy_func1():
+                    # @req-id: need_002
+                    def dummy_func2():
+                        pass
+                    pass
+            """,
+            "def dummy_func2()",
+        ),
+        (
+            b"""
+                def dummy_func1():
+                '''@req-id: need_002'''
+                    def nested_dummy_func():
+                        pass
+                    pass
+            """,
+            "def dummy_func1()",
+        ),
+        (
+            b"""
+                def dummy_func1():
+                    def nested_dummy_func():
+                        '''@req-id: need_002'''
+                        pass
+                    pass
+            """,
+            "def nested_dummy_func()",
+        ),
+        (
+            b"""
+                def dummy_func1():
+                    def nested_dummy_func():
+                        # @req-id: need_002
+                        pass
+                    pass
+            """,
+            "def nested_dummy_func()",
+        ),
+        (
+            b"""
+                def dummy_func1():
+                    def nested_dummy_func():
+                        pass
+                    # @req-id: need_002
+                    pass
+            """,
+            "def dummy_func1()",
+        ),
+    ],
+)
+def test_find_associated_scope_python(code, result, init_python_tree_sitter):
+    parser, query = init_python_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_associated_scope(comments[0])
+    assert node
+    assert node.text
+    func_def = node.text.decode("utf-8")
+    assert func_def.startswith(result)
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
+                def dummy_func1():
+                    # @req-id: need_001
+                    pass
+            """,
+            "def dummy_func1()",
+        ),
+        (
+            b"""
+                def dummy_func1():
+                '''@req-id: need_001'''
+                    pass
+            """,
+            "def dummy_func1()",
+        ),
+        (
+            b"""
+                def dummy_func1():
+                    def nested_dummy_func1():
+                        '''@req-id: need_001'''
+                        pass
+                    pass
+            """,
+            "def nested_dummy_func1()",
+        ),
+        (
+            b"""
+                def dummy_func1():
+                    '''@req-id: need_001'''
+                    def nested_dummy_func1():
+                        pass
+                    pass
+            """,
+            "def dummy_func1()",
+        ),
+    ],
+)
+def test_find_enclosing_scope_python(code, result, init_python_tree_sitter):
+    parser, query = init_python_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_enclosing_scope(comments[0])
+    assert node
+    assert node.text
+    func_def = node.text.decode("utf-8")
+    assert result in func_def
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
+                # @req-id: need_001
+                def dummy_func1():
+                    pass
+            """,
+            "def dummy_func1()",
+        ),
+        (
+            b"""
+                # @req-id: need_001
+                # @req-id: need_002
+                def dummy_func1():
+                    pass
+            """,
+            "def dummy_func1()",
+        ),
+    ],
+)
+def test_find_next_scope_python(code, result, init_python_tree_sitter):
+    parser, query = init_python_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_next_scope(comments[0])
+    assert node
+    assert node.text
+    func_def = node.text.decode("utf-8")
+    assert result in func_def
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
     [
         (
             b"""
                 // @req-id: need_001
+                void dummy_func1(){
+                }
+            """,
+            "void dummy_func1()",
+        ),
+        (
+            b"""
+                /* @req-id: need_001 */
                 void dummy_func1(){
                 }
             """,
@@ -43,8 +207,42 @@ def init_python_tree_sitter() -> tuple[Parser, Query]:
 def test_find_next_scope_cpp(code, result, init_cpp_tree_sitter):
     parser, query = init_cpp_tree_sitter
     comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_next_scope(comments[0])
+    assert node
+    assert node.text
+    func_def = node.text.decode("utf-8")
+    assert result in func_def
 
-    assert len(comments) == 1
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
+                void dummy_func1(){
+                // @req-id: need_001
+                }
+            """,
+            "void dummy_func1()",
+        ),
+        (
+            b"""
+                void dummy_func1(){
+                /* @req-id: need_001 */
+                }
+            """,
+            "void dummy_func1()",
+        ),
+    ],
+)
+def test_find_enclosing_scope_cpp(code, result, init_cpp_tree_sitter):
+    parser, query = init_cpp_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_enclosing_scope(comments[0])
+    assert node
+    assert node.text
+    func_def = node.text.decode("utf-8")
+    assert result in func_def
 
 
 @pytest.mark.parametrize(

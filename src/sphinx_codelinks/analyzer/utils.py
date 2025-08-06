@@ -8,7 +8,7 @@ from giturlparse import parse  # type: ignore[import-untyped]
 from tree_sitter import Language, Parser, Point, Query, QueryCursor
 from tree_sitter import Node as TreeSitterNode
 
-from sphinx_codelinks.analyzer.config import CommentType
+from sphinx_codelinks.analyzer.config import CommentElement, CommentType
 
 # initialize logger
 logger = logging.getLogger(__name__)
@@ -72,11 +72,8 @@ def extract_comments(
     return captures["comment"]
 
 
-def find_enclosing_scope(
-    node: TreeSitterNode, comment_type: CommentType = CommentType.cpp
-) -> TreeSitterNode | None:
+def find_enclosing_scope(node: TreeSitterNode) -> TreeSitterNode | None:
     """Find the enclosing scope of a comment."""
-    del comment_type  # here for the extendability
     current: TreeSitterNode = node
     while current:
         if current.type in {"function_definition", "class_definition"}:
@@ -85,17 +82,30 @@ def find_enclosing_scope(
     return None
 
 
-def find_next_scope(
-    node: TreeSitterNode, comment_type: CommentType = CommentType.cpp
-) -> TreeSitterNode | None:
+def find_next_scope(node: TreeSitterNode) -> TreeSitterNode | None:
     """Find the next scope of a comment."""
-    del comment_type  # here for the extendability
     current: TreeSitterNode = node
     while current:
         if current.type in {"function_definition", "class_definition"}:
             return current
         current: TreeSitterNode | None = current.next_named_sibling
+        if current and current.type == "block":
+            for child in current.named_children:
+                if child.type in {"function_definition", "class_definition"}:
+                    return child
     return None
+
+
+def find_associated_scope(node: TreeSitterNode) -> TreeSitterNode | None:
+    """Find the associated scope of a comment."""
+    if node.type == CommentElement.docstring:
+        # Only for python's docstring
+        return find_enclosing_scope(node)
+    # General comments regardless of comment types
+    associated_scope = find_next_scope(node)
+    if not associated_scope:
+        associated_scope = find_enclosing_scope(node)
+    return associated_scope
 
 
 def locate_git_root(src_dir: Path) -> Path | None:

@@ -129,16 +129,7 @@ class SourceAnalyzer:
             )
             if not filepath:
                 continue
-
-            if src_comment.node.parent:
-                tagged_scope: TreeSitterNode | None = utils.find_enclosing_scope(
-                    src_comment.node, self.comment_type
-                )
-            else:
-                tagged_scope: TreeSitterNode | None = utils.find_next_scope(
-                    src_comment.node, self.comment_type
-                )
-
+            tagged_scope = utils.find_associated_scope(src_comment.node)
             for (
                 marker,
                 need_ids,
