@@ -117,6 +117,54 @@ class SourceAnalyzer:
                 yield marker, need_ids, row_offset, start_column, end_column
             row_offset += 1
 
+    def extract_anchors(
+        self,
+        text: str,
+        filepath: Path,
+        tagged_scope: TreeSitterNode | None,
+        src_comment: SourceComment,
+    ) -> list[SourceAnchor]:
+        """Extract need-ids-refs from a comment."""
+        anchors: list[SourceAnchor] = []
+        for (
+            marker,
+            need_ids,
+            row_offset,
+            start_column,
+            end_column,
+        ) in self.extract_marker(text):
+            lineno = src_comment.node.start_point.row + row_offset + 1
+            remote_url = self.git_remote_url
+            if self.git_remote_url and self.git_commit_rev:
+                remote_url = utils.form_https_url(
+                    self.git_remote_url,
+                    self.git_commit_rev,
+                    filepath,
+                    lineno,
+                )
+            source_map: SourceMap = {
+                "start": {
+                    "row": lineno - 1,
+                    "column": start_column,
+                },
+                "end": {
+                    "row": lineno - 1,
+                    "column": end_column,
+                },
+            }
+            anchors.append(
+                SourceAnchor(
+                    filepath,
+                    remote_url,
+                    source_map,
+                    marker,
+                    src_comment,
+                    tagged_scope,
+                    need_ids,
+                )
+            )
+        return anchors
+
     def extract_markers(self) -> None:
         for src_comment in self.src_comments:
             text = (
@@ -129,44 +177,11 @@ class SourceAnalyzer:
             )
             if not filepath:
                 continue
-            tagged_scope = utils.find_associated_scope(src_comment.node)
-            for (
-                marker,
-                need_ids,
-                row_offset,
-                start_column,
-                end_column,
-            ) in self.extract_marker(text):
-                lineno = src_comment.node.start_point.row + row_offset + 1
-                remote_url = self.git_remote_url
-                if self.git_remote_url and self.git_commit_rev:
-                    remote_url = utils.form_https_url(
-                        self.git_remote_url,
-                        self.git_commit_rev,
-                        filepath,
-                        lineno,
-                    )
-                source_map: SourceMap = {
-                    "start": {
-                        "row": lineno - 1,
-                        "column": start_column,
-                    },
-                    "end": {
-                        "row": lineno - 1,
-                        "column": end_column,
-                    },
-                }
-                self.anchors.append(
-                    SourceAnchor(
-                        filepath,
-                        remote_url,
-                        source_map,
-                        marker,
-                        src_comment,
-                        tagged_scope,
-                        need_ids,
-                    )
-                )
+            tagged_scope: TreeSitterNode | None = utils.find_associated_scope(
+                src_comment.node
+            )
+            anchors = self.extract_anchors(text, filepath, tagged_scope, src_comment)
+            self.anchors.extend(anchors)
 
         logger.info(f"Source anchors extracted: {len(self.anchors)}")
 
