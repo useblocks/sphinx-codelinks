@@ -32,6 +32,59 @@ def init_python_tree_sitter() -> tuple[Parser, Query]:
     [
         (
             b"""
+                // @req-id: need_001
+                void dummy_func1(){
+                }
+            """,
+            "void dummy_func1()",
+        ),
+        (
+            b"""
+                void dummy_func2(){
+                }
+                // @req-id: need_001
+                void dummy_func1(){
+                }
+            """,
+            "void dummy_func1()",
+        ),
+        (
+            b"""
+                void dummy_func1(){
+                    a = 1;
+                    /* @req-id: need_001 */
+                }
+            """,
+            "void dummy_func1()",
+        ),
+        (
+            b"""
+                void dummy_func1(){
+                    // @req-id: need_001
+                    a = 1;
+                }
+                void dummy_func2(){
+                }
+            """,
+            "void dummy_func1()",
+        ),
+    ],
+)
+def test_find_associated_scope_cpp(code, result, init_cpp_tree_sitter):
+    parser, query = init_cpp_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_associated_scope(comments[0])
+    assert node
+    assert node.text
+    func_def = node.text.decode("utf-8")
+    assert result in func_def
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
                 def dummy_func1():
                     # @req-id: need_001
                     pass

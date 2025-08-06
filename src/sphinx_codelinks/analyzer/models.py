@@ -59,6 +59,7 @@ class Metadata:
             if self.tagged_scope and self.tagged_scope.text
             else None
         )
+        del obj["source_comment"]
         return obj
 
     def add_src_comment(self, src_comment: SourceComment) -> None:
