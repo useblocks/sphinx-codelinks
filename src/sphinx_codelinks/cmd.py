@@ -7,7 +7,7 @@ from typing import Annotated, cast
 
 import typer
 
-from sphinx_codelinks.analyzer.config import Language
+from sphinx_codelinks.analyzer.config import CommentType
 from sphinx_codelinks.source_discovery.config import SourceDiscoveryConfig
 from sphinx_codelinks.sphinx_extension.config import (
     SrcTraceProjectConfigFileType,
@@ -47,14 +47,14 @@ def analyzer(
             help="The markers to extract need ids from",
         ),
     ] = ["@"],  # noqa: B006 # for typer to show the default
-    language: Annotated[
-        Language,
+    comment_type: Annotated[
+        CommentType,
         typer.Option(
-            "--language",
-            "-l",
+            "--comment-type",
+            "-ct",
             help="The language of the source files",
         ),
-    ] = Language.cpp,
+    ] = CommentType.cpp,
     outdir: Annotated[
         Path,
         typer.Option(
@@ -71,7 +71,7 @@ def analyzer(
     analyzer = SourceAnalyzer(
         src_dir=src_dir,
         markers=markers,
-        language=language,
+        comment_type=comment_type,
         outdir=outdir,
     )
     analyzer.run()

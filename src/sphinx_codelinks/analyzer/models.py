@@ -1,27 +1,20 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
+from typing import TypedDict
 
 from tree_sitter import Node as TreeSitterNode
 
 
-@dataclass
-class SourceAnchor:
-    filepath: Path
-    remote_url: str | None
-    lineno: int  # start from 1
-    marker: str
-    need_ids: list[str]
-
-    def to_dict(self) -> dict[str, str | int | list[str]]:
-        obj = self.__dict__.copy()
-        obj["filepath"] = str(self.filepath)
-        return obj
+class MarkedContentType(str, Enum):
+    need = ("need",)
+    need_id_refs = ("need-id-refs",)
+    rst = "rst"
 
 
 class SourceComment:
     def __init__(self, node: TreeSitterNode) -> None:
         self.node: TreeSitterNode = node
-        self.marker = None
         self.source_file: SourceFile | None = None
 
 
@@ -37,3 +30,54 @@ class SourceFile:
     def add_comments(self, comments: list[SourceComment]) -> None:
         for comment in comments:
             self.add_comment(comment)
+
+
+class Position(TypedDict):
+    row: int
+    column: int
+
+
+class SourceMap(TypedDict):
+    start: Position
+    end: Position
+
+
+@dataclass
+class Metadata:
+    filepath: Path
+    remote_url: str | None
+    source_map: SourceMap
+    marker: str
+    source_comment: SourceComment
+    tagged_scope: TreeSitterNode | None
+
+    def to_dict(self) -> dict[str, str | int | list[str]]:
+        obj = self.__dict__.copy()
+        obj["filepath"] = str(self.filepath)
+        obj["tagged_scope"] = (
+            str(self.tagged_scope.text.decode("utf-8"))
+            if self.tagged_scope and self.tagged_scope.text
+            else None
+        )
+        return obj
+
+    def add_src_comment(self, src_comment: SourceComment) -> None:
+        self.source_comment = src_comment
+
+
+@dataclass
+class SourceAnchor(Metadata):
+    need_ids: list[str]
+    type: MarkedContentType = field(init=False, default=MarkedContentType.need_id_refs)
+
+
+@dataclass
+class OneLineNeed(Metadata):
+    need: dict[str, str | list[str]]
+    type: MarkedContentType = field(init=False, default=MarkedContentType.need)
+
+
+@dataclass
+class MarkedRst(Metadata):
+    rst: str
+    type: MarkedContentType = field(init=False, default=MarkedContentType.rst)

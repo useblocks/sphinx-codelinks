@@ -5,7 +5,10 @@ from pathlib import Path
 from urllib.request import pathname2url
 
 from giturlparse import parse  # type: ignore[import-untyped]
-from tree_sitter import Point
+from tree_sitter import Language, Parser, Point, Query, QueryCursor
+from tree_sitter import Node as TreeSitterNode
+
+from sphinx_codelinks.analyzer.config import CommentType
 
 # initialize logger
 logger = logging.getLogger(__name__)
@@ -20,6 +23,34 @@ GIT_HOST_URL_TEMPLATE = {
     "gitlab": "https://gitlab.com/{owner}/{repo}/-/blob/{rev}/{path}#L{lineno}",
 }
 
+PYTHON_QUERY = """
+                ; Match comments
+                (comment) @comment
+
+                ; Match docstrings inside modules, functions, or classes
+                (module (expression_statement (string)) @comment)
+                (function_definition (block (expression_statement (string)) @comment))
+                (class_definition (block (expression_statement (string)) @comment))
+            """
+CPP_QUERY = """(comment) @comment"""
+
+
+def init_tree_sitter(comment_type: CommentType) -> tuple[Parser, Query]:
+    if comment_type == CommentType.cpp:
+        import tree_sitter_cpp  # noqa: PLC0415
+
+        parsed_language = Language(tree_sitter_cpp.language())
+        query = Query(parsed_language, CPP_QUERY)
+    elif comment_type == CommentType.python:
+        import tree_sitter_python  # noqa: PLC0415
+
+        parsed_language = Language(tree_sitter_python.language())
+        query = Query(parsed_language, PYTHON_QUERY)
+    else:
+        raise ValueError(f"Unsupported comment style: {comment_type}")
+    parser = Parser(parsed_language)
+    return parser, query
+
 
 def wrap_read_callable_point(
     src_string: ByteString,
@@ -28,6 +59,43 @@ def wrap_read_callable_point(
         return src_string[byte_offset : byte_offset + 1]
 
     return read_callable_byte_offset
+
+
+def extract_comments(
+    src_string: ByteString, parser: Parser, query: Query
+) -> list[TreeSitterNode]:
+    """Get all comments from source files by tree-sitter."""
+    read_point_fn = wrap_read_callable_point(src_string)
+    tree = parser.parse(read_point_fn)
+    query_cursor = QueryCursor(query)
+    captures: dict[str, list[TreeSitterNode]] = query_cursor.captures(tree.root_node)
+    return captures["comment"]
+
+
+def find_enclosing_scope(
+    node: TreeSitterNode, comment_type: CommentType = CommentType.cpp
+) -> TreeSitterNode | None:
+    """Find the enclosing scope of a comment."""
+    del comment_type  # here for the extendability
+    current: TreeSitterNode = node
+    while current:
+        if current.type in {"function_definition", "class_definition"}:
+            return current
+        current: TreeSitterNode | None = current.parent
+    return None
+
+
+def find_next_scope(
+    node: TreeSitterNode, comment_type: CommentType = CommentType.cpp
+) -> TreeSitterNode | None:
+    """Find the next scope of a comment."""
+    del comment_type  # here for the extendability
+    current: TreeSitterNode = node
+    while current:
+        if current.type in {"function_definition", "class_definition"}:
+            return current
+        current: TreeSitterNode | None = current.next_named_sibling
+    return None
 
 
 def locate_git_root(src_dir: Path) -> Path | None:

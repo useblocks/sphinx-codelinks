@@ -1,16 +1,24 @@
-from collections.abc import ByteString, Generator
+from collections.abc import Generator
+from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
 from typing import Any
 
-from tree_sitter import Language, Parser, Point, Query, QueryCursor
 from tree_sitter import Node as TreeSitterNode
 
 from sphinx_codelinks.analyzer import utils
-from sphinx_codelinks.analyzer.config import LANGUAGE_FILETYPE
-from sphinx_codelinks.analyzer.config import Language as Supported_Language
-from sphinx_codelinks.analyzer.models import SourceAnchor, SourceComment, SourceFile
+from sphinx_codelinks.analyzer.config import (
+    COMMENT_FILETYPE,
+    CommentType,
+    OneLineCommentStyle,
+)
+from sphinx_codelinks.analyzer.models import (
+    SourceAnchor,
+    SourceComment,
+    SourceFile,
+    SourceMap,
+)
 from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
 
 # initialize logger
@@ -22,43 +30,30 @@ console.setLevel(logging.INFO)
 logger.addHandler(console)
 
 
+@dataclass
+class AnalyzerWarning:
+    file_path: str
+    lineno: int
+    msg: str
+    type: str
+    sub_type: str
+
+
 class SourceAnalyzer:
+    warning_filepath: Path = Path("cached_warnings") / "codelinks_warnings.json"
+
     def __init__(
         self,
         src_dir: Path,
         markers: list[str] | None = None,
-        language: Supported_Language = Supported_Language.cpp,
+        comment_type: CommentType = CommentType.cpp,
         outdir: Path | None = None,
+        oneline_comment_style: OneLineCommentStyle | None = None,
     ) -> None:
         self.src_dir = src_dir
         self.markers = markers if markers else ["@"]
-        self.language = language
+        self.comment_type = comment_type
         self.outdir = outdir if outdir else src_dir
-
-        # init tree-sitter
-
-        if language == "cpp":
-            import tree_sitter_cpp  # noqa: PLC0415
-
-            parsed_language = Language(tree_sitter_cpp.language())
-            query = """(comment) @comment"""
-        elif language == "python":
-            import tree_sitter_python  # noqa: PLC0415
-
-            parsed_language = Language(tree_sitter_python.language())
-            query = """
-                ; Match comments
-                (comment) @comment
-
-                ; Match docstrings inside modules, functions, or classes
-                (module (expression_statement (string)) @comment)
-                (function_definition (block (expression_statement (string)) @comment))
-                (class_definition (block (expression_statement (string)) @comment))
-            """
-        else:
-            raise ValueError(f"Unsupported language: {language}")
-        self.parser = Parser(parsed_language)
-        self.query = Query(parsed_language, query)
 
         self.src_files: list[SourceFile] = []
         self.src_comments: list[SourceComment] = []
@@ -70,33 +65,28 @@ class SourceAnalyzer:
         self.git_commit_rev: str | None = (
             utils.get_current_rev(self.git_root) if self.git_root else None
         )
+        self.oneline_comment_style = oneline_comment_style
+        self.oneline_warnings: list[AnalyzerWarning] = []
+        self.warnings_path = self.outdir / SourceAnalyzer.warning_filepath
 
     def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
         """Load source files and extract their content."""
         src_discovery = SourceDiscover(
-            self.src_dir, file_types=LANGUAGE_FILETYPE[self.language], gitignore=False
+            self.src_dir,
+            file_types=COMMENT_FILETYPE[self.comment_type],
+            gitignore=False,
         )
         for src_path in src_discovery.source_paths:
             with src_path.open("r") as f:
                 yield src_path, f.read().encode("utf8")
 
-    def extract_comments(self, src_string: ByteString) -> list[TreeSitterNode]:
-        """Get all comments from source files by tree-sitter."""
-
-        # read_point_fn = utils.wrap_read_callable_point(src_string)
-        def read_callable_byte_offset(byte_offset: int, _: Point) -> ByteString:
-            return src_string[byte_offset : byte_offset + 1]
-
-        tree = self.parser.parse(read_callable_byte_offset)
-        query_cursor = QueryCursor(self.query)
-        captures: dict[str, list[TreeSitterNode]] = query_cursor.captures(
-            tree.root_node
-        )
-        return captures["comment"]
-
     def create_src_objects(self) -> None:
+        parser, query = utils.init_tree_sitter(self.comment_type)
+
         for src_path, src_string in self.get_src_strings():
-            comments: list[TreeSitterNode] = self.extract_comments(src_string)
+            comments: list[TreeSitterNode] = utils.extract_comments(
+                src_string, parser, query
+            )
             src_comments: list[SourceComment] = [
                 SourceComment(node) for node in comments
             ]
@@ -112,7 +102,7 @@ class SourceAnalyzer:
     def extract_marker(
         self,
         text: str,
-    ) -> Generator[tuple[str, list[str], int], None, None]:
+    ) -> Generator[tuple[str, list[str], int, int, int], None, None]:
         lines = text.splitlines()
         row_offset = 0
         for line in lines:
@@ -122,7 +112,9 @@ class SourceAnalyzer:
                     continue
                 markered_text = line[marker_idx + len(marker) :].strip()
                 need_ids = markered_text.replace(",", " ").split()
-                yield marker, need_ids, row_offset
+                start_column = marker_idx + len(marker)
+                end_column = start_column + len(markered_text)
+                yield marker, need_ids, row_offset, start_column, end_column
             row_offset += 1
 
     def extract_markers(self) -> None:
@@ -138,7 +130,22 @@ class SourceAnalyzer:
             if not filepath:
                 continue
 
-            for marker, need_ids, row_offset in self.extract_marker(text):
+            if src_comment.node.parent:
+                tagged_scope: TreeSitterNode | None = utils.find_enclosing_scope(
+                    src_comment.node, self.comment_type
+                )
+            else:
+                tagged_scope: TreeSitterNode | None = utils.find_next_scope(
+                    src_comment.node, self.comment_type
+                )
+
+            for (
+                marker,
+                need_ids,
+                row_offset,
+                start_column,
+                end_column,
+            ) in self.extract_marker(text):
                 lineno = src_comment.node.start_point.row + row_offset + 1
                 remote_url = self.git_remote_url
                 if self.git_remote_url and self.git_commit_rev:
@@ -148,12 +155,24 @@ class SourceAnalyzer:
                         filepath,
                         lineno,
                     )
+                source_map: SourceMap = {
+                    "start": {
+                        "row": lineno - 1,
+                        "column": start_column,
+                    },
+                    "end": {
+                        "row": lineno - 1,
+                        "column": end_column,
+                    },
+                }
                 self.anchors.append(
                     SourceAnchor(
                         filepath,
                         remote_url,
-                        lineno,
+                        source_map,
                         marker,
+                        src_comment,
+                        tagged_scope,
                         need_ids,
                     )
                 )
