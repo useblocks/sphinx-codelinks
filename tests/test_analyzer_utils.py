@@ -325,6 +325,16 @@ def test_find_enclosing_scope_cpp(code, result, init_cpp_tree_sitter):
             """,
             "/* @req-id: need_001 */",
         ),
+        (
+            b"""
+                //
+                //   @req-id: need_001
+                //
+                void dummy_func1(){
+                }
+            """,
+            "/* @req-id: need_001 */",
+        ),
     ],
 )
 def test_cpp_comment(code, result, tmp_path, init_cpp_tree_sitter):
@@ -494,3 +504,26 @@ def test_get_current_rev(git_repo: tuple[Path, str]) -> None:
     repo_path, _ = git_repo
     current_rev = get_current_commit_hash(repo_path)
     assert current_rev == utils.get_current_rev(repo_path)
+
+
+@pytest.mark.parametrize(
+    ("text", "leading_sequences", "result"),
+    [
+        (
+            """
+*    some text in a comment
+*    some text in a comment
+*
+""",
+            ["*"],
+            """
+    some text in a comment
+    some text in a comment
+
+""",
+        ),
+    ],
+)
+def test_remove_leading_sequences(text, leading_sequences, result):
+    clean_text = utils.remove_leading_sequences(text, leading_sequences)
+    assert clean_text == result

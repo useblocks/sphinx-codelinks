@@ -168,3 +168,41 @@ def form_https_url(git_url: str, rev: str, filepath: Path, lineno: int) -> str |
         lineno=str(lineno),
     )
     return https_url
+
+
+def remove_leading_sequences(text: str, leading_sequences: list[str]) -> str:
+    lines = text.splitlines(keepends=True)
+    no_comment_lines = []
+    for line in lines:
+        leading_sequence_exist = False
+        for leading_sequence in leading_sequences:
+            leading_sequence_idx = line.find(leading_sequence)
+            if leading_sequence_idx == -1:
+                continue
+            no_comment_lines.append(
+                line[leading_sequence_idx + len(leading_sequence) :]
+            )
+            leading_sequence_exist = True
+            break
+
+        if not leading_sequence_exist:
+            no_comment_lines.append(line)
+
+    return "".join(no_comment_lines)
+
+
+def extract_rst(
+    text: str, start_marker: str, end_marker: str
+) -> tuple[str, int, int, int] | None:
+    """Extract rst from a comment."""
+    start_idx = text.find(start_marker)
+    end_idx = text.rfind(end_marker)
+    if start_idx == -1 or end_idx == -1:
+        return None
+    rst_text = text[start_idx + len(start_marker) : end_idx - len(end_marker)]
+    row_offset = len(text[:start_idx].splitlines())
+    if not rst_text.strip():
+        # empty string is out of the interest
+        return None
+
+    return rst_text, row_offset, start_idx, end_idx

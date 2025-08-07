@@ -2,6 +2,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -14,10 +15,16 @@ from sphinx_codelinks.analyzer.config import (
     OneLineCommentStyle,
 )
 from sphinx_codelinks.analyzer.models import (
-    SourceAnchor,
+    MarkedContentType,
+    NeedIdRefs,
+    OneLineNeed,
     SourceComment,
     SourceFile,
     SourceMap,
+)
+from sphinx_codelinks.analyzer.oneline_parser import (
+    OnelineParserInvalidWarning,
+    oneline_parser,
 )
 from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
 
@@ -42,22 +49,29 @@ class AnalyzerWarning:
 class SourceAnalyzer:
     warning_filepath: Path = Path("cached_warnings") / "codelinks_warnings.json"
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         src_dir: Path,
-        markers: list[str] | None = None,
         comment_type: CommentType = CommentType.cpp,
         outdir: Path | None = None,
+        get_need_id_refs: bool = True,
+        get_oneline_needs: bool = False,
+        get_rst: bool = False,
+        markers: list[str] | None = None,
         oneline_comment_style: OneLineCommentStyle | None = None,
     ) -> None:
         self.src_dir = src_dir
         self.markers = markers if markers else ["@"]
         self.comment_type = comment_type
         self.outdir = outdir if outdir else src_dir
-
+        self.get_need_id_refs = get_need_id_refs
+        self.get_oneline_needs = get_oneline_needs
+        self.get_rst = get_rst
         self.src_files: list[SourceFile] = []
         self.src_comments: list[SourceComment] = []
-        self.anchors: list[SourceAnchor] = []  # a flat view of each link
+        self.need_id_refs: list[NeedIdRefs] = []
+        self.oneline_needs: list[OneLineNeed] = []
+        self.all_marked_content: list[NeedIdRefs | OneLineNeed] = []
         self.git_root: Path | None = utils.locate_git_root(src_dir)
         self.git_remote_url: str | None = (
             utils.get_remote_url(self.git_root) if self.git_root else None
@@ -65,7 +79,9 @@ class SourceAnalyzer:
         self.git_commit_rev: str | None = (
             utils.get_current_rev(self.git_root) if self.git_root else None
         )
-        self.oneline_comment_style = oneline_comment_style
+        self.oneline_comment_style = (
+            oneline_comment_style if oneline_comment_style else OneLineCommentStyle()
+        )
         self.oneline_warnings: list[AnalyzerWarning] = []
         self.warnings_path = self.outdir / SourceAnalyzer.warning_filepath
 
@@ -123,9 +139,9 @@ class SourceAnalyzer:
         filepath: Path,
         tagged_scope: TreeSitterNode | None,
         src_comment: SourceComment,
-    ) -> list[SourceAnchor]:
+    ) -> list[NeedIdRefs]:
         """Extract need-ids-refs from a comment."""
-        anchors: list[SourceAnchor] = []
+        anchors: list[NeedIdRefs] = []
         for (
             marker,
             need_ids,
@@ -153,19 +169,97 @@ class SourceAnalyzer:
                 },
             }
             anchors.append(
-                SourceAnchor(
+                NeedIdRefs(
                     filepath,
                     remote_url,
                     source_map,
-                    marker,
                     src_comment,
                     tagged_scope,
                     need_ids,
+                    marker,
                 )
             )
         return anchors
 
-    def extract_markers(self) -> None:
+    def extract_oneline_need(
+        self,
+        text: str,
+        src_comment: SourceComment,
+        oneline_comment_style: OneLineCommentStyle,
+    ) -> Generator[tuple[dict[str, str | list[str] | int], int]]:
+        lines = text.splitlines(keepends=True)
+        row_offset = 0
+        if len(lines) == 1:
+            # single line comment has no newline char in the extracted comment
+            lines[0] = f"{lines[0]}{os.linesep}"
+
+        for line in lines:
+            resolved = oneline_parser(line, oneline_comment_style)
+            if not resolved:
+                continue
+            if isinstance(resolved, OnelineParserInvalidWarning):
+                if not src_comment.source_file:
+                    continue
+                self.oneline_warnings.append(
+                    AnalyzerWarning(
+                        str(src_comment.source_file.filepath),
+                        src_comment.node.start_point.row + row_offset + 1,
+                        resolved.msg,
+                        MarkedContentType.need,
+                        resolved.sub_type.value,
+                    )
+                )
+                continue
+            yield resolved, row_offset
+            row_offset += 1
+
+    def extract_oneline_needs(
+        self,
+        text: str,
+        filepath: Path,
+        tagged_scope: TreeSitterNode | None,
+        src_comment: SourceComment,
+        oneline_comment_style: OneLineCommentStyle,
+    ) -> list[OneLineNeed]:
+        row_offset = 0
+        oneline_needs = []
+        for resolved, row_offset in self.extract_oneline_need(
+            text, src_comment, oneline_comment_style
+        ):
+            lineno = src_comment.node.start_point.row + row_offset + 1
+            remote_url = self.git_remote_url
+            if self.git_remote_url and self.git_commit_rev:
+                remote_url = utils.form_https_url(
+                    self.git_remote_url,
+                    self.git_commit_rev,
+                    filepath,
+                    lineno,
+                )
+            source_map: SourceMap = {
+                "start": {
+                    "row": lineno - 1,
+                    "column": resolved["start_column"],  # type: ignore[typeddict-item]  # dynamic keys
+                },
+                "end": {
+                    "row": lineno - 1,
+                    "column": resolved["end_column"],  # type: ignore[typeddict-item]  # dynamic keys
+                },
+            }
+            del resolved["start_column"]
+            del resolved["end_column"]
+            oneline_needs.append(
+                OneLineNeed(
+                    filepath,
+                    remote_url,
+                    source_map,
+                    src_comment,
+                    tagged_scope,
+                    resolved,  # type: ignore[arg-type] # int arguments were deleted
+                )
+            )
+        return oneline_needs
+
+    def extract_marked_content(self) -> None:
         for src_comment in self.src_comments:
             text = (
                 src_comment.node.text.decode("utf-8") if src_comment.node.text else None
@@ -180,21 +274,45 @@ class SourceAnalyzer:
             tagged_scope: TreeSitterNode | None = utils.find_associated_scope(
                 src_comment.node
             )
-            anchors = self.extract_anchors(text, filepath, tagged_scope, src_comment)
-            self.anchors.extend(anchors)
+            if self.get_need_id_refs:
+                anchors = self.extract_anchors(
+                    text, filepath, tagged_scope, src_comment
+                )
+                self.need_id_refs.extend(anchors)
 
-        logger.info(f"Source anchors extracted: {len(self.anchors)}")
+            if self.get_oneline_needs:
+                oneline_needs = self.extract_oneline_needs(
+                    text,
+                    filepath,
+                    tagged_scope,
+                    src_comment,
+                    self.oneline_comment_style,
+                )
+                self.oneline_needs.extend(oneline_needs)
 
-    def dump_anchors(self) -> None:
-        output_path = self.outdir / "anchors.json"
+        if self.get_need_id_refs:
+            logger.info(f"Need-id-refs extracted: {len(self.need_id_refs)}")
+        if self.get_oneline_needs:
+            logger.info(f"Oneline needs extracted: {len(self.oneline_needs)}")
+
+    def merge_marked_content(self) -> None:
+        self.all_marked_content.extend(self.need_id_refs)
+        self.all_marked_content.extend(self.oneline_needs)
+        self.all_marked_content.sort(key=lambda x: x.source_map["start"]["row"])
+
+    def dump_marked_content(self) -> None:
+        output_path = self.outdir / "marked_content.json"
         if not output_path.parent.exists():
             output_path.parent.mkdir(parents=True)
-        anchors = [anchor.to_dict() for anchor in self.anchors]
+        to_dump = [
+            marked_content.to_dict() for marked_content in self.all_marked_content
+        ]
         with output_path.open("w") as f:
-            json.dump(anchors, f)
-        logger.info(f"Source anchors dumped to {output_path}")
+            json.dump(to_dump, f)
+        logger.info(f"Marked content dumped to {output_path}")
 
     def run(self) -> None:
         self.create_src_objects()
-        self.extract_markers()
-        self.dump_anchors()
+        self.extract_marked_content()
+        self.merge_marked_content()
+        self.dump_marked_content()

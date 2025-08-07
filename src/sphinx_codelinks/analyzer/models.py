@@ -47,9 +47,9 @@ class Metadata:
     filepath: Path
     remote_url: str | None
     source_map: SourceMap
-    marker: str
     source_comment: SourceComment
     tagged_scope: TreeSitterNode | None
+    type: MarkedContentType
 
     def to_dict(self) -> dict[str, str | int | list[str]]:
         obj = self.__dict__.copy()
@@ -59,6 +59,8 @@ class Metadata:
             if self.tagged_scope and self.tagged_scope.text
             else None
         )
+        obj["type"] = self.type.value
+        del obj["tagged_scope"]
         del obj["source_comment"]
         return obj
 
@@ -67,8 +69,9 @@ class Metadata:
 
 
 @dataclass
-class SourceAnchor(Metadata):
+class NeedIdRefs(Metadata):
     need_ids: list[str]
+    marker: str
     type: MarkedContentType = field(init=False, default=MarkedContentType.need_id_refs)
 
 
