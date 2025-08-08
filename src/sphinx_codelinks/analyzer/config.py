@@ -23,37 +23,21 @@ class CommentElement(str, Enum):
     docstring = "expression_statement"
 
 
-class SourceAnalyzerConfigType(TypedDict, total=False):
-    src_dir: Path
+class NeedIdRefsConfigType(TypedDict):
     markers: list[str]
-    comment_style: CommentType
-    outdir: Path
 
 
 @dataclass
-class SourceAnalyzerConfig:
+class NeedIdRefsConfig:
     @classmethod
     def field_names(cls) -> set[str]:
         return {item.name for item in fields(cls)}
 
-    src_dir: Path = field(
-        default_factory=lambda: Path("./"), metadata={"schema": {"type": "string"}}
-    )
-    """The root of the source directory."""
     markers: list[str] = field(
-        default_factory=lambda: ["@"],
+        default_factory=lambda: ["@need-ids:"],
         metadata={"schema": {"type": "array", "items": {"type": "string"}}},
     )
     """The markers to extract need ids from"""
-    comment_style: CommentType = field(
-        default=CommentType.cpp,
-        metadata={"schema": {"type": "string", "enum": ["python", "cpp"]}},
-    )
-    """The language of the source files."""
-    outdir: Path = field(
-        default_factory=lambda: Path.cwd(), metadata={"schema": {"type": "string"}}
-    )
-    """The output directory."""
 
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
@@ -67,15 +51,61 @@ class SourceAnalyzerConfig:
         for _field_name in self.field_names():
             schema = self.get_schema(_field_name)
             value = getattr(self, _field_name)
-            if isinstance(value, Path):  # adapt to json schema restriction
-                value = str(value)
             try:
-                validate(instance=value, schema=schema)  # type: ignore[arg-type] # the library doesn't support typing
+                validate(instance=value, schema=schema)  # type: ignore[arg-type]  # validate has no type
             except ValidationError as e:
                 errors.append(
                     f"Schema validation error in field '{_field_name}': {e.message}"
                 )
         return errors
+
+
+class MarkedRstConfigType(TypedDict):
+    start_sequece: str
+    end_sequence: str
+
+
+@dataclass
+class MarkedRstConfig:
+    @classmethod
+    def field_names(cls) -> set[str]:
+        return {item.name for item in fields(cls)}
+
+    start_sequence: str = field(default="@rst", metadata={"schema": {"type": "string"}})
+    """Chars sequence to indicate the start of the rst text."""
+    end_sequence: str = field(
+        default="@endrst", metadata={"schema": {"type": "string"}}
+    )
+    """Chars sequence to indicate the end of the rst text."""
+
+    @classmethod
+    def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
+        _field = next(_field for _field in fields(cls) if _field.name is name)
+        if _field.metadata is not MISSING and "schema" in _field.metadata:
+            return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[explicit-any]
+        return None
+
+    def check_schema(self) -> list[str]:
+        errors = []
+        for _field_name in self.field_names():
+            schema = self.get_schema(_field_name)
+            value = getattr(self, _field_name)
+            try:
+                validate(instance=value, schema=schema)  # type: ignore[arg-type]  # validate has no type
+            except ValidationError as e:
+                errors.append(
+                    f"Schema validation error in field '{_field_name}': {e.message}"
+                )
+        return errors
+
+    def check_sequence_mutually_exclusive(self) -> list[str]:
+        errors = []
+        if self.start_sequence == self.end_sequence:
+            errors.append("start_sequence and end_sequence cannot be the same.")
+        return errors
+
+    def check_fields_configuration(self) -> list[str]:
+        return self.check_schema() + self.check_sequence_mutually_exclusive()
 
 
 class FieldConfig(TypedDict, total=False):
@@ -256,3 +286,125 @@ class OneLineCommentStyle:
             if _field["type"] == "list[str]":
                 pos_list_str.append(idx + 1)
         return pos_list_str
+
+
+class SourceAnalyzerConfigType(TypedDict, total=False):
+    src_files: list[Path]
+    src_dir: Path
+    outdir: Path
+    comment_style: CommentType
+    get_need_id_refs: bool
+    get_oneline_needs: bool
+    get_rst: bool
+    need_id_refs_config: NeedIdRefsConfig
+    marked_rst_config: MarkedRstConfig
+    oneline_comment_style: OneLineCommentStyle
+
+
+@dataclass
+class SourceAnalyzerConfig:
+    @classmethod
+    def field_names(cls) -> set[str]:
+        return {item.name for item in fields(cls)}
+
+    src_files: list[Path] = field(
+        metadata={"schema": {"type": "array", "items": {"type": "string"}}},
+    )
+    """A list of source files to be  processed."""
+    src_dir: Path = field(
+        default_factory=lambda: Path("./"), metadata={"schema": {"type": "string"}}
+    )
+
+    outdir: Path = field(
+        default=Path("output"), metadata={"schema": {"type": "string"}}
+    )
+    """The directory where  the virtual documents and their caches will be stored."""
+
+    comment_type: CommentType = field(
+        default=CommentType.cpp, metadata={"schema": {"type": "string"}}
+    )
+    """The type of comment to be processed."""
+
+    get_need_id_refs: bool = field(
+        default=True, metadata={"schema": {"type": "boolean"}}
+    )
+    """Whether to extract need id references from comments"""
+
+    get_oneline_needs: bool = field(
+        default=False, metadata={"schema": {"type": "boolean"}}
+    )
+    """Whether to extract oneline needs from comments"""
+
+    get_rst: bool = field(default=False, metadata={"schema": {"type": "boolean"}})
+    """Whether to extract rst texts from comments"""
+
+    need_id_refs_config: NeedIdRefsConfig = field(default_factory=NeedIdRefsConfig)
+    """Configuration for extracting need id references from comments."""
+
+    marked_rst_config: MarkedRstConfig = field(default_factory=MarkedRstConfig)
+    """Configuration for extracting rst texts from comments."""
+
+    oneline_comment_style: OneLineCommentStyle = field(
+        default_factory=OneLineCommentStyle
+    )
+    """Configuration for extracting oneline needs from comments."""
+
+    @classmethod
+    def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
+        _field = next(_field for _field in fields(cls) if _field.name is name)
+        if _field.metadata is not MISSING and "schema" in _field.metadata:
+            return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[explicit-any]
+        return None
+
+    def check_schema(self) -> list[str]:
+        errors = []
+        for _field_name in self.field_names():
+            schema = self.get_schema(_field_name)
+            if not schema:
+                continue
+            value = getattr(self, _field_name)
+            if isinstance(value, Path):  # adapt to json schema restriction
+                value = str(value)
+            try:
+                validate(instance=value, schema=schema)  # type: ignore[arg-type] # the library doesn't support typing
+            except ValidationError as e:
+                errors.append(
+                    f"Schema validation error in field '{_field_name}': {e.message}"
+                )
+        return errors
+
+    def check_markers_mutually_exclusive(self) -> list[str]:
+        errors = set()
+        markers = set()
+        markers.add(self.oneline_comment_style.start_sequence)
+        markers.add(self.oneline_comment_style.end_sequence)
+        if self.marked_rst_config.start_sequence in markers:
+            errors.add(
+                f"Marker {self.marked_rst_config.start_sequence} is defined multiple times"
+            )
+        else:
+            markers.add(self.marked_rst_config.start_sequence)
+        if self.marked_rst_config.end_sequence in markers:
+            errors.add(
+                f"Marker {self.marked_rst_config.end_sequence} is defined multiple times"
+            )
+        else:
+            markers.add(self.marked_rst_config.end_sequence)
+
+        for marker in self.need_id_refs_config.markers:
+            if marker in markers:
+                errors.add(f"Marker {marker} is defined multiple times")
+            else:
+                markers.add(marker)
+        return list(errors)
+
+    def check_fields_configuration(self) -> list[str]:
+        errors = []
+        if self.get_need_id_refs:
+            errors.extend(self.need_id_refs_config.check_schema())
+        if self.get_oneline_needs:
+            errors.extend(self.oneline_comment_style.check_fields_configuration())
+        if self.get_rst:
+            errors.extend(self.marked_rst_config.check_fields_configuration())
+        errors.extend(self.check_markers_mutually_exclusive())
+        return errors

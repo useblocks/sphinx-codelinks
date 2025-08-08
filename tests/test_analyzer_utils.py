@@ -300,7 +300,7 @@ def test_find_enclosing_scope_cpp(code, result, init_cpp_tree_sitter):
 
 
 @pytest.mark.parametrize(
-    ("code", "result"),
+    ("code", "num_comments", "result"),
     [
         (
             b"""
@@ -308,6 +308,7 @@ def test_find_enclosing_scope_cpp(code, result, init_cpp_tree_sitter):
                 void dummy_func1(){
                 }
             """,
+            1,
             "// @req-id: need_001",
         ),
         (
@@ -316,6 +317,7 @@ def test_find_enclosing_scope_cpp(code, result, init_cpp_tree_sitter):
                 // @req-id: need_001
                 }
             """,
+            1,
             "// @req-id: need_001",
         ),
         (
@@ -324,24 +326,27 @@ def test_find_enclosing_scope_cpp(code, result, init_cpp_tree_sitter):
                 void dummy_func1(){
                 }
             """,
+            1,
             "/* @req-id: need_001 */",
         ),
         (
             b"""
+                //  @req-id: need_001
                 //
-                //   @req-id: need_001
                 //
                 void dummy_func1(){
                 }
             """,
-            "/* @req-id: need_001 */",
+            3,
+            "//  @req-id: need_001",
         ),
     ],
 )
-def test_cpp_comment(code, result, tmp_path, init_cpp_tree_sitter):
+def test_cpp_comment(code, num_comments, result, init_cpp_tree_sitter):
     parser, query = init_cpp_tree_sitter
     comments = utils.extract_comments(code, parser, query)
-    assert len(comments) == 1
+    assert len(comments) == num_comments
+    comments.sort(key=lambda x: x.start_point.row)
     assert comments[0].text
     assert comments[0].text.decode("utf-8") == result
 

@@ -9,11 +9,7 @@ from typing import Any
 from tree_sitter import Node as TreeSitterNode
 
 from sphinx_codelinks.analyzer import utils
-from sphinx_codelinks.analyzer.config import (
-    COMMENT_FILETYPE,
-    CommentType,
-    OneLineCommentStyle,
-)
+from sphinx_codelinks.analyzer.config import OneLineCommentStyle, SourceAnalyzerConfig
 from sphinx_codelinks.analyzer.models import (
     MarkedContentType,
     MarkedRst,
@@ -27,7 +23,6 @@ from sphinx_codelinks.analyzer.oneline_parser import (
     OnelineParserInvalidWarning,
     oneline_parser,
 )
-from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
 
 # initialize logger
 logger = logging.getLogger(__name__)
@@ -50,56 +45,35 @@ class AnalyzerWarning:
 class SourceAnalyzer:
     warning_filepath: Path = Path("cached_warnings") / "codelinks_warnings.json"
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
-        src_dir: Path,
-        comment_type: CommentType = CommentType.cpp,
-        outdir: Path | None = None,
-        get_need_id_refs: bool = True,
-        get_oneline_needs: bool = False,
-        get_rst: bool = False,
-        markers: list[str] | None = None,
-        oneline_comment_style: OneLineCommentStyle | None = None,
+        analyzer_config: SourceAnalyzerConfig,
     ) -> None:
-        self.src_dir = src_dir
-        self.markers = markers if markers else ["@"]
-        self.comment_type = comment_type
-        self.outdir = outdir if outdir else src_dir
-        self.get_need_id_refs = get_need_id_refs
-        self.get_oneline_needs = get_oneline_needs
-        self.get_rst = get_rst
+        self.analyzer_config = analyzer_config
         self.src_files: list[SourceFile] = []
         self.src_comments: list[SourceComment] = []
         self.need_id_refs: list[NeedIdRefs] = []
         self.oneline_needs: list[OneLineNeed] = []
         self.marked_rst: list[MarkedRst] = []
         self.all_marked_content: list[NeedIdRefs | OneLineNeed | MarkedRst] = []
-        self.git_root: Path | None = utils.locate_git_root(src_dir)
+        self.git_root: Path | None = utils.locate_git_root(self.analyzer_config.src_dir)
         self.git_remote_url: str | None = (
             utils.get_remote_url(self.git_root) if self.git_root else None
         )
         self.git_commit_rev: str | None = (
             utils.get_current_rev(self.git_root) if self.git_root else None
         )
-        self.oneline_comment_style = (
-            oneline_comment_style if oneline_comment_style else OneLineCommentStyle()
-        )
         self.oneline_warnings: list[AnalyzerWarning] = []
-        self.warnings_path = self.outdir / SourceAnalyzer.warning_filepath
+        self.warnings_path = analyzer_config.outdir / SourceAnalyzer.warning_filepath
 
     def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
         """Load source files and extract their content."""
-        src_discovery = SourceDiscover(
-            self.src_dir,
-            file_types=COMMENT_FILETYPE[self.comment_type],
-            gitignore=False,
-        )
-        for src_path in src_discovery.source_paths:
+        for src_path in self.analyzer_config.src_files:
             with src_path.open("r") as f:
                 yield src_path, f.read().encode("utf8")
 
     def create_src_objects(self) -> None:
-        parser, query = utils.init_tree_sitter(self.comment_type)
+        parser, query = utils.init_tree_sitter(self.analyzer_config.comment_type)
 
         for src_path, src_string in self.get_src_strings():
             comments: list[TreeSitterNode] = utils.extract_comments(
@@ -108,7 +82,9 @@ class SourceAnalyzer:
             src_comments: list[SourceComment] = [
                 SourceComment(node) for node in comments
             ]
-            project_path: Path = self.git_root if self.git_root else self.src_dir
+            project_path: Path = (
+                self.git_root if self.git_root else self.analyzer_config.src_dir
+            )
             src_file = SourceFile(src_path.relative_to(project_path))
             src_file.add_comments(src_comments)
             self.src_files.append(src_file)
@@ -124,7 +100,7 @@ class SourceAnalyzer:
         lines = text.splitlines()
         row_offset = 0
         for line in lines:
-            for marker in self.markers:
+            for marker in self.analyzer_config.need_id_refs_config.markers:
                 marker_idx = line.find(marker)
                 if marker_idx == -1:
                     continue
@@ -322,33 +298,33 @@ class SourceAnalyzer:
             tagged_scope: TreeSitterNode | None = utils.find_associated_scope(
                 src_comment.node
             )
-            if self.get_need_id_refs:
+            if self.analyzer_config.get_need_id_refs:
                 anchors = self.extract_anchors(
                     text, filepath, tagged_scope, src_comment
                 )
                 self.need_id_refs.extend(anchors)
 
-            if self.get_oneline_needs:
+            if self.analyzer_config.get_oneline_needs:
                 oneline_needs = self.extract_oneline_needs(
                     text,
                     filepath,
                     tagged_scope,
                     src_comment,
-                    self.oneline_comment_style,
+                    self.analyzer_config.oneline_comment_style,
                 )
                 self.oneline_needs.extend(oneline_needs)
-            if self.get_rst:
+            if self.analyzer_config.get_rst:
                 marked_rst = self.extract_marked_rst(
                     text, filepath, tagged_scope, src_comment
                 )
                 if marked_rst:
                     self.marked_rst.append(marked_rst)
 
-        if self.get_need_id_refs:
+        if self.analyzer_config.get_need_id_refs:
             logger.info(f"Need-id-refs extracted: {len(self.need_id_refs)}")
-        if self.get_oneline_needs:
+        if self.analyzer_config.get_oneline_needs:
             logger.info(f"Oneline needs extracted: {len(self.oneline_needs)}")
-        if self.get_rst:
+        if self.analyzer_config.get_rst:
             logger.info(f"Marked rst extracted: {len(self.marked_rst)}")
 
     def merge_marked_content(self) -> None:
@@ -360,7 +336,7 @@ class SourceAnalyzer:
         )
 
     def dump_marked_content(self) -> None:
-        output_path = self.outdir / "marked_content.json"
+        output_path = self.analyzer_config.outdir / "marked_content.json"
         if not output_path.parent.exists():
             output_path.parent.mkdir(parents=True)
         to_dump = [
