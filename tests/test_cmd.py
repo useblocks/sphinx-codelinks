@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,24 @@ VDOC_CONFIG_TEMPLATE = {
 
 
 runner = CliRunner()
+
+
+@pytest.mark.parametrize(
+    ("options", "num_anchors"), [(["analyzer", str(TEST_DIR / "data" / "anchors")], 2)]
+)
+def test_analyzer(tmp_path: Path, options: list[str], num_anchors: int) -> None:
+    options.append("--outdir")
+    options.append(str(tmp_path))
+    result = runner.invoke(app, options)
+
+    output_path = tmp_path / "anchors.json"
+
+    assert output_path.exists()
+    assert result.exit_code == 0
+
+    with output_path.open("r") as f:
+        anchors = json.load(f)
+    assert len(anchors) == num_anchors
 
 
 @pytest.mark.parametrize(
@@ -246,4 +265,4 @@ def test_vdoc_config_negative(config_dict, output_lines, tmp_path: Path) -> None
     result = runner.invoke(app, options)
     assert result.exit_code != 0
     for line in output_lines:
-        assert line in result.stderr
+        assert line in result.stdout

@@ -7,6 +7,13 @@ from typing import Annotated, cast
 
 import typer
 
+from sphinx_codelinks.analyzer.config import (
+    MarkedRstConfig,
+    MarkedRstConfigType,
+    NeedIdRefsConfig,
+    NeedIdRefsConfigType,
+    SourceAnalyzerConfigFileType,
+)
 from sphinx_codelinks.source_discovery.config import SourceDiscoveryConfig
 from sphinx_codelinks.sphinx_extension.config import (
     SrcTraceProjectConfigFileType,
@@ -22,6 +29,94 @@ from sphinx_codelinks.virtual_docs.config import (
 app = typer.Typer(
     no_args_is_help=True, context_settings={"help_option_names": ["-h", "--help"]}
 )
+
+
+@app.command(no_args_is_help=True)
+def analyzer(
+    config: Annotated[
+        Path,
+        typer.Option(
+            "--config",
+            "-c",
+            help="The toml config file",
+            show_default=False,
+            dir_okay=False,
+            file_okay=True,
+            exists=True,
+        ),
+    ],
+) -> None:
+    """Analyze marked content in source code."""
+    data = load_src_analyzer_config_from_toml(config)
+
+    # errors: deque[str] = deque()
+
+    # # Get source_discovery configuration
+    # src_discovery_4_analyzer_dict: SrcDiscoveryConfigType4Analyzer | None = data.get(
+    #     "src_discovery"
+    # )
+    # if src_discovery_4_analyzer_dict:
+    #     src_dicovery_dict: SourceDiscoveryConfigType = {
+    #         ("file_types" if key == "comment_type" else key): (
+    #             COMMENT_FILETYPE[value] if key == "comment_type" else value
+    #         )
+    #         for key, value in src_discovery_4_analyzer_dict.items()
+    #     }
+    #     src_discovery_config = SourceDiscoveryConfig(**src_dicovery_dict)
+    # else:
+    #     src_discovery_config = SourceDiscoveryConfig()
+
+    # Get oneline_comment_style configuration
+    oneline_comment_style_dict: OneLineCommentStyleType | None = data.get(
+        "oneline_comment_style"
+    )
+    if oneline_comment_style_dict is None:
+        oneline_comment_style = OneLineCommentStyle()
+    else:
+        try:
+            oneline_comment_style = OneLineCommentStyle(**oneline_comment_style_dict)
+        except TypeError as e:
+            raise typer.BadParameter(
+                f"Invalid oneline comment style configuration: {e}"
+            ) from e
+
+    # Get need_id_refs configuration
+    need_id_refs_confg_dict: NeedIdRefsConfigType | None = data.get("need_id_refs")
+    if not need_id_refs_confg_dict:
+        need_id_refs_config = NeedIdRefsConfig()
+    else:
+        try:
+            need_id_refs_config = NeedIdRefsConfig(**need_id_refs_confg_dict)
+        except TypeError as e:
+            raise typer.BadParameter(
+                f"Invalid oneline comment style configuration: {e}"
+            ) from e
+
+    # Get marked_rst configuration
+    marked_rst_config_dict: MarkedRstConfigType | None = data.get("marked_rst")
+    if not marked_rst_config_dict:
+        marked_rst_config = MarkedRstConfig()
+    else:
+        try:
+            marked_rst_config = MarkedRstConfig(**marked_rst_config_dict)
+        except TypeError as e:
+            raise typer.BadParameter(
+                f"Invalid oneline comment style configuration: {e}"
+            ) from e
+
+    non_root_configs = {
+        "source_discovery",
+        "oneline_comment_style",
+        "need_id_refs",
+        "marked_rst",
+    }
+    # Get root config
+    src_analyzer_dict = {
+        key: value for key, value in data.items() if key not in non_root_configs
+    }
+    src_analyzer_dict["need_id_refs_config"] = need_id_refs_config
+    src_analyzer_dict["marked_rst_config"] = marked_rst_config
+    src_analyzer_dict["oneline_comment_style"] = oneline_comment_style
 
 
 @app.command(no_args_is_help=True)
@@ -206,6 +301,19 @@ def load_config_from_toml(
         ) from e
 
     return cast(SrcTraceProjectConfigFileType, toml_data)
+
+
+def load_src_analyzer_config_from_toml(toml_file: Path) -> SourceAnalyzerConfigFileType:
+    try:
+        with toml_file.open("rb") as f:
+            toml_data = tomllib.load(f)
+
+    except Exception as e:
+        raise Exception(
+            f"Failed to load Source Analyzer configuration from {toml_file}"
+        ) from e
+
+    return cast(SourceAnalyzerConfigFileType, toml_data)
 
 
 if __name__ == "__main__":

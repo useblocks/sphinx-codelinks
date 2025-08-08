@@ -1,0 +1,23 @@
+[
+  {
+    "filepath": "tests/data/anchors/dummy_1.cpp",
+    "remote_url": null,
+    "lineno": 3,
+    "marker": "@req-id:",
+    "need_ids": [
+      "need_001",
+      "need_002",
+      "need_003",
+      "need_004"
+    ]
+  },
+  {
+    "filepath": "tests/data/anchors/dummy_1.cpp",
+    "remote_url": null,
+    "lineno": 8,
+    "marker": "@req-id:",
+    "need_ids": [
+      "need_003"
+    ]
+  }
+]

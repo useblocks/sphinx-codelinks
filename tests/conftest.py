@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from docutils.nodes import document
@@ -63,3 +64,24 @@ def snapshot_doctree(snapshot):
     except AttributeError:
         # fallback for older versions of pytest-snapshot
         return snapshot.use_extension(DoctreeSnapshotExtension)
+
+
+class AnchorsSnapshotExtension(SingleFileSnapshotExtension):
+    _write_mode = WriteMode.TEXT
+    _file_extension = "anchors.json"
+
+    def serialize(self, data, **_kwargs):
+        if not isinstance(data, list):
+            raise TypeError(f"Expected list, got {type(data)}")
+        anchors = data
+
+        return json.dumps(anchors, indent=2)
+
+
+@pytest.fixture
+def snapshot_anchors(snapshot):
+    """Snapshot fixture for reqif.
+
+    Sanitize the reqif, to make the snapshots reproducible.
+    """
+    return snapshot.with_defaults(extension_class=AnchorsSnapshotExtension)
