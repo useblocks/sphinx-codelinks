@@ -6,6 +6,7 @@ from jsonschema import ValidationError, validate
 from sphinx.application import Sphinx
 from sphinx.config import Config as _SphinxConfig
 
+from sphinx_codelinks.analyzer.config import MarkedRstConfigType, NeedIdRefsConfigType
 from sphinx_codelinks.source_discovery.config import (
     SourceDiscoveryConfig,
     SourceDiscoveryConfigType,
@@ -29,7 +30,7 @@ class SourceTracingLineHref:
 file_lineno_href = SourceTracingLineHref()
 
 
-class SrcTraceProjectConfigFileType(TypedDict):
+class SrcTraceProjectConfigFileType(TypedDict, total=False):
     # only support C/C++ for now
     comment_type: Literal["cpp", "hpp", "c", "h"]
     src_dir: str
@@ -38,6 +39,8 @@ class SrcTraceProjectConfigFileType(TypedDict):
     include: list[str]
     gitignore: bool
     oneline_comment_style: OneLineCommentStyleType
+    need_id_refs: NeedIdRefsConfigType
+    marked_rst: MarkedRstConfigType
 
 
 class SrcTraceProjectConfigType(TypedDict):

@@ -10,7 +10,7 @@ from giturlparse import parse  # type: ignore[import-untyped]
 from tree_sitter import Language, Parser, Point, Query, QueryCursor
 from tree_sitter import Node as TreeSitterNode
 
-from sphinx_codelinks.analyzer.config import CommentElement, CommentType
+from sphinx_codelinks.analyzer.config import CommentCategory, CommentType
 
 # initialize logger
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ def find_next_scope(node: TreeSitterNode) -> TreeSitterNode | None:
 
 def find_associated_scope(node: TreeSitterNode) -> TreeSitterNode | None:
     """Find the associated scope of a comment."""
-    if node.type == CommentElement.docstring:
+    if node.type == CommentCategory.docstring:
         # Only for python's docstring
         return find_enclosing_scope(node)
     # General comments regardless of comment types

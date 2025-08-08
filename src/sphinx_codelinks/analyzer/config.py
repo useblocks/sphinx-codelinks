@@ -18,9 +18,17 @@ ESCAPE = "\\"
 SUPPORTED_COMMENT_TYPES = {"c", "h", "cpp", "hpp"}
 
 
-class CommentElement(str, Enum):
+class CommentCategory(str, Enum):
     comment = "comment"
     docstring = "expression_statement"
+
+
+class SrcDiscoveryConfigType4Analyzer(TypedDict, total=False):
+    src_dir: Path
+    exclude: list[str]
+    include: list[str]
+    gitignore: bool
+    comment_type: CommentType
 
 
 class NeedIdRefsConfigType(TypedDict):
@@ -61,7 +69,7 @@ class NeedIdRefsConfig:
 
 
 class MarkedRstConfigType(TypedDict):
-    start_sequece: str
+    start_sequence: str
     end_sequence: str
 
 
@@ -286,6 +294,16 @@ class OneLineCommentStyle:
             if _field["type"] == "list[str]":
                 pos_list_str.append(idx + 1)
         return pos_list_str
+
+
+class SourceAnalyzerConfigFileType(TypedDict, total=False):
+    src_discovery: SrcDiscoveryConfigType4Analyzer
+    get_need_id_refs: bool
+    get_oneline_needs: bool
+    get_rst: bool
+    need_id_refs: NeedIdRefsConfigType
+    marked_rst: MarkedRstConfigType
+    oneline_comment_style: OneLineCommentStyleType
 
 
 class SourceAnalyzerConfigType(TypedDict, total=False):
