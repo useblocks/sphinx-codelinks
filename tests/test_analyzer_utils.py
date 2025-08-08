@@ -346,7 +346,7 @@ def test_cpp_comment(code, result, tmp_path, init_cpp_tree_sitter):
 
 
 @pytest.mark.parametrize(
-    ("code", "result"),
+    ("code", "num_comments", "result"),
     [
         (
             b"""
@@ -354,6 +354,7 @@ def test_cpp_comment(code, result, tmp_path, init_cpp_tree_sitter):
                 def dummy_func1():
                     pass
             """,
+            1,
             "# @req-id: need_001",
         ),
         (
@@ -362,7 +363,18 @@ def test_cpp_comment(code, result, tmp_path, init_cpp_tree_sitter):
                     # @req-id: need_001
                     pass
             """,
+            1,
             "# @req-id: need_001",
+        ),
+        (
+            b"""
+                # single line comment
+                # @req-id: need_001
+                def dummy_func1():
+                    pass
+            """,
+            2,
+            "# single line comment",
         ),
         (
             b"""
@@ -372,6 +384,7 @@ def test_cpp_comment(code, result, tmp_path, init_cpp_tree_sitter):
                     '''
                     pass
             """,
+            1,
             "'''\n                    @req-id: need_001\n                    '''",
         ),
         (
@@ -381,14 +394,16 @@ def test_cpp_comment(code, result, tmp_path, init_cpp_tree_sitter):
                     # @req-id: need_001
                     pass
             """,
+            1,
             "# @req-id: need_001",
         ),
     ],
 )
-def test_python_comment(code, result, init_python_tree_sitter):
+def test_python_comment(code, num_comments, result, init_python_tree_sitter):
     parser, query = init_python_tree_sitter
     comments: list[TreeSitterNode] = utils.extract_comments(code, parser, query)
-    assert len(comments) == 1
+    comments.sort(key=lambda x: x.start_point.row)
+    assert len(comments) == num_comments
     assert comments[0].text
     assert comments[0].text.decode("utf-8") == result
 
@@ -516,6 +531,19 @@ def test_get_current_rev(git_repo: tuple[Path, str]) -> None:
 *
 """,
             ["*"],
+            """
+    some text in a comment
+    some text in a comment
+
+""",
+        ),
+        (
+            """
+#    some text in a comment
+#    some text in a comment
+#
+""",
+            ["#"],
             """
     some text in a comment
     some text in a comment
