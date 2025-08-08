@@ -16,6 +16,7 @@ from sphinx_codelinks.analyzer.config import (
 )
 from sphinx_codelinks.analyzer.models import (
     MarkedContentType,
+    MarkedRst,
     NeedIdRefs,
     OneLineNeed,
     SourceComment,
@@ -71,7 +72,8 @@ class SourceAnalyzer:
         self.src_comments: list[SourceComment] = []
         self.need_id_refs: list[NeedIdRefs] = []
         self.oneline_needs: list[OneLineNeed] = []
-        self.all_marked_content: list[NeedIdRefs | OneLineNeed] = []
+        self.marked_rst: list[MarkedRst] = []
+        self.all_marked_content: list[NeedIdRefs | OneLineNeed | MarkedRst] = []
         self.git_root: Path | None = utils.locate_git_root(src_dir)
         self.git_remote_url: str | None = (
             utils.get_remote_url(self.git_root) if self.git_root else None
@@ -259,6 +261,52 @@ class SourceAnalyzer:
             )
         return oneline_needs
 
+    def extract_marked_rst(
+        self,
+        text: str,
+        filepath: Path,
+        tagged_scope: TreeSitterNode | None,
+        src_comment: SourceComment,
+    ) -> MarkedRst | None:
+        """Extract marked rst from a comment.
+
+        Presumably, only one marked rst text in a comment.
+        """
+        extracted_rst = utils.extract_rst(text, "@rst", "@endrst")
+        if not extracted_rst:
+            return None
+        if os.linesep in extracted_rst["rst_text"]:
+            rst_text = utils.remove_leading_sequences(extracted_rst["rst_text"], ["*"])
+        else:
+            rst_text = extracted_rst["rst_text"]
+        lineno = src_comment.node.start_point.row + extracted_rst["row_offset"] + 1
+        remote_url = self.git_remote_url
+        if self.git_remote_url and self.git_commit_rev:
+            remote_url = utils.form_https_url(
+                self.git_remote_url,
+                self.git_commit_rev,
+                filepath,
+                lineno,
+            )
+        source_map: SourceMap = {
+            "start": {
+                "row": lineno - 1,
+                "column": extracted_rst["start_idx"],
+            },
+            "end": {
+                "row": lineno - 1,
+                "column": extracted_rst["end_idx"],
+            },
+        }
+        return MarkedRst(
+            filepath,
+            remote_url,
+            source_map,
+            src_comment,
+            tagged_scope,
+            rst_text,
+        )
+
     def extract_marked_content(self) -> None:
         for src_comment in self.src_comments:
             text = (
@@ -289,16 +337,27 @@ class SourceAnalyzer:
                     self.oneline_comment_style,
                 )
                 self.oneline_needs.extend(oneline_needs)
+            if self.get_rst:
+                marked_rst = self.extract_marked_rst(
+                    text, filepath, tagged_scope, src_comment
+                )
+                if marked_rst:
+                    self.marked_rst.append(marked_rst)
 
         if self.get_need_id_refs:
             logger.info(f"Need-id-refs extracted: {len(self.need_id_refs)}")
         if self.get_oneline_needs:
             logger.info(f"Oneline needs extracted: {len(self.oneline_needs)}")
+        if self.get_rst:
+            logger.info(f"Marked rst extracted: {len(self.marked_rst)}")
 
     def merge_marked_content(self) -> None:
         self.all_marked_content.extend(self.need_id_refs)
         self.all_marked_content.extend(self.oneline_needs)
-        self.all_marked_content.sort(key=lambda x: x.source_map["start"]["row"])
+        self.all_marked_content.extend(self.marked_rst)
+        self.all_marked_content.sort(
+            key=lambda x: (x.filepath, x.source_map["start"]["row"])
+        )
 
     def dump_marked_content(self) -> None:
         output_path = self.outdir / "marked_content.json"

@@ -1,7 +1,9 @@
 from collections.abc import ByteString, Callable
 import configparser
 import logging
+import os
 from pathlib import Path
+from typing import TypedDict
 from urllib.request import pathname2url
 
 from giturlparse import parse  # type: ignore[import-untyped]
@@ -191,18 +193,68 @@ def remove_leading_sequences(text: str, leading_sequences: list[str]) -> str:
     return "".join(no_comment_lines)
 
 
+class ExtractedRstType(TypedDict):
+    rst_text: str
+    row_offset: int
+    start_idx: int
+    end_idx: int
+
+
 def extract_rst(
     text: str, start_marker: str, end_marker: str
-) -> tuple[str, int, int, int] | None:
-    """Extract rst from a comment."""
+) -> ExtractedRstType | None:
+    """Extract rst from a comment.
+
+    Two use cases:
+    1. Start_marker and end_marker one the same line.
+
+    The rst text is wrapped by start and the end markers on the same line,
+    so, there is no need to remove the leading chars.ArithmeticError
+    E.g.
+    @rst  .. admonition:: title here @endrst
+
+    2. Start_marker and end_marker in different lines.
+
+    The rst text is expected to start from the next line of the start_marker
+    and ends at he previous line of the end_marker.
+    E.g.
+    @rst
+    .. admonition:: title here
+      :collapsible: open
+
+      This example is collapsible, and initially open.
+    @endrst
+    """
     start_idx = text.find(start_marker)
     end_idx = text.rfind(end_marker)
     if start_idx == -1 or end_idx == -1:
         return None
-    rst_text = text[start_idx + len(start_marker) : end_idx - len(end_marker)]
+    rst_text = text[start_idx + len(start_marker) : end_idx]
     row_offset = len(text[:start_idx].splitlines())
     if not rst_text.strip():
         # empty string is out of the interest
         return None
+    if os.linesep not in rst_text:
+        # single line rst text
+        oneline_rst: ExtractedRstType = {
+            "rst_text": rst_text,
+            "row_offset": row_offset,
+            "start_idx": start_idx + len(start_marker),
+            "end_idx": end_idx,
+        }
+        return oneline_rst
 
-    return rst_text, row_offset, start_idx, end_idx
+    # multiline rst text
+    first_newline_idx = rst_text.find(os.linesep)
+    rst_text = rst_text[first_newline_idx + len(os.linesep) :]
+    multiline_rst: ExtractedRstType = {
+        "rst_text": rst_text,
+        "row_offset": row_offset,
+        "start_idx": start_idx
+        + len(start_marker)
+        + first_newline_idx
+        + len(os.linesep),
+        "end_idx": end_idx,
+    }
+
+    return multiline_rst

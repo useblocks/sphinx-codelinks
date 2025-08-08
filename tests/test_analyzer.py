@@ -11,6 +11,7 @@ def test_analyzer(tmp_path, snapshot_anchors):
         outdir=tmp_path,
         get_need_id_refs=True,
         get_oneline_needs=True,
+        get_rst=True,
         markers=["@need-ids:"],
     )
     anaylzer.git_remote_url = None

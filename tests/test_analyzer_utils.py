@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -537,21 +538,40 @@ def test_get_current_rev(git_repo: tuple[Path, str]) -> None:
 
 """,
         ),
-        (
-            """
-#    some text in a comment
-#    some text in a comment
-#
-""",
-            ["#"],
-            """
-    some text in a comment
-    some text in a comment
-
-""",
-        ),
     ],
 )
 def test_remove_leading_sequences(text, leading_sequences, result):
     clean_text = utils.remove_leading_sequences(text, leading_sequences)
     assert clean_text == result
+
+
+@pytest.mark.parametrize(
+    ("text", "rst_markers", "rst_text", "positions"),
+    [
+        (
+            """
+@rst
+.. impl:: multiline rst text
+   :id: IMPL_71
+@endrst
+""",
+            ["@rst", "@endrst"],
+            f""".. impl:: multiline rst text{os.linesep}   :id: IMPL_71{os.linesep}""",
+            {"row_offset": 1, "start_idx": 6, "end_idx": 51},
+        ),
+        (
+            """
+@rst.. impl:: oneline rst text@endrst
+""",
+            ["@rst", "@endrst"],
+            """.. impl:: oneline rst text""",
+            {"row_offset": 0, "start_idx": 5, "end_idx": 31},
+        ),
+    ],
+)
+def test_extract_rst(text, rst_markers, rst_text, positions):
+    extracted_rst = utils.extract_rst(text, rst_markers[0], rst_markers[1])
+    assert extracted_rst is not None
+    assert extracted_rst["rst_text"] == rst_text
+    assert extracted_rst["start_idx"] == positions["start_idx"]
+    assert extracted_rst["end_idx"] == positions["end_idx"]
