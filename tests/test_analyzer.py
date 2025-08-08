@@ -1,18 +1,30 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from sphinx_codelinks.analyzer.analyzer import SourceAnalyzer
-from sphinx_codelinks.analyzer.config import COMMENT_FILETYPE, SourceAnalyzerConfig
-from sphinx_codelinks.source_discovery.source_discover import SourceDiscover
+from sphinx_codelinks.analyzer.config import SourceAnalyzerConfig
+
+TEST_DATA_DIR = Path(__file__).parent.parent / "tests" / "data"
 
 
-def test_analyzer(tmp_path, snapshot_anchors):
-    src_dir = Path(__file__).parent.parent / "tests" / "data"
-    src_discovery = SourceDiscover(
-        src_dir, gitignore=False, file_types=COMMENT_FILETYPE["cpp"]
-    )
+@pytest.mark.parametrize(
+    ("src_dir", "src_paths"),
+    [
+        (
+            TEST_DATA_DIR,
+            [
+                TEST_DATA_DIR / "oneline_comment_default" / "default_oneliners.c",
+                TEST_DATA_DIR / "need_id_refs" / "dummy_1.cpp",
+                TEST_DATA_DIR / "marked_rst" / "dummy_1.cpp",
+            ],
+        )
+    ],
+)
+def test_analyzer(src_dir, src_paths, tmp_path, snapshot_anchors):
     src_anaylizer_config = SourceAnalyzerConfig(
-        src_files=src_discovery.source_paths,
+        src_files=src_paths,
         src_dir=src_dir,
         outdir=tmp_path,
         get_need_id_refs=True,
