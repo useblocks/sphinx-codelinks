@@ -5,7 +5,7 @@ A Sphinx extension for discovering, linking, and documenting source code across 
 ## Features
 
 - **Source Discovery**: Automatically discover source files in your project
-- **Virtual Documentation**: Generate documentation from code without modifying source files
+- **Analyse**: Parse source codes and extract specified markers with their metadata
 - **Code Linking**: Create intelligent links between code elements
 - **Sphinx Integration**: Seamless integration with existing Sphinx documentation
 
@@ -28,7 +28,7 @@ Full documentation: https://codelinks.useblocks.com
 ## Components
 
 - **Source Discovery** ([`src/sphinx_codelinks/source_discover`](src/sphinx_codelinks/source_discover)): Code analysis and discovery
-- **Virtual Docs** ([`src/sphinx_codelinks/virtual_docs`](src/sphinx_codelinks/virtual_docs)): Documentation generation
+- **Analyse** ([`src/sphinx_codelinks/analyse`](src/sphinx_codelinks/analyse)): Documentation generation
 - **Sphinx Extension** ([`src/sphinx_codelinks/sphinx_extension`](src/sphinx_codelinks/sphinx_extension)): Sphinx integration
 - **Command Line** ([`src/sphinx_codelinks/cmd.py`](src/sphinx_codelinks/cmd.py)): CLI interface
 
