@@ -2,7 +2,7 @@ from collections import deque
 from os import linesep
 from pathlib import Path
 import tomllib
-from typing import Annotated, cast
+from typing import Annotated, TypeAlias, cast
 
 import typer
 
@@ -13,6 +13,8 @@ from sphinx_codelinks.config import (
     CodeLinksProjectConfigType,
     generate_project_configs,
 )
+from sphinx_codelinks.logger import logger
+from sphinx_codelinks.needextend_bridge import convert_marked_content
 from sphinx_codelinks.source_discover.config import (
     CommentType,
     SourceDiscoverConfig,
@@ -23,6 +25,30 @@ from sphinx_codelinks.source_discover.source_discover import SourceDiscover
 app = typer.Typer(
     no_args_is_help=True, context_settings={"help_option_names": ["-h", "--help"]}
 )
+
+
+OptVerbose: TypeAlias = Annotated[  # noqa: UP040   # has to be TypeAlias
+    bool,
+    typer.Option(
+        ...,
+        "-v",
+        "--verbose",
+        is_flag=True,
+        help="Show debug information",
+        rich_help_panel="Logging",
+    ),
+]
+OptQuiet: TypeAlias = Annotated[  # noqa: UP040 # has to be TypeAlias
+    bool,
+    typer.Option(
+        ...,
+        "-q",
+        "--quiet",
+        is_flag=True,
+        help="Only show errors and warnings",
+        rich_help_panel="Logging",
+    ),
+]
 
 
 @app.command(no_args_is_help=True)
