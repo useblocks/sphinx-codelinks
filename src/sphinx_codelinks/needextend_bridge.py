@@ -40,19 +40,31 @@ class MarkedContentSchema:
             "schema": {
                 "type": "object",
                 "properties": {
-                    "row": {"type": "integer"},
-                    "column": {"type": "integer"},
+                    "start": {
+                        "type": "object",
+                        "properties": {
+                            "row": {"type": "integer"},
+                            "column": {"type": "integer"},
+                        },
+                        "required": ["row", "column"],
+                    },
+                    "end": {
+                        "type": "object",
+                        "properties": {
+                            "row": {"type": "integer"},
+                            "column": {"type": "integer"},
+                        },
+                        "required": ["row", "column"],
+                    },
                 },
-                "required": ["row", "column"],
+                "required": ["start", "end"],
                 "additionalProperties": False,
             }
         }
     )
     """Coordinate of the marked content in a file"""
 
-    tagged_scope: str | None = field(
-        metadata={"schema": {"type": "string", "nullable": True}}
-    )
+    tagged_scope: str | None = field(metadata={"schema": {"type": ["string", "null"]}})
     """The scoped tagged by the marked content"""
 
     type: MarkedContentType = field(
@@ -66,20 +78,20 @@ class MarkedContentSchema:
     """Type of the marked content."""
 
     marker: str | None = field(
-        default=None, metadata={"schema": {"type": "string", "nullable": True}}
+        default=None, metadata={"schema": {"type": ["string", "null"]}}
     )
     """Marker of the marked content."""
 
     need_ids: list[str] | None = field(
         default=None,
-        metadata={"schema": {"type": "array", "items": {"type": "string"}}},
+        metadata={"schema": {"type": ["array", "null"], "items": {"type": "string"}}},
     )
     """Need id refs which is associated to the need items in the documentation."""
     need: dict[str, str | list[str]] | None = field(
         default=None,
         metadata={
             "schema": {
-                "type": "object",
+                "type": ["object", "null"],
                 "properties": {"title": {"type": "string"}, "id": {"title": "string"}},
                 "required": ["title", "id"],
                 "additionalProperties": True,
@@ -89,7 +101,7 @@ class MarkedContentSchema:
     """Definition of a need item"""
 
     rst: str | None = field(
-        default=None, metadata={"schema": {"type": "string", "nullable": True}}
+        default=None, metadata={"schema": {"type": ["string", "null"]}}
     )
     """Extracted rst text."""
 
@@ -151,7 +163,7 @@ class MarkedObjType(TypedDict):
     rst: str | None
 
 
-def convert_makred_content(
+def convert_marked_content(
     jsonpath: Path, outdir: Path, remote_url_field: str = "remote_url"
 ) -> None:
     """Convert marked objects extracted by anaylse CLI to needextend in RST"""
@@ -172,7 +184,7 @@ def convert_makred_content(
         obj_warnings.extend(schema.check_schema())
         obj_warnings.extend(schema.check_conditional_required_fields())
         if obj_warnings:
-            obj_warnings.appendleft(f"Marked object {obj} has the following warnings:")
+            obj_warnings.appendleft(f"{obj} has the following warnings:")
             warnings.extend(list(obj_warnings))
 
     if warnings:
@@ -193,3 +205,5 @@ def convert_makred_content(
     needextend_path = outdir / "needextend.rst"
     with needextend_path.open("w") as f:
         f.writelines(needextend_texts)
+
+    logger.info(f"Generated needextend.rst in {needextend_path}")
