@@ -3,6 +3,8 @@
 Directive
 =========
 
+.. Note:: ``src-trace`` directive currently only supports :ref:`one-line need definition <oneline>`.
+
 ``CodeLinks`` provides ``src-trace`` directive and it can be used in the following ways:
 
 .. code-block:: rst
