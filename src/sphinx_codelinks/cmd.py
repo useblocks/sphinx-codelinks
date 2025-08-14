@@ -4,7 +4,7 @@ from enum import Enum
 from os import linesep
 from pathlib import Path
 import tomllib
-from typing import Annotated, cast
+from typing import Annotated, TypeAlias, cast
 
 import typer
 
@@ -22,6 +22,8 @@ from sphinx_codelinks.analyse.config import (
     SourceAnalyseConfigType,
     SrcDiscoverConfigType4Analyse,
 )
+from sphinx_codelinks.logger import logger
+from sphinx_codelinks.needextend_bridge import convert_marked_content
 from sphinx_codelinks.source_discover.config import (
     SourceDiscoverConfig,
     SourceDiscoverConfigType,
@@ -32,6 +34,30 @@ from sphinx_codelinks.sphinx_extension.config import SrcTraceProjectConfigFileTy
 app = typer.Typer(
     no_args_is_help=True, context_settings={"help_option_names": ["-h", "--help"]}
 )
+
+
+OptVerbose: TypeAlias = Annotated[  # noqa: UP040   # has to be TypeAlias
+    bool,
+    typer.Option(
+        ...,
+        "-v",
+        "--verbose",
+        is_flag=True,
+        help="Show debug information",
+        rich_help_panel="Logging",
+    ),
+]
+OptQuiet: TypeAlias = Annotated[  # noqa: UP040 # has to be TypeAlias
+    bool,
+    typer.Option(
+        ...,
+        "-q",
+        "--quiet",
+        is_flag=True,
+        help="Only show errors and warnings",
+        rich_help_panel="Logging",
+    ),
+]
 
 
 @app.command(no_args_is_help=True)
@@ -210,6 +236,49 @@ def discover(
     typer.echo(f"{len(source_discover.source_paths)} files discovered")
     for file_path in source_discover.source_paths:
         typer.echo(file_path)
+
+
+@app.command(no_args_is_help=True)
+def bridge(
+    jsonpath: Annotated[
+        Path,
+        typer.Argument(
+            ...,
+            help="Path of the JSON file which contains the extracted markers",
+            show_default=False,
+            dir_okay=False,
+            file_okay=True,
+            exists=True,
+            resolve_path=True,
+        ),
+    ],
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            "-o",
+            help="The output directory for needextend.rst",
+            show_default=True,
+            dir_okay=True,
+            file_okay=False,
+            exists=True,
+        ),
+    ] = Path.cwd(),  # noqa: B008  # to show default value in this CLI
+    remote_url_field: Annotated[
+        str,
+        typer.Option(
+            "--remote-url-field",
+            "-r",
+            help="The field name for the remote url",
+            show_default=True,
+        ),
+    ] = "remote_url",  # to show default value in this CLI
+    verbose: OptVerbose = False,
+    quiet: OptQuiet = False,
+) -> None:
+    """Generate needextend.rst from the extracted obj in JSON."""
+    logger.configure(verbose, quiet)
+    convert_marked_content(jsonpath, outdir, remote_url_field)
 
 
 def load_config_from_toml(
