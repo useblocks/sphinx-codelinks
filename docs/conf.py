@@ -63,6 +63,7 @@ html_theme_options = {
     "light_logo": "sphinx-codelinks-logo_light.svg",
     "dark_logo": "sphinx-codelinks-logo_dark.svg",
 }
+html_context = {"repository": "useblocks/sphinx-codelinks"}
 html_css_files = ["furo.css"]
 
 src_trace_config_from_toml = "./src_trace.toml"
