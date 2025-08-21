@@ -1,4 +1,5 @@
 from collections import deque
+from enum import Enum
 from os import linesep
 from pathlib import Path
 import tomllib
@@ -6,6 +7,7 @@ from typing import Annotated, TypeAlias, cast
 
 import typer
 
+from sphinx_codelinks.analyse.models import MarkedContentType
 from sphinx_codelinks.analyse.projects import AnalyseProjects
 from sphinx_codelinks.config import (
     CodeLinksConfig,
@@ -14,7 +16,7 @@ from sphinx_codelinks.config import (
     generate_project_configs,
 )
 from sphinx_codelinks.logger import logger
-from sphinx_codelinks.needextend_bridge import convert_marked_content
+from sphinx_codelinks.needextend_write import convert_marked_content
 from sphinx_codelinks.source_discover.config import (
     CommentType,
     SourceDiscoverConfig,
@@ -25,7 +27,10 @@ from sphinx_codelinks.source_discover.source_discover import SourceDiscover
 app = typer.Typer(
     no_args_is_help=True, context_settings={"help_option_names": ["-h", "--help"]}
 )
-
+write_app = typer.Typer(
+    help="Export marked content to other formats", no_args_is_help=True
+)
+app.add_typer(write_app, name="write", rich_help_panel="Sub-menus")
 
 OptVerbose: TypeAlias = Annotated[  # noqa: UP040   # has to be TypeAlias
     bool,
@@ -216,8 +221,13 @@ def discover(
         typer.echo(file_path)
 
 
-@app.command(no_args_is_help=True)
-def bridge(
+class SupportedMarkerTypes(str, Enum):
+    need = "need"
+    need_id_refs = "need-id-refs"
+
+
+@write_app.command("rst", no_args_is_help=True)
+def write_rst(  # noqa: PLR0913  # for CLI, so it takes as many as it requires
     jsonpath: Annotated[
         Path,
         typer.Argument(
@@ -230,18 +240,27 @@ def bridge(
             resolve_path=True,
         ),
     ],
-    outdir: Annotated[
+    types: Annotated[
+        list[SupportedMarkerTypes],
+        typer.Option(
+            "--types",
+            "-t",
+            help="The types of marked content to be exported",
+            show_default=True,
+        ),
+    ] = [SupportedMarkerTypes.need_id_refs],  # noqa: B006  # to show the default value on CLI
+    outpath: Annotated[
         Path,
         typer.Option(
             "--outdir",
             "-o",
-            help="The output directory for needextend.rst",
+            help="The output path for needextend.rst",
             show_default=True,
-            dir_okay=True,
-            file_okay=False,
-            exists=True,
+            dir_okay=False,
+            file_okay=True,
+            exists=False,
         ),
-    ] = Path.cwd(),  # noqa: B008  # to show default value in this CLI
+    ] = Path("needextend.rst"),
     remote_url_field: Annotated[
         str,
         typer.Option(
@@ -251,12 +270,23 @@ def bridge(
             show_default=True,
         ),
     ] = "remote_url",  # to show default value in this CLI
+    title: Annotated[
+        str | None,
+        typer.Option(
+            "--title",
+            "-t",
+            help="Give the title to the generated RST file",
+            show_default=True,
+        ),
+    ] = None,  # to show default value in this CLI
     verbose: OptVerbose = False,
     quiet: OptQuiet = False,
 ) -> None:
     """Generate needextend.rst from the extracted obj in JSON."""
     logger.configure(verbose, quiet)
-    convert_marked_content(jsonpath, outdir, remote_url_field)
+    convert_marked_content(
+        jsonpath, outpath, remote_url_field, cast(list[MarkedContentType], types), title
+    )
 
 
 def load_config_from_toml(toml_file: Path) -> CodeLinksConfigType:
