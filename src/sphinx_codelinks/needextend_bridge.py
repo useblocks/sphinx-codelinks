@@ -168,9 +168,14 @@ def convert_marked_content(
 ) -> None:
     """Convert marked objects extracted by anaylse CLI to needextend in RST"""
     with jsonpath.open("r") as f:
-        marked_objs = json.load(f)
+        marked_content = json.load(f)
 
     warnings = []
+
+    # flatten objects
+    marked_objs: list[MarkedObjType] = [
+        obj for objs in marked_content.values() for obj in objs
+    ]
 
     need_id_refs = [
         obj

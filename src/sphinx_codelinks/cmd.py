@@ -216,6 +216,49 @@ def discover(
         typer.echo(file_path)
 
 
+@app.command(no_args_is_help=True)
+def bridge(
+    jsonpath: Annotated[
+        Path,
+        typer.Argument(
+            ...,
+            help="Path of the JSON file which contains the extracted markers",
+            show_default=False,
+            dir_okay=False,
+            file_okay=True,
+            exists=True,
+            resolve_path=True,
+        ),
+    ],
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            "-o",
+            help="The output directory for needextend.rst",
+            show_default=True,
+            dir_okay=True,
+            file_okay=False,
+            exists=True,
+        ),
+    ] = Path.cwd(),  # noqa: B008  # to show default value in this CLI
+    remote_url_field: Annotated[
+        str,
+        typer.Option(
+            "--remote-url-field",
+            "-r",
+            help="The field name for the remote url",
+            show_default=True,
+        ),
+    ] = "remote_url",  # to show default value in this CLI
+    verbose: OptVerbose = False,
+    quiet: OptQuiet = False,
+) -> None:
+    """Generate needextend.rst from the extracted obj in JSON."""
+    logger.configure(verbose, quiet)
+    convert_marked_content(jsonpath, outdir, remote_url_field)
+
+
 def load_config_from_toml(toml_file: Path) -> CodeLinksConfigType:
     try:
         with toml_file.open("rb") as f:
