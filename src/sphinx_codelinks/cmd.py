@@ -1,5 +1,4 @@
 from collections import deque
-from enum import Enum
 from os import linesep
 from pathlib import Path
 import tomllib
@@ -7,7 +6,6 @@ from typing import Annotated, TypeAlias, cast
 
 import typer
 
-from sphinx_codelinks.analyse.models import MarkedContentType
 from sphinx_codelinks.analyse.projects import AnalyseProjects
 from sphinx_codelinks.config import (
     CodeLinksConfig,
@@ -221,11 +219,6 @@ def discover(
         typer.echo(file_path)
 
 
-class SupportedMarkerTypes(str, Enum):
-    need = "need"
-    need_id_refs = "need-id-refs"
-
-
 @write_app.command("rst", no_args_is_help=True)
 def write_rst(  # noqa: PLR0913  # for CLI, so it takes as many as it requires
     jsonpath: Annotated[
@@ -240,21 +233,12 @@ def write_rst(  # noqa: PLR0913  # for CLI, so it takes as many as it requires
             resolve_path=True,
         ),
     ],
-    types: Annotated[
-        list[SupportedMarkerTypes],
-        typer.Option(
-            "--types",
-            "-t",
-            help="The types of marked content to be exported",
-            show_default=True,
-        ),
-    ] = [SupportedMarkerTypes.need_id_refs],  # noqa: B006  # to show the default value on CLI
     outpath: Annotated[
         Path,
         typer.Option(
-            "--outdir",
+            "--outpath",
             "-o",
-            help="The output path for needextend.rst",
+            help="The output path for generated rst file",
             show_default=True,
             dir_okay=False,
             file_okay=True,
@@ -284,9 +268,7 @@ def write_rst(  # noqa: PLR0913  # for CLI, so it takes as many as it requires
 ) -> None:
     """Generate needextend.rst from the extracted obj in JSON."""
     logger.configure(verbose, quiet)
-    convert_marked_content(
-        jsonpath, outpath, remote_url_field, cast(list[MarkedContentType], types), title
-    )
+    convert_marked_content(jsonpath, outpath, remote_url_field, title)
 
 
 def load_config_from_toml(toml_file: Path) -> CodeLinksConfigType:

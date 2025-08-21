@@ -167,12 +167,9 @@ def convert_marked_content(
     jsonpath: Path,
     outpath: Path,
     remote_url_field: str = "remote-url",
-    types: list[MarkedContentType] | None = None,
     title: str | None = None,
 ) -> None:
     """Convert marked objects extracted by anaylse CLI to needextend in RST"""
-    if not types:
-        types = [MarkedContentType.need_id_refs]
     with jsonpath.open("r") as f:
         marked_content = json.load(f)
 
@@ -183,7 +180,11 @@ def convert_marked_content(
         obj for objs in marked_content.values() for obj in objs
     ]
 
-    intersted_objs = [obj for obj in marked_objs if obj["type"] in types]
+    intersted_objs = [
+        obj
+        for obj in marked_objs
+        if obj["type"] == MarkedContentType.need_id_refs.value
+    ]
 
     for obj in intersted_objs:
         schema = MarkedContentSchema(**obj)
@@ -212,21 +213,8 @@ def convert_marked_content(
                     remote_url=obj["remote_url"],
                 )
                 needextend_texts.append(needextend_text)
-        elif obj["type"] == MarkedContentType.need.value and obj["need"]:
-            oneline_need_id = obj["need"].get("id")
-            if not oneline_need_id:
-                warnings.append(
-                    f"Oneline-need definition {obj} does not have 'id' field in 'need', skipping."
-                )
-                continue
-            needextend_text = NEEDEXTEND_TEMPLATE.safe_substitute(
-                need_id=oneline_need_id,
-                remote_url_field=remote_url_field,
-                remote_url=obj["remote_url"],
-            )
-            needextend_texts.append(needextend_text)
 
     with outpath.open("w") as f:
         f.writelines(needextend_texts)
 
-    logger.info(f"Generated needextend.rst in {outpath}")
+    logger.info(f"Generated {outpath}")
