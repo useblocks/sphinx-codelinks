@@ -281,11 +281,15 @@ def write_rst(  # noqa: PLR0913  # for CLI, so it takes as many as it requires
         obj for objs in marked_content.values() for obj in objs
     ]
 
-    errors = convert_marked_content(marked_objs, outpath, remote_url_field, title)
+    needextend_texts, errors = convert_marked_content(
+        marked_objs, remote_url_field, title
+    )
     if errors:
         raise typer.BadParameter(
             f"Errors occurred during conversion: {linesep.join(errors)}"
         )
+    with outpath.open("w") as f:
+        f.writelines(needextend_texts)
     typer.echo(f"Generated {outpath}")
 
 

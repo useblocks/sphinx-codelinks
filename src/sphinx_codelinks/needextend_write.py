@@ -3,7 +3,6 @@
 from collections import deque
 from dataclasses import MISSING, dataclass, field, fields
 from os import linesep
-from pathlib import Path
 from string import Template
 from typing import Any, TypedDict, cast
 
@@ -163,13 +162,12 @@ class MarkedObjType(TypedDict):
 
 def convert_marked_content(
     marked_objs: list[MarkedObjType],
-    outpath: Path,
     remote_url_field: str = "remote-url",
     title: str | None = None,
-) -> list[str] | None:
+) -> tuple[list[str], list[str]]:
     """Convert marked objects extracted by anaylse CLI to needextend in RST"""
     errors = []
-
+    needextend_texts: list[str] = []
     intersted_objs = [
         obj
         for obj in marked_objs
@@ -190,23 +188,31 @@ def convert_marked_content(
             errors.extend(list(obj_errors))
 
     if errors:
-        return errors
+        return needextend_texts, errors
 
-    needextend_texts: list[str] = []
-    if title:
-        needextend_texts.append(f"{title}{linesep}{'=' * len(title)}{linesep}{linesep}")
-
+    # handle N:1 mapping of need_id and remote_url
+    id_urls: dict[str, list[str]] = {}
     for obj in intersted_objs:
         if obj["type"] == MarkedContentType.need_id_refs.value and obj["need_ids"]:
             for need_id in obj["need_ids"]:
-                needextend_text = NEEDEXTEND_TEMPLATE.safe_substitute(
-                    need_id=need_id,
-                    remote_url_field=remote_url_field,
-                    remote_url=obj["remote_url"],
-                )
-                needextend_texts.append(needextend_text)
+                if need_id not in id_urls:
+                    id_urls[need_id] = []
+                if obj["remote_url"]:
+                    id_urls[need_id].append(obj["remote_url"])
 
-    with outpath.open("w") as f:
-        f.writelines(needextend_texts)
+    if title:
+        needextend_texts.append(f"{title}{linesep}{'=' * len(title)}{linesep}{linesep}")
 
-    return None
+    for id, urls in id_urls.items():
+        # Connect urls with comma, if there are multiple urls
+        if not urls:
+            continue
+        remote_url = ",".join(urls)
+        needextend_text = NEEDEXTEND_TEMPLATE.safe_substitute(
+            need_id=id,
+            remote_url_field=remote_url_field,
+            remote_url=remote_url,
+        )
+        needextend_texts.append(needextend_text)
+
+    return needextend_texts, errors
