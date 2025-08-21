@@ -2,7 +2,6 @@
 
 from collections import deque
 from dataclasses import MISSING, dataclass, field, fields
-import json
 from os import linesep
 from pathlib import Path
 from string import Template
@@ -11,7 +10,6 @@ from typing import Any, TypedDict, cast
 from jsonschema import ValidationError, validate
 
 from sphinx_codelinks.analyse.models import MarkedContentType, SourceMap
-from sphinx_codelinks.logger import logger
 
 NEEDEXTEND_TEMPLATE = Template(""".. needextend:: $need_id
    :$remote_url_field: $remote_url
@@ -164,21 +162,13 @@ class MarkedObjType(TypedDict):
 
 
 def convert_marked_content(
-    jsonpath: Path,
+    marked_objs: list[MarkedObjType],
     outpath: Path,
     remote_url_field: str = "remote-url",
     title: str | None = None,
-) -> None:
+) -> list[str] | None:
     """Convert marked objects extracted by anaylse CLI to needextend in RST"""
-    with jsonpath.open("r") as f:
-        marked_content = json.load(f)
-
-    warnings = []
-
-    # flatten objects
-    marked_objs: list[MarkedObjType] = [
-        obj for objs in marked_content.values() for obj in objs
-    ]
+    errors = []
 
     intersted_objs = [
         obj
@@ -187,18 +177,20 @@ def convert_marked_content(
     ]
 
     for obj in intersted_objs:
-        schema = MarkedContentSchema(**obj)
-        obj_warnings: deque[str] = deque()
-        obj_warnings.extend(schema.check_schema())
-        obj_warnings.extend(schema.check_conditional_required_fields())
-        if obj_warnings:
-            obj_warnings.appendleft(f"{obj} has the following warnings:")
-            warnings.extend(list(obj_warnings))
+        try:
+            schema = MarkedContentSchema(**obj)
+        except TypeError as e:
+            errors.append(str(e))
+            continue
+        obj_errors: deque[str] = deque()
+        obj_errors.extend(schema.check_schema())
+        obj_errors.extend(schema.check_conditional_required_fields())
+        if obj_errors:
+            obj_errors.appendleft(f"{obj} has the following errors:")
+            errors.extend(list(obj_errors))
 
-    if warnings:
-        logger.warning(
-            f"Marked objects have the following warnings: {linesep.join(warnings)}"
-        )
+    if errors:
+        return errors
 
     needextend_texts: list[str] = []
     if title:
@@ -217,4 +209,4 @@ def convert_marked_content(
     with outpath.open("w") as f:
         f.writelines(needextend_texts)
 
-    logger.info(f"Generated {outpath}")
+    return None

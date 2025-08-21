@@ -1,4 +1,5 @@
 from collections import deque
+import json
 from os import linesep
 from pathlib import Path
 import tomllib
@@ -14,7 +15,7 @@ from sphinx_codelinks.config import (
     generate_project_configs,
 )
 from sphinx_codelinks.logger import logger
-from sphinx_codelinks.needextend_write import convert_marked_content
+from sphinx_codelinks.needextend_write import MarkedObjType, convert_marked_content
 from sphinx_codelinks.source_discover.config import (
     CommentType,
     SourceDiscoverConfig,
@@ -268,7 +269,24 @@ def write_rst(  # noqa: PLR0913  # for CLI, so it takes as many as it requires
 ) -> None:
     """Generate needextend.rst from the extracted obj in JSON."""
     logger.configure(verbose, quiet)
-    convert_marked_content(jsonpath, outpath, remote_url_field, title)
+    try:
+        with jsonpath.open("r") as f:
+            marked_content = json.load(f)
+    except Exception as e:
+        raise typer.BadParameter(
+            f"Failed to load marked content from {jsonpath}: {e}"
+        ) from e
+
+    marked_objs: list[MarkedObjType] = [
+        obj for objs in marked_content.values() for obj in objs
+    ]
+
+    errors = convert_marked_content(marked_objs, outpath, remote_url_field, title)
+    if errors:
+        raise typer.BadParameter(
+            f"Errors occurred during conversion: {linesep.join(errors)}"
+        )
+    typer.echo(f"Generated {outpath}")
 
 
 def load_config_from_toml(toml_file: Path) -> CodeLinksConfigType:
