@@ -25,7 +25,6 @@ Source Code Parsing
 
   - Rust
   - YAML
-  - SyML
 
 - Enhance ``.gitignore`` handling to support nested ``.gitignore`` files.
 

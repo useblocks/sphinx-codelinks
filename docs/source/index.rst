@@ -65,6 +65,7 @@ Contents
    components/oneline
    components/analyse
    components/discover
+   components/write
 
 .. toctree::
    :maxdepth: 1
