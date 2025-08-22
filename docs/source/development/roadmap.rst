@@ -21,7 +21,7 @@ Source Code Parsing
 
 - Introduce a configurable option to strip leading characters (e.g., ``*``) from commented RST blocks.
 - Enrich tagged scopes with additional metadata.
-- Extend language support by adding parsers for more comment styles, including:
+- Extend language support by adding parsers for more comment styles, including but not limited to:
 
   - Rust
   - YAML
