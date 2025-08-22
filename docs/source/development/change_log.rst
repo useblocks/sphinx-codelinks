@@ -43,8 +43,6 @@ New and Improved
 
   The configuration for ``src-trace`` directive defined in TOML is now compatible with the new ``analyse`` module.
 
-
-
 .. _`release:0.1.2`:
 
 0.1.2

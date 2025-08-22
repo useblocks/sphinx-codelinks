@@ -11,9 +11,7 @@ Command-Line Interface
 Configuration Files
 -------------------
 
-- Unify TOML configuration for the ``src-trace`` directive and the ``analyse`` CLI.
 - Support automatic discovery of TOML configuration files (e.g., ``pyproject.toml``).
-- Discourage global configuration in TOML files to promote project-specific settings.
 - Improve integration with the ``ubCode`` and ``Sphinx-Needs`` ecosystems.
 
 Source Code Parsing
