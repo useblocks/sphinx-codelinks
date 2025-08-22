@@ -79,16 +79,16 @@ codelinks = "sphinx_codelinks.cmd:app"
 # needextend demo
 "analyse" = "codelinks analyse tests/data/configs/minimum_config.toml"
 "analyse:rm" = "rm -rf output/marked_content.json"
-"bridge" = "codelinks bridge output/marked_content.json --outdir tests/data/needextend_demo"
-"bridge:rm" = "rm -rf tests/data/needextend_demo/needextend.rst"
+"write" = "codelinks write rst output/marked_content.json --outpath tests/data/needextend_demo/needextend.rst"
+"write:rm" = "rm -rf tests/data/needextend_demo/needextend.rst"
 "demo:rm" = "rm -rf tests/data/needextend_demo/_build"
 "demo:build" = "sphinx-build -nW --keep-going -b html -T -c tests/data/needextend_demo tests/data/needextend_demo tests/data/needextend_demo/_build/html"
 "demo:clean" = { chain = [
   "demo:rm",
   "analyse:rm",
-  "bridge:rm",
+  "write:rm",
   "analyse",
-  "bridge",
+  "write",
   "demo:build",
 ] }
 
