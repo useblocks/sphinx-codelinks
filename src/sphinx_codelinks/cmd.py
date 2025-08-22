@@ -286,7 +286,7 @@ def write_rst(  # noqa: PLR0913  # for CLI, so it takes as many as it requires
     )
     if errors:
         raise typer.BadParameter(
-            f"Errors occurred during conversion: {linesep.join(errors)}"
+            f"Errors occurred during conversion:{linesep} {linesep.join(errors)}"
         )
     with outpath.open("w") as f:
         f.writelines(needextend_texts)

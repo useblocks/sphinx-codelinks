@@ -137,10 +137,6 @@ class MarkedContentSchema:
                 errors.append(
                     "Need id refs are required for marked content of type 'need_id_refs'"
                 )
-        elif self.type == MarkedContentType.need.value and not self.need_ids:
-            errors.append(
-                "Need id refs are required for marked content of type 'need_id_refs'"
-            )
         elif self.type == MarkedContentType.rst.value and not self.rst:
             errors.append("RST text is required for marked content of type 'rst'")
         return errors
@@ -160,6 +156,18 @@ class MarkedObjType(TypedDict):
     rst: str | None
 
 
+def sort_mappings(objs: list[MarkedObjType]) -> dict[str, list[str]]:
+    id_urls: dict[str, list[str]] = {}
+    for obj in objs:
+        if obj["type"] == MarkedContentType.need_id_refs.value and obj["need_ids"]:
+            for need_id in obj["need_ids"]:
+                if need_id not in id_urls:
+                    id_urls[need_id] = []
+                if obj["remote_url"]:
+                    id_urls[need_id].append(obj["remote_url"])
+    return id_urls
+
+
 def convert_marked_content(
     marked_objs: list[MarkedObjType],
     remote_url_field: str = "remote-url",
@@ -168,17 +176,13 @@ def convert_marked_content(
     """Convert marked objects extracted by anaylse CLI to needextend in RST"""
     errors = []
     needextend_texts: list[str] = []
-    intersted_objs = [
-        obj
-        for obj in marked_objs
-        if obj["type"] == MarkedContentType.need_id_refs.value
-    ]
+    intersted_objs = []
 
-    for obj in intersted_objs:
+    for obj in marked_objs:
         try:
             schema = MarkedContentSchema(**obj)
         except TypeError as e:
-            errors.append(str(e))
+            errors.append(f"{obj} has {e!s}")
             continue
         obj_errors: deque[str] = deque()
         obj_errors.extend(schema.check_schema())
@@ -186,19 +190,14 @@ def convert_marked_content(
         if obj_errors:
             obj_errors.appendleft(f"{obj} has the following errors:")
             errors.extend(list(obj_errors))
+        if obj["type"] == MarkedContentType.need_id_refs.value:
+            intersted_objs.append(obj)
 
     if errors:
         return needextend_texts, errors
 
     # handle N:1 mapping of need_id and remote_url
-    id_urls: dict[str, list[str]] = {}
-    for obj in intersted_objs:
-        if obj["type"] == MarkedContentType.need_id_refs.value and obj["need_ids"]:
-            for need_id in obj["need_ids"]:
-                if need_id not in id_urls:
-                    id_urls[need_id] = []
-                if obj["remote_url"]:
-                    id_urls[need_id].append(obj["remote_url"])
+    id_urls = sort_mappings(intersted_objs)
 
     if title:
         needextend_texts.append(f"{title}{linesep}{'=' * len(title)}{linesep}{linesep}")
