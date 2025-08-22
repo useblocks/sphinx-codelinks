@@ -19,6 +19,7 @@ Add to your `conf.py`:
 
 ```python
 extensions = ['sphinx_needs', 'sphinx_codelinks']
+src_trace_config_from_toml = "codelinks.toml"
 ```
 
 ## Documentation
