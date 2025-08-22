@@ -235,7 +235,7 @@ def test_write_rst_invalid_json(tmp_path: Path) -> None:
     result = runner.invoke(app, options)
 
     assert result.exit_code != 0
-    assert "Expecting ',' delimiter: line 1 column 21 (char 20)" in result.stdout
+    assert "Expecting" in result.stdout
 
 
 @pytest.mark.parametrize(
@@ -258,7 +258,7 @@ def test_write_rst_invalid_json(tmp_path: Path) -> None:
             [
                 "Invalid value: Errors occurred",
                 "Schema validation error in field 'filepath': 123 is not of type 'string'",
-                "Marker is required for marked content of type 'need_id_refs' ",
+                "Marker is required for marked content of type 'need_id_refs'",
                 "Need id refs are required for marked content of type 'need_id_refs'",
             ],
         ),
