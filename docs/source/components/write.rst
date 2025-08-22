@@ -3,7 +3,7 @@
 Write
 =====
 
-The ``write`` command is used to generate reStructuredText files from the markers extracted by the ``analyse`` command.
+The ``write`` command is used to generate file formats such as reStructuredText from the markers extracted by the ``analyse`` command.
 This allows you to create documentation that includes links to source code based on the need ids specified in your code comments.
 
 Example usage
