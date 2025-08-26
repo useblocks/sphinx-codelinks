@@ -37,6 +37,7 @@ def generate_str_link_name(
     oneline_need: OneLineNeed,
     target_filepath: Path,
     dirs: dict[str, Path],
+    docname: str,
     local: bool = False,
 ) -> str:
     if oneline_need.source_map["start"]["row"] == oneline_need.source_map["end"]["row"]:
@@ -45,7 +46,12 @@ def generate_str_link_name(
         lineno = f"L{oneline_need.source_map['start']['row'] + 1}-L{oneline_need.source_map['end']['row'] + 1}"
     # url = str(target_filepath.relative_to(target_dir)) + f"#{lineno}"
     if local:
-        url = str(target_filepath) + f"#{lineno}"
+        # calculate the relative path from the current doc to the target file
+        depth = len(Path(docname).parents) - 1
+        rel_target_fileapth = Path(*[".."] * depth) / target_filepath.relative_to(
+            dirs["out_dir"]
+        )
+        url = str(rel_target_fileapth) + f"#{lineno}"
     else:
         remote_path = dirs["remote_src_dir"] / target_filepath.relative_to(
             dirs["target_dir"]
@@ -145,7 +151,7 @@ class SourceTracingDirective(SphinxDirective):
                 to_remove_str = to_remove_str.replace("\\", "\\\\")
             self.env.config.needs_string_links[local_url_field] = {
                 "regex": r"^(?P<value>.+?)\.[^\.]+#L(?P<lineno>\d+)",
-                "link_url": ("file://{{value}}.html#L-{{lineno}}"),
+                "link_url": ("{{value}}.html#L-{{lineno}}"),
                 "link_name": f"{{{{value | replace('{to_remove_str}', '')}}}}#L{{{{lineno}}}}",
                 "options": [local_url_field],
             }
@@ -269,11 +275,15 @@ class SourceTracingDirective(SphinxDirective):
             if local_url_field:
                 # generate link name
                 local_link_name = generate_str_link_name(
-                    oneline_need, target_filepath, dirs, local=True
+                    oneline_need,
+                    target_filepath,
+                    dirs,
+                    self.env.docname,
+                    local=True,
                 )
             if remote_url_field:
                 remote_link_name = generate_str_link_name(
-                    oneline_need, target_filepath, dirs, local=False
+                    oneline_need, target_filepath, dirs, self.env.docname, local=False
                 )
 
             if oneline_need.need:
