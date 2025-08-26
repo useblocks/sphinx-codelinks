@@ -3,6 +3,13 @@
 Changelog
 =========
 
+.. _`unreleased`:
+
+Unreleased
+----------
+
+- 🐛 Replace absolute path with relative path to fixe ``local-url`` not working on the non-local environment
+
 .. _`release:1.0.0`:
 
 1.0.0
