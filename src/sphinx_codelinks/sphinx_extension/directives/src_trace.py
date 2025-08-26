@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_rel_path(doc_path: Path, code_path: Path, base_dir: Path) -> tuple[Path, Path]:
-    """Get the relative path of the target path, where the relative path can be directed from the source path based on the base directory."""
+    """Get the relative path from the document to the source code file and vice versa."""
     doc_depth = len(doc_path.parents) - 1
     src_rel_path = Path(*[".."] * doc_depth) / code_path.relative_to(base_dir)
     code_depth = len(code_path.relative_to(base_dir).parents) - 1
