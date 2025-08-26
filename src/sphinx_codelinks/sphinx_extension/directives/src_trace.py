@@ -33,11 +33,19 @@ else:
 logger = logging.getLogger(__name__)
 
 
+def get_rel_path(doc_path: Path, code_path: Path, base_dir: Path) -> tuple[Path, Path]:
+    """Get the relative path of the target path, where the relative path can be directed from the source path based on the base directory."""
+    doc_depth = len(doc_path.parents) - 1
+    src_rel_path = Path(*[".."] * doc_depth) / code_path.relative_to(base_dir)
+    code_depth = len(code_path.relative_to(base_dir).parents) - 1
+    doc_rel_path = Path(*[".."] * code_depth) / doc_path
+    return src_rel_path, doc_rel_path.with_suffix(".html")
+
+
 def generate_str_link_name(
     oneline_need: OneLineNeed,
     target_filepath: Path,
     dirs: dict[str, Path],
-    docname: str,
     local: bool = False,
 ) -> str:
     if oneline_need.source_map["start"]["row"] == oneline_need.source_map["end"]["row"]:
@@ -46,12 +54,7 @@ def generate_str_link_name(
         lineno = f"L{oneline_need.source_map['start']['row'] + 1}-L{oneline_need.source_map['end']['row'] + 1}"
     # url = str(target_filepath.relative_to(target_dir)) + f"#{lineno}"
     if local:
-        # calculate the relative path from the current doc to the target file
-        depth = len(Path(docname).parents) - 1
-        rel_target_fileapth = Path(*[".."] * depth) / target_filepath.relative_to(
-            dirs["out_dir"]
-        )
-        url = str(rel_target_fileapth) + f"#{lineno}"
+        url = str(target_filepath) + f"#{lineno}"
     else:
         remote_path = dirs["remote_src_dir"] / target_filepath.relative_to(
             dirs["target_dir"]
@@ -265,7 +268,7 @@ class SourceTracingDirective(SphinxDirective):
             # mapping between lineno and need link in docs for local url
 
             # The link to the documentation page for the source file
-            docs_href = f"{dirs['out_dir'] / self.env.docname}.html"
+
             if local_url_field:
                 # copy files to _build/html
                 target_filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -274,16 +277,21 @@ class SourceTracingDirective(SphinxDirective):
             remote_link_name = None
             if local_url_field:
                 # generate link name
+                # calculate the relative path from the current doc to the target file
+                local_rel_path, docs_href = get_rel_path(
+                    Path(self.env.docname), target_filepath, dirs["out_dir"]
+                )
+                # docs_href = f"{dirs['out_dir'] / self.env.docname}.html"
+
                 local_link_name = generate_str_link_name(
                     oneline_need,
-                    target_filepath,
+                    local_rel_path,
                     dirs,
-                    self.env.docname,
                     local=True,
                 )
             if remote_url_field:
                 remote_link_name = generate_str_link_name(
-                    oneline_need, target_filepath, dirs, self.env.docname, local=False
+                    oneline_need, target_filepath, dirs, local=False
                 )
 
             if oneline_need.need:
