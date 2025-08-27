@@ -78,11 +78,7 @@ def add_custom_css(  # type: ignore[explicit-any]
     }
 
     if pagename in target_htmls and templatename == "page.html":
-        if "css_files" not in context:
-            context["css_files"] = []
-        context["css_files"].append(
-            "_static/source_tracing/ub_sct.css"
-        )  # Add the custom CSS file to the context
+        app.add_css_file("_static/source_tracing/ub_sct.css")
 
 
 def generate_code_page(
