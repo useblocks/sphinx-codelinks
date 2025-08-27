@@ -69,7 +69,7 @@ def add_custom_css(  # type: ignore[explicit-any]
     app: Sphinx,
     pagename: str,
     templatename: str,
-    context: dict[str, Any],
+    _context: dict[str, Any],
     _doctree: Any,
 ) -> None:
     target_htmls = {
