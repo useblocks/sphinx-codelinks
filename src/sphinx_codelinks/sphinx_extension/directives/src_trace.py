@@ -281,8 +281,6 @@ class SourceTracingDirective(SphinxDirective):
                 local_rel_path, docs_href = get_rel_path(
                     Path(self.env.docname), target_filepath, dirs["out_dir"]
                 )
-                # docs_href = f"{dirs['out_dir'] / self.env.docname}.html"
-
                 local_link_name = generate_str_link_name(
                     oneline_need,
                     local_rel_path,
