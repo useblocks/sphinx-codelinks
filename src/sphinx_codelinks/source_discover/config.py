@@ -5,7 +5,10 @@ from typing import Any, Required, TypedDict, cast
 
 from jsonschema import ValidationError, validate
 
-COMMENT_FILETYPE = {"cpp": ["c", "cpp", "h", "hpp"], "python": ["py"]}
+COMMENT_FILETYPE = {
+    "cpp": ["c", "ci", "cpp", ".cc", "cxx", "h", "hpp", "hxx", "hh", "ihl"],
+    "python": ["py"],
+}
 
 
 class CommentType(str, Enum):

@@ -20,7 +20,6 @@ UNIX_NEWLINE = "\n"
 
 COMMENT_MARKERS = {CommentType.cpp: ["//", "/*"], CommentType.python: ["#"]}
 ESCAPE = "\\"
-SUPPORTED_COMMENT_TYPES = {"c", "h", "cpp", "hpp", "py"}
 
 
 class CommentCategory(str, Enum):
