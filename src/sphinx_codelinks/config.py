@@ -46,7 +46,7 @@ class NeedIdRefsConfig:
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
         _field = next(_field for _field in fields(cls) if _field.name is name)
-        if _field.metadata is not MISSING and "schema" in _field.metadata:
+        if _field.metadata and "schema" in _field.metadata:
             return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[explicit-any]
         return None
 
@@ -85,7 +85,7 @@ class MarkedRstConfig:
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
         _field = next(_field for _field in fields(cls) if _field.name is name)
-        if _field.metadata is not MISSING and "schema" in _field.metadata:
+        if _field.metadata and "schema" in _field.metadata:
             return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[explicit-any]
         return None
 
@@ -225,7 +225,7 @@ class OneLineCommentStyle:
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
         _field = next(_field for _field in fields(cls) if _field.name is name)
-        if _field.metadata is not MISSING and "schema" in _field.metadata:
+        if _field.metadata and "schema" in _field.metadata:
             return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[explicit-any]
         return None
 
@@ -369,7 +369,7 @@ class SourceAnalyseConfig:
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
         _field = next(_field for _field in fields(cls) if _field.name is name)
-        if _field.metadata is not MISSING and "schema" in _field.metadata:
+        if _field.metadata and "schema" in _field.metadata:
             return cast(dict[str, Any], _field.metadata["schema"])  # type: ignore[explicit-any]
         return None
 
@@ -565,7 +565,7 @@ class CodeLinksConfig:
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
         """Get the schema for a config item."""
         _field = next(field for field in fields(cls) if field.name is name)
-        if _field.metadata is not MISSING and "schema" in _field.metadata:
+        if _field.metadata and "schema" in _field.metadata:
             return _field.metadata["schema"]  # type: ignore[no-any-return]
         return None
 
