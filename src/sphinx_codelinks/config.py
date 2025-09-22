@@ -218,7 +218,7 @@ class OneLineCommentStyle:
     @classmethod
     def get_required_fields(cls, name: str) -> list[str] | None:
         _field = next(_field for _field in fields(cls) if _field.name is name)
-        if _field.metadata is not MISSING:
+        if _field.metadata:
             return cast(list[str], _field.metadata["required_fields"])
         return None
 
