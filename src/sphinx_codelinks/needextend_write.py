@@ -1,4 +1,4 @@
-"""Covert the generated JSON file created by CodeLinks anaylse to need-extend in RST."""
+"""Convert the generated JSON file created by CodeLinks analyse to need-extend in RST."""
 
 from collections import deque
 from dataclasses import dataclass, field, fields
@@ -165,7 +165,7 @@ def convert_marked_content(
     remote_url_field: str = "remote-url",
     title: str | None = None,
 ) -> tuple[list[str], list[str]]:
-    """Convert marked objects extracted by anaylse CLI to needextend in RST"""
+    """Convert marked objects extracted by analyse CLI to needextend in RST"""
     errors = []
     needextend_texts: list[str] = []
     intersted_objs = [
