@@ -93,6 +93,7 @@ class SourceTracingDirective(SphinxDirective):
         validate_option(self.options)
 
         project = self.options["project"]
+        id = self.options.get("id")
         title = self.arguments[0]
         # get source tracing config
         src_trace_sphinx_config = CodeLinksConfig.from_sphinx(self.env.config)
@@ -109,6 +110,8 @@ class SourceTracingDirective(SphinxDirective):
         target_dir = out_dir / src_dir.name
 
         extra_options = {"project": project}
+        if id:
+            extra_options["id"] = id
         source_files = self.get_src_files(self.options, src_dir, src_discover_config)
 
         # add source files into the dependency
