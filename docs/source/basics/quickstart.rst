@@ -46,6 +46,7 @@ Example
 -------
 
 .. src-trace:: dummy src
+   :id: SRC_000
    :project: src
 
 .. note:: **local-url** is not working on the website as it only supports local browse
