@@ -1,4 +1,5 @@
 from collections.abc import Callable
+import hashlib
 import os
 from pathlib import Path
 from typing import Any, ClassVar, cast
@@ -7,6 +8,7 @@ from docutils import nodes
 from docutils.parsers.rst import directives
 from packaging.version import Version
 import sphinx
+from sphinx.config import Config as _SphinxConfig
 from sphinx.util.docutils import SphinxDirective
 from sphinx_needs.api import add_need  # type: ignore[import-untyped]
 from sphinx_needs.utils import add_doc  # type: ignore[import-untyped]
@@ -31,6 +33,42 @@ else:
     import logging  # type: ignore[no-redef]
 
 logger = logging.getLogger(__name__)
+
+
+def _check_id(
+    config: _SphinxConfig,
+    id: str | None,
+    src_strings: list[str],
+    options: dict[str, str],
+    extra_options: dict[str, str],
+) -> None:
+    """Check and set the id for the need.
+
+    src_strings[0] is always the title.
+    src_strings[1] is always the project.
+    """
+    if config.needs_id_required:
+        if id:
+            extra_options["id"] = id
+        else:
+            if "directory" in options:
+                src_strings.append(options["directory"])
+            if "file" in options:
+                src_strings.append(options["file"])
+
+            extra_options["id"] = _make_hashed_id("SRCTRACE_", src_strings, config)
+
+
+def _make_hashed_id(
+    type_prefix: str, src_strings: list[str], config: _SphinxConfig
+) -> str:
+    """Create an ID based on the type and title of the need."""
+    full_title = src_strings[0]  # title is always the first element
+    hashable_content = "_".join(src_strings)
+    hashed = hashlib.sha256(hashable_content.encode("UTF-8")).hexdigest().upper()
+    if config.needs_id_from_title:
+        hashed = full_title.upper().replace(" ", "_") + "_" + hashed
+    return f"{type_prefix}{hashed[: config.needs_id_length]}"
 
 
 def get_rel_path(doc_path: Path, code_path: Path, base_dir: Path) -> tuple[Path, Path]:
@@ -110,8 +148,9 @@ class SourceTracingDirective(SphinxDirective):
         target_dir = out_dir / src_dir.name
 
         extra_options = {"project": project}
-        if id:
-            extra_options["id"] = id
+
+        _check_id(self.env.config, id, [title, project], self.options, extra_options)
+
         source_files = self.get_src_files(self.options, src_dir, src_discover_config)
 
         # add source files into the dependency
