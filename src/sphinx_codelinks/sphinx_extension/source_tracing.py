@@ -35,7 +35,33 @@ from sphinx_codelinks.sphinx_extension.html_wrapper import html_wrapper
 logger = logging.getLogger(__name__)
 
 
+def _check_sphinx_needs_dependency(app: Sphinx) -> bool:
+    """Check if sphinx-needs is configured as an extension."""
+    # Check if sphinx-needs is in the extensions list
+    if "sphinx_needs" not in app.config.extensions:
+        error_msg = (
+            "sphinx-codelinks requires sphinx-needs to be configured as an extension.\n"
+            "Please add 'sphinx_needs' to your extensions list in conf.py:\n"
+            "   extensions = ['sphinx_needs', 'sphinx_codelinks', ...]\n"
+            f"Current extensions: {app.config.extensions}"
+        )
+        logger.error(error_msg)
+        return False
+    return True
+
+
 def setup(app: Sphinx) -> dict[str, Any]:  # type: ignore[explicit-any]
+    # Check if sphinx-needs is available and properly configured
+    if not _check_sphinx_needs_dependency(app):
+        logger.error(
+            "Failed to initialize sphinx-codelinks due to missing sphinx-needs dependency"
+        )
+        return {
+            "version": "builtin",
+            "parallel_read_safe": True,
+            "parallel_write_safe": True,
+        }
+
     app.add_node(SourceTracing)
     app.add_directive("src-trace", SourceTracingDirective)
     CodeLinksConfig.add_config_values(app)
