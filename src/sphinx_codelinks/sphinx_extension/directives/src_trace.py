@@ -40,7 +40,7 @@ def _check_id(
     id: str | None,
     src_strings: list[str],
     options: dict[str, str],
-    extra_options: dict[str, str],
+    additional_options: dict[str, str],
 ) -> None:
     """Check and set the id for the need.
 
@@ -49,14 +49,14 @@ def _check_id(
     """
     if config.needs_id_required:
         if id:
-            extra_options["id"] = id
+            additional_options["id"] = id
         else:
             if "directory" in options:
                 src_strings.append(options["directory"])
             if "file" in options:
                 src_strings.append(options["file"])
 
-            extra_options["id"] = _make_hashed_id("SRCTRACE_", src_strings, config)
+            additional_options["id"] = _make_hashed_id("SRCTRACE_", src_strings, config)
 
 
 def _make_hashed_id(
@@ -147,9 +147,11 @@ class SourceTracingDirective(SphinxDirective):
         # the directory where the source files are copied to
         target_dir = out_dir / src_dir.name
 
-        extra_options = {"project": project}
+        additional_options = {"project": project}
 
-        _check_id(self.env.config, id, [title, project], self.options, extra_options)
+        _check_id(
+            self.env.config, id, [title, project], self.options, additional_options
+        )
 
         source_files = self.get_src_files(self.options, src_dir, src_discover_config)
 
@@ -174,7 +176,7 @@ class SourceTracingDirective(SphinxDirective):
             lineno=self.lineno,  # The line number where the directive is used
             need_type="srctrace",  # The type of the need
             title=title,  # The title of the need
-            **extra_options,
+            **additional_options,
         )
         needs.extend(src_trace_need)
 
@@ -242,7 +244,7 @@ class SourceTracingDirective(SphinxDirective):
 
     def get_src_files(
         self,
-        extra_options: dict[str, str],
+        additional_options: dict[str, str],
         src_dir: Path,
         src_discover_config: SourceDiscoverConfig,
     ) -> list[Path]:
@@ -252,14 +254,14 @@ class SourceTracingDirective(SphinxDirective):
             file: str = self.options["file"]
             filepath = src_dir / file
             source_files.append(filepath.resolve())
-            extra_options["file"] = file
+            additional_options["file"] = file
         else:
             directory = self.options.get("directory")
             if directory is None:
                 # when neither "file" and "directory" are given, the project root dir is by default
                 directory = "./"
             else:
-                extra_options["directory"] = directory
+                additional_options["directory"] = directory
             dir_path = src_dir / directory
             # create a new config for the specified directory
             src_discover = SourceDiscoverConfig(
