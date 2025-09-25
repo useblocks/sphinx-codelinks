@@ -36,14 +36,15 @@ logger = logging.getLogger(__name__)
 
 
 def _check_sphinx_needs_dependency(app: Sphinx) -> bool:
-    """Check if sphinx-needs is configured as an extension."""
-    # Check if sphinx-needs is in the extensions list
+    """Check if sphinx-needs is actually loaded as an extension."""
+    # Check if sphinx-needs is in the loaded extensions
     if "sphinx_needs" not in app.extensions:
         error_msg = (
-            "sphinx-codelinks requires sphinx-needs to be configured as an extension.\n"
-            "Please add 'sphinx_needs' to your extensions list in conf.py:\n"
+            "sphinx-codelinks requires sphinx-needs to be loaded as an extension.\n"
+            "Please ensure 'sphinx_needs' is properly installed and added to your extensions list in conf.py:\n"
             "   extensions = ['sphinx_needs', 'sphinx_codelinks', ...]\n"
-            f"Current extensions: {app.config.extensions}"
+            f"Currently loaded extensions: {list(app.extensions.keys())}\n"
+            f"Configured extensions: {app.config.extensions}"
         )
         logger.error(error_msg)
         return False
