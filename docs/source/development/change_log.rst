@@ -8,6 +8,26 @@ Changelog
 Unreleased
 ----------
 
+New and Improved
+................
+
+- ✨ Added C-Sharp parser for ``analyse`` module.
+
+  Need ID references and marked RST blocks can be extracted from C-Sharp source files.
+  The comments styles supported are:(``//``, ``/* */``, ``///``)
+
+- ✨ Added YAML parser for ``analyse`` module.
+
+  Need ID references can be extracted from YAML files.
+  The comment style supported is: (``#``) as well as The inline comment style (e.g. ``key: value # comment``).
+
+- 🔨 Directive ``src-trace`` does not create the need item typed by ``srctrace`` anymore and only generate need items from the one-line need definition in the given source.
+
+  The need item is removed because:
+  - It has no use cases so far.
+  - It creates extra need items users may not actually want in their documentation
+  - It creates the errors with some Sphinx-Needs configurations, e.g., when ``need_id_required`` or ``needs_statuses`` is defined.
+
 Fixes
 .....
 
