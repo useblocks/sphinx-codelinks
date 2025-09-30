@@ -21,7 +21,7 @@ New and Improved
   Need ID references can be extracted from YAML files.
   The supported comment style is ``#`` as well as inline comment style, e.g. ``key: value # comment``.
 
-- 👌 Directive ``src-trace`` does not create the need item typed by ``srctrace`` anymore and only generate need items from the one-line need definition in the given source.
+- 👌 Directive ``src-trace`` itself does not create need items anymore and only generate need items from the one-line need definition in the given source.
 
   The need item is removed because:
   - It has no use cases so far.
