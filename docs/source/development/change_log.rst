@@ -19,7 +19,7 @@ New and Improved
 - ✨ Added YAML parser for ``analyse`` module.
 
   Need ID references can be extracted from YAML files.
-  The comment style supported is: (``#``) as well as The inline comment style (e.g. ``key: value # comment``).
+  The supported comment style is ``#`` as well as inline comment style, e.g. ``key: value # comment``.
 
 - 👌 Directive ``src-trace`` does not create the need item typed by ``srctrace`` anymore and only generate need items from the one-line need definition in the given source.
 
