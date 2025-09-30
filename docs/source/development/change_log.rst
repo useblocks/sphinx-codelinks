@@ -13,7 +13,7 @@ New and Improved
 
 - ✨ Added C# parser for ``analyse`` module.
 
-  Need ID references and marked RST blocks can be extracted from C-Sharp source files.
+  Need ID references and marked RST blocks can be extracted from C# source files.
   The comments styles supported are:(``//``, ``/* */``, ``///``)
 
 - ✨ Added YAML parser for ``analyse`` module.
