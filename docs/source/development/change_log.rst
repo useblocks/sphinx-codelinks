@@ -24,9 +24,10 @@ New and Improved
 - 👌 Directive ``src-trace`` itself does not create need items anymore and only generate need items from the one-line need definition in the given source.
 
   The need item is removed because:
+
   - It has no use cases so far.
   - It creates extra need items users may not actually want in their documentation
-  - It creates the errors with some Sphinx-Needs configurations, e.g., when ``need_id_required`` or ``needs_statuses`` is defined.
+  - It creates errors with some Sphinx-Needs configurations, e.g., when ``need_id_required`` or ``needs_statuses`` is defined.
 
 Fixes
 .....
