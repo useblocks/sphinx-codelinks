@@ -3,10 +3,10 @@
 Changelog
 =========
 
-.. _`unreleased`:
+.. _`release:1.1.0`:
 
-Unreleased
-----------
+1.1.0
+-----
 
 New and Improved
 ................
