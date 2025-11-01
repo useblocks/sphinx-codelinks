@@ -284,7 +284,10 @@ class SourceAnalyse:
         if not extracted_rst:
             return None
         if UNIX_NEWLINE in extracted_rst["rst_text"]:
-            rst_text = utils.remove_leading_sequences(extracted_rst["rst_text"], ["*"])
+            rst_text = utils.remove_leading_sequences(
+                extracted_rst["rst_text"],
+                self.analyse_config.marked_rst_config.leading_sequences,
+            )
         else:
             rst_text = extracted_rst["rst_text"]
         lineno = src_comment.node.start_point.row + extracted_rst["row_offset"] + 1

@@ -33,9 +33,9 @@
  }
 
   /**
-  * @brief Function with a rst blocks.
+  * @rst
   * .. impl:: Feature G - Data loss prevention
-  *
+  * @endrst
   * Some description here.
   * [[ IMPL_main_demo2, main func in demo_2]]
   */

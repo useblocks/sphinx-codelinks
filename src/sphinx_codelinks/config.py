@@ -87,6 +87,11 @@ class MarkedRstConfig:
         default="@endrst", metadata={"schema": {"type": "string"}}
     )
     """Chars sequence to indicate the end of the rst text."""
+    leading_sequences: list[str] = field(
+        default_factory=lambda: ["*"],
+        metadata={"schema": {"type": "array", "items": {"type": "string"}}},
+    )
+    """List of leading sequences to be stripped from each line of the rst text."""
 
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]

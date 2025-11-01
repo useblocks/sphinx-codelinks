@@ -389,7 +389,7 @@ get_need_id_refs
 Enables the extraction of need IDs from source code comments. When enabled, **SourceAnalyse** will parse comments for specific markers that indicate need IDs, allowing them to be extracted for further usages.
 
 **Type:** ``bool``
-**Default:** ``False``
+**Default:** ``True``
 
 .. code-block:: toml
 
