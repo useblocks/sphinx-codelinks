@@ -15,7 +15,7 @@ class DirectiveTransformer(Transformer):
         return str(tok).strip()
 
     def OPTION_NAME(self, tok):
-        return str(tok)
+        return str(tok).replace(":", "").strip()
 
     def OPTION_VALUE(self, tok):
         return str(tok).strip()
@@ -23,12 +23,21 @@ class DirectiveTransformer(Transformer):
     def TEXT(self, tok):
         return str(tok)
 
+    def TEXT_NO_COLUMN(self, tok):
+        return str(tok)
+
     def INDENT(self, tok):
         """Return the length of the indent."""
         return len(str(tok))
 
-    def title(self, title):
-        return {"title": title}
+    def NEWLINE_IN_CONTENT(self, tok):
+        return str(tok)
+
+    def multi_lines_title(self, *title_line):
+        return title_line[1]
+
+    def title_block(self, *title):
+        return {"title": " ".join(title)}
 
     def option(self, _indent, name, value=None):
         return (name, value)
@@ -36,21 +45,39 @@ class DirectiveTransformer(Transformer):
     def options_block(self, *options):
         return {"options": dict(options)}
 
-    def content_line(
+    def first_line(
         self,
         _indent,
         text,
     ):
-        return text
+        return text.rstrip()
+
+    def content_line(self, *line):
+        if len(line) == 1:
+            # it's a NEWLINE_IN_CONTENT
+            return line[0].rstrip()
+        else:
+            # it's an indented TEXT
+            return line[1].rstrip()
 
     def content_block(self, *lines):
         # items is list of lines
         return {"content": "\n".join(lines)}
 
+    def directive_block(self, *blocks):
+        return blocks
+
     def directive(self, name, *optionals):
         # NAME,, optional title/options/content
         need = {"type": name}
+        # flaten optionals
+        flatten_optionals = []
         for item in optionals:
+            if isinstance(item, tuple):
+                flatten_optionals.extend(item)
+            else:
+                flatten_optionals.append(item)
+        for item in flatten_optionals:
             if "title" in item:
                 need["title"] = item["title"]
             elif "options" in item:
@@ -71,7 +98,7 @@ def get_parser() -> Lark:
     parser = Lark(
         grammar,
         start="directive",
-        parser="lalr",
+        parser="earley",
         propagate_positions=True,
         maybe_placeholders=False,
     )

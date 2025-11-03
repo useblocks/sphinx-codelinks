@@ -1,31 +1,37 @@
 start: directive
 
-directive: INDENT_DIRECTIVE? ".." _WS NAME "::" _WS title? _NEWLINE options_block? content_block?
+directive: INDENT_DIRECTIVE? ".." _WS NAME "::" _WS title_block? directive_block?
 
-title: TITLE
+title_block: TEXT_NO_COLUMN _NEWLINE multi_lines_title* | _NEWLINE multi_lines_title+
+
+multi_lines_title: INDENT TEXT_NO_COLUMN _NEWLINE
+
+directive_block: options_block (_NEWLINE content_block)? | _NEWLINE content_block
 
 options_block: option+
 
-option: INDENT ":" OPTION_NAME ":" _WS? OPTION_VALUE? _NEWLINE
+option: INDENT OPTION_NAME _WS? OPTION_VALUE? _NEWLINE
 
-content_block: _NEWLINE content_line+
+content_block: content_line+
 
 content_line: INDENT TEXT _NEWLINE
 
-OPTION_NAME: /[a-zA-Z0-9_-]+/
+INDENT: "   "
+
+OPTION_NAME: /:[a-zA-Z0-9_-]+:/
 
 OPTION_VALUE: /[^\n]+/
 
 NAME: /[a-zA-Z0-9_-]+/
 
-TITLE: /[^\n]+/
+TEXT_NO_COLUMN: /(?!.*:[a-zA-Z0-9_-]+:)[^\r\n]+/
 
-TEXT: /.+/
+TEXT: /[^\r\n]+/
+
+NEWLINE_IN_CONTENT: /\r?\n/
 
 _NEWLINE: /\r?\n/
 
 _WS: /[ \t]+/
 
 INDENT_DIRECTIVE: /[ \t]+/
-
-INDENT: "   "

@@ -7,8 +7,24 @@ from sphinx_codelinks.sphinx_extension.sn_rst_parser import parse_rst
     ("text", "expected"),
     [
         (
+            ".. req:: ",
+            {"type": "req"},
+        ),
+        (
+            ".. req:: no newline",
+            {"type": "req", "title": "no newline"},
+        ),
+        (
             ".. req:: title1\n",
             {"type": "req", "title": "title1"},
+        ),
+        (
+            ".. req:: multi-line title1\n   still title2\n   still title3\n",
+            {"type": "req", "title": "multi-line title1 still title2 still title3"},
+        ),
+        (
+            ".. req:: \n   multi-line title1\n   still title2\n   still title3\n",
+            {"type": "req", "title": "multi-line title1 still title2 still title3"},
         ),
         (
             ".. impl:: User Authentication\n   :status: open\n   :priority: high\n",
@@ -19,10 +35,10 @@ from sphinx_codelinks.sphinx_extension.sn_rst_parser import parse_rst
             },
         ),
         (
-            ".. impl:: Data Processing\n\n   This is the implementation content.\n   It spans multiple lines.\n",
+            ".. impl:: no options but content\n\n   This is the implementation content.\n   It spans multiple lines.\n",
             {
                 "type": "impl",
-                "title": "Data Processing",
+                "title": "no options but content",
                 "content": "This is the implementation content.\nIt spans multiple lines.",
             },
         ),
