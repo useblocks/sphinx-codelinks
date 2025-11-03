@@ -3,7 +3,7 @@
 Directive
 =========
 
-.. attention:: ``src-trace`` directive currently only supports :ref:`one-line need definition <oneline>`.
+.. attention:: ``src-trace`` directive do NOT supports :ref:`Sphinx-Needs ID Refs <analyse_need_id_refs>`.
 
 ``src-trace`` Directive generates Sphinx-Needs items from source code comments. There are two ways to define need items in source code:
 

@@ -382,6 +382,7 @@ Configures how **Sphinx-CodeLinks** analyse source files to extract markers from
    [codelinks.projects.my_project.analyse.marked_rst]
    start_sequence = "@rst"
    end_sequence = "@endrst"
+   link_options = ["links"]
 
 get_need_id_refs
 ^^^^^^^^^^^^^^^^
@@ -523,8 +524,10 @@ Configuration for marked RST block extraction.
    [codelinks.projects.my_project.analyse.marked_rst]
    start_sequence = "@rst"
    end_sequence = "@endrst"
+   link_options = ["links"]
 
 **Configuration fields:**
 
 - ``start_sequence`` (``str``) - Marker that begins an RST block
 - ``end_sequence`` (``str``) - Marker that ends an RST block
+- ``link_options`` (``list[str]``) - List of option names whose values should be treated as Sphinx-Needs link fields

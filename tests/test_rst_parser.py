@@ -1,6 +1,6 @@
 import pytest
 
-from sphinx_codelinks.sphinx_extension.sn_rst_parser import parse_rst
+from sphinx_codelinks.analyse.sn_rst_parser import parse_rst
 
 
 @pytest.mark.parametrize(

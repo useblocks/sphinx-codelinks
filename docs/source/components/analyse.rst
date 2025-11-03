@@ -40,7 +40,7 @@ Use simplified comment patterns to define **Sphinx-Needs** items without complex
 Marked RST Blocks
 ~~~~~~~~~~~~~~~~~
 
-Embed complete reStructuredText content within source code comments for rich documentation that can be extracted and processed.
+Embed complete reStructuredText directives which is extracted and parsed as the grammar of **Sphinx-Needs** definition blocks.
 
 Limitations
 -----------
@@ -54,6 +54,8 @@ Extraction Examples
 -------------------
 
 The following examples are configured with :ref:`the analyse configuration <analyse_config>`,
+
+.. _`analyse_need_id_refs`:
 
 Sphinx-Needs ID References
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -118,6 +120,8 @@ Below is an example of a C++ source file containing need ID references and the c
 - ``marker`` - The marker string used for identification
 - ``type`` - Type of extraction ("need-id-refs")
 
+.. _`analyse_rst`:
+
 Marked RST Blocks
 ~~~~~~~~~~~~~~~~~
 
@@ -126,6 +130,7 @@ This example demonstrates how the analyse extracts RST blocks from comments.
 .. tabs::
 
    .. code-tab:: cpp
+      :linenos:
 
        #include <iostream>
 
@@ -190,6 +195,8 @@ The module supports both multi-line and single-line RST blocks:
 - **Multi-line blocks**: Use ``@rst`` and ``@endrst`` on separate lines
 - **Single-line blocks**: Use ``@rst content @endrst`` on the same line
 
+.. _`analyse_oneline`:
+
 One-line Needs
 --------------
 
@@ -199,14 +206,70 @@ For comprehensive information about one-line needs configuration and usage, see 
 
 **Basic Example:**
 
-.. code-block:: c
 
-   // @Function Implementation, IMPL_001, impl, [REQ_001, REQ_002]
+.. tabs::
 
-This single comment line creates a complete **Sphinx-Needs** item equivalent to:
+   .. code-tab:: c
+      :linenos:
 
-.. code-block:: rst
+      // @Function Foo, IMPL_1
+      void foo() {}
 
-   .. impl:: Function Implementation
-       :id: IMPL_001
-       :links: REQ_001, REQ_002
+      // @Function Bar, IMPL_2
+      void bar() {}
+
+      // @Function Baz\, as I want it, IMPL_3
+      void baz() {}
+
+   .. code-tab:: json
+
+      [
+         {
+            "filepath": "/home/jui-wen/git_repo/ub/sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
+            "remote_url": "https://github.com/useblocks/sphinx-codelinks/blob/951e40e7845f06d5cfc4ca20ebb984308fdaf985/tests/data/oneline_comment_default/default_oneliners.c#L1",
+            "source_map": {
+                  "start": { "row": 0, "column": 4 },
+                  "end": { "row": 0, "column": 24 }
+            },
+            "tagged_scope": "void foo() {}",
+            "need": {
+                  "title": "Function Foo",
+                  "id": "IMPL_1",
+                  "type": "impl",
+                  "links": []
+            },
+            "type": "need"
+         },
+         {
+            "filepath": "/home/jui-wen/git_repo/ub/sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
+            "remote_url": "https://github.com/useblocks/sphinx-codelinks/blob/951e40e7845f06d5cfc4ca20ebb984308fdaf985/tests/data/oneline_comment_default/default_oneliners.c#L4",
+            "source_map": {
+                  "start": { "row": 3, "column": 4 },
+                  "end": { "row": 3, "column": 24 }
+            },
+            "tagged_scope": "void bar() {}",
+            "need": {
+                  "title": "Function Bar",
+                  "id": "IMPL_2",
+                  "type": "impl",
+                  "links": []
+            },
+            "type": "need"
+         },
+         {
+            "filepath": "/home/jui-wen/git_repo/ub/sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
+            "remote_url": "https://github.com/useblocks/sphinx-codelinks/blob/951e40e7845f06d5cfc4ca20ebb984308fdaf985/tests/data/oneline_comment_default/default_oneliners.c#L7",
+            "source_map": {
+                  "start": { "row": 6, "column": 4 },
+                  "end": { "row": 6, "column": 39 }
+            },
+            "tagged_scope": "void baz() {}",
+            "need": {
+                  "title": "Function Baz, as I want it",
+                  "id": "IMPL_3",
+                  "type": "impl",
+                  "links": []
+            },
+            "type": "need"
+         }
+      ]
