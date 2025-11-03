@@ -14,7 +14,7 @@ option: INDENT OPTION_NAME _WS? OPTION_VALUE? _NEWLINE
 
 content_block: content_line+
 
-content_line: INDENT TEXT _NEWLINE
+content_line: INDENT TEXT _NEWLINE | _NEWLINE
 
 INDENT: "   "
 
@@ -30,7 +30,7 @@ TEXT: /[^\r\n]+/
 
 NEWLINE_IN_CONTENT: /\r?\n/
 
-_NEWLINE: /\r?\n/
+_NEWLINE: /[ \t]*\r?\n/
 
 _WS: /[ \t]+/
 

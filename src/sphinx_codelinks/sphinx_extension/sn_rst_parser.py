@@ -24,7 +24,7 @@ class DirectiveTransformer(Transformer):
         return str(tok)
 
     def TEXT_NO_COLUMN(self, tok):
-        return str(tok)
+        return str(tok).strip()
 
     def INDENT(self, tok):
         """Return the length of the indent."""
@@ -36,8 +36,8 @@ class DirectiveTransformer(Transformer):
     def multi_lines_title(self, *title_line):
         return title_line[1]
 
-    def title_block(self, *title):
-        return {"title": " ".join(title)}
+    def title_block(self, *titles):
+        return {"title": " ".join(titles)}
 
     def option(self, _indent, name, value=None):
         return (name, value)
@@ -45,14 +45,9 @@ class DirectiveTransformer(Transformer):
     def options_block(self, *options):
         return {"options": dict(options)}
 
-    def first_line(
-        self,
-        _indent,
-        text,
-    ):
-        return text.rstrip()
-
     def content_line(self, *line):
+        if not line:
+            return ""
         if len(line) == 1:
             # it's a NEWLINE_IN_CONTENT
             return line[0].rstrip()
