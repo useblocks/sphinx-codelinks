@@ -7,7 +7,7 @@ from sphinx_codelinks.sphinx_extension.sn_rst_parser import parse_rst
     ("text", "expected"),
     [
         (
-            ".. req:: ",
+            ".. req::\n",
             {"type": "req"},
         ),
         (
