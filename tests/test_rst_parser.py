@@ -103,6 +103,16 @@ from sphinx_codelinks.analyse.sn_rst_parser import parse_rst
                 "content": "First paragraph.\nStill first paragraph.\n\nSecond paragraph here.\nStill second paragraph.",
             },
         ),
+        # comment in content
+        (
+            ".. spec:: comment in content\n   :option: value\n\n   .. commentline\n   Content without blank line.\n",
+            {
+                "type": "spec",
+                "title": "comment in content",
+                "options": {"option": "value"},
+                "content": ".. commentline\nContent without blank line.",
+            },
+        ),
     ],
 )
 def test_sn_rst_parser_positive(text: str, expected: dict):
