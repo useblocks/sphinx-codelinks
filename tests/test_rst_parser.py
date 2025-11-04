@@ -1,3 +1,4 @@
+from lark import UnexpectedInput
 import pytest
 
 from sphinx_codelinks.analyse.sn_rst_parser import parse_rst
@@ -142,6 +143,28 @@ from sphinx_codelinks.analyse.sn_rst_parser import parse_rst
         ),
     ],
 )
-def test_sn_rst_parser(text: str, expected: dict):
+def test_sn_rst_parser_positive(text: str, expected: dict):
     result = parse_rst(text)
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("text"),
+    [
+        # Missing directive type
+        (".. :: Missing type\n"),
+        # Improper indentation (option line not indented)
+        (".. impl:: Title\n:option: value\n"),
+        # Content without blank line separator
+        (".. spec:: Title\n   :option: value\n   Content without blank line.\n"),
+        # Invalid characters in directive type
+        (".. re@q:: Invalid type\n"),
+        # Title line that looks like an option
+        (".. req:: :notanoption:\n"),
+        # Content block without proper indentation
+        (".. impl:: Title\nContent not indented properly.\n"),
+    ],
+)
+def test_sn_rst_parser_negative(text: str):
+    warning = parse_rst(text)
+    assert isinstance(warning, UnexpectedInput)

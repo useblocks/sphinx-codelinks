@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any, TypedDict
 
+from lark import UnexpectedInput
 from tree_sitter import Node as TreeSitterNode
 
 from sphinx_codelinks.analyse import utils
@@ -21,6 +22,7 @@ from sphinx_codelinks.analyse.oneline_parser import (
     OnelineParserInvalidWarning,
     oneline_parser,
 )
+from sphinx_codelinks.analyse.sn_rst_parser import parse_rst
 from sphinx_codelinks.config import (
     UNIX_NEWLINE,
     OneLineCommentStyle,
@@ -80,6 +82,7 @@ class SourceAnalyse:
             self.git_root if self.git_root else self.analyse_config.src_dir
         )
         self.oneline_warnings: list[AnalyseWarning] = []
+        self.rst_warnings: list[AnalyseWarning] = []
 
     def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
         """Load source files and extract their content."""
@@ -310,6 +313,11 @@ class SourceAnalyse:
                 "column": extracted_rst["end_idx"],
             },
         }
+        resolved = parse_rst(rst_text)
+        if isinstance(resolved, UnexpectedInput):
+            self.handle_rst_warning(resolved, src_comment, rst_text)
+            return None
+
         return MarkedRst(
             filepath,
             remote_url,
@@ -317,6 +325,24 @@ class SourceAnalyse:
             src_comment,
             tagged_scope,
             rst_text,
+            resolved,
+        )
+
+    def handle_rst_warning(
+        self, warning: UnexpectedInput, src_comment: SourceComment, rst_text
+    ) -> None:
+        """Handle RST parsing warnings."""
+        if not src_comment.source_file:
+            return
+        lineno = src_comment.node.start_point.row + warning.line + 1
+        self.rst_warnings.append(
+            AnalyseWarning(
+                str(src_comment.source_file.filepath),
+                lineno,
+                f"{warning.get_context(rst_text)}\n{warning!s}",
+                MarkedContentType.rst,
+                "parsing_error",
+            )
         )
 
     def extract_marked_content(self) -> None:

@@ -3,7 +3,7 @@
 # ruff: noqa: N802
 from pathlib import Path
 
-from lark import Lark, Transformer, v_args
+from lark import Lark, Transformer, UnexpectedInput, v_args
 
 
 @v_args(inline=True)
@@ -101,10 +101,13 @@ def get_parser() -> Lark:
     return parser
 
 
-def parse_rst(text: str) -> dict:
+def parse_rst(text: str) -> dict | UnexpectedInput:
     """Parse the given RST directive text and return the parsed data."""
     parser = get_parser()
-    tree = parser.parse(text)
+    try:
+        tree = parser.parse(text)
+    except UnexpectedInput as e:
+        return e
     transformer = DirectiveTransformer()
     result = transformer.transform(tree)
     return result
