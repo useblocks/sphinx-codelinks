@@ -1,12 +1,10 @@
 start: directive
 
-directive: INDENT_DIRECTIVE? ".." _WS NAME "::" _NEWLINE? (_WS title_block)? directive_block?
+directive: INDENT_DIRECTIVE? ".." _WS NAME "::" _NEWLINE? directive_block?
 
-title_block: TEXT_NO_COLUMN _NEWLINE multi_lines_title* | _NEWLINE multi_lines_title+
+directive_block: inline_title _NEWLINE | inline_title _NEWLINE options_block (_NEWLINE content_block)? | inline_title _NEWLINE _NEWLINE content_block | _NEWLINE content_block
 
-multi_lines_title: INDENT TEXT_NO_COLUMN _NEWLINE
-
-directive_block: options_block (_NEWLINE content_block)? | _NEWLINE content_block
+inline_title: TEXT_NO_COLUMN
 
 options_block: option+
 

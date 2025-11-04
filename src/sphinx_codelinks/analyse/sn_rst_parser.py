@@ -33,11 +33,8 @@ class DirectiveTransformer(Transformer):
     def NEWLINE_IN_CONTENT(self, tok):
         return str(tok)
 
-    def multi_lines_title(self, *title_line):
-        return title_line[1]
-
-    def title_block(self, *titles):
-        return {"title": " ".join(titles)}
+    def inline_title(self, text):
+        return {"title": text.strip()}  # strip leading/trailing whitespace
 
     def option(self, _indent, name, value=None):
         return (name, value)
@@ -93,7 +90,7 @@ def get_parser() -> Lark:
     parser = Lark(
         grammar,
         start="directive",
-        parser="earley",
+        parser="lalr",
         propagate_positions=True,
         maybe_placeholders=False,
     )
