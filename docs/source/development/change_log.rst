@@ -3,6 +3,36 @@
 Changelog
 =========
 
+.. _`unreleased`:
+
+Unreleased
+-----------
+
+New and Improved
+................
+
+- ✨ Added RST directive parser for ``analyse`` module to resolve the marked RST into Sphinx-Needs related data.
+
+  Marked RST blocks can be resolved from the marked RST text in source files using the simplified RST directive parser.
+  The resolved RST blocks will be dumped into the JSON output along with other extracted markers.
+  To make the parser more stable, 3 new configuration options are added to control the parsing behavior:
+
+  - ``leading_sequences``: List of leading character sequences to strip from each line.
+
+    This option allows users to specify a list of leading character sequences (e.g., ``*``, ``-``) that should be stripped
+    from each line of the marked RST block before parsing.
+    This is useful for handling comment styles that include leading characters in multi-line comments.
+
+  - ``indented_spaces``: Number of spaces that indicate an indented block.
+  - ``link_options``: List of option names whose values should be converted to lists when parsed.
+
+- ✨ Enhanced the ``src-trace`` directive to support creating need items from marked RST blocks in addition to one-line need definitions.
+
+  The ``src-trace`` directive can now create Sphinx-Needs need items from both one-line need definitions and marked RST blocks.
+  This provides more flexibility for defining needs in source code comments.
+
+:Released: 02.10.2025
+
 .. _`release:1.1.0`:
 
 1.1.0

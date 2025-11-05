@@ -511,6 +511,8 @@ Configuration for Sphinx-Needs ID reference extraction.
 
 - ``markers`` (``list[str]``) - List of marker strings that identify need ID references
 
+.. _analyse_marked_rst:
+
 analyse.marked_rst
 ^^^^^^^^^^^^^^^^^^
 
