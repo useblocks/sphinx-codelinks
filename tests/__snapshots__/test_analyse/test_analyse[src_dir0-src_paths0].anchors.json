@@ -14,6 +14,13 @@
     },
     "tagged_scope": "void dummy_func1(){\n     //...\n }",
     "rst": ".. impl:: implement dummy function 1\n   :id: IMPL_71\n",
+    "need": {
+      "type": "impl",
+      "title": "implement dummy function 1",
+      "options": {
+        "id": "IMPL_71"
+      }
+    },
     "type": "rst"
   },
   {
@@ -26,11 +33,15 @@
       },
       "end": {
         "row": 13,
-        "column": 40
+        "column": 41
       }
     },
     "tagged_scope": "int main() {\n   std::cout << \"Starting demo_1...\" << std::endl;\n   dummy_func1();\n   std::cout << \"Demo_1 finished.\" << std::endl;\n   return 0;\n }",
-    "rst": "..impl:: implement main function ",
+    "rst": ".. impl:: implement main function ",
+    "need": {
+      "type": "impl",
+      "title": "implement main function"
+    },
     "type": "rst"
   },
   {
