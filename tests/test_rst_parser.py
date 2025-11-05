@@ -1,7 +1,7 @@
 from lark import UnexpectedInput
 import pytest
 
-from sphinx_codelinks.analyse.sn_rst_parser import parse_rst
+from sphinx_codelinks.analyse.sn_rst_parser import parse_rst, preprocess_rst
 
 
 @pytest.mark.parametrize(
@@ -159,3 +159,64 @@ def test_sn_rst_parser_positive(text: str, expected: dict):
 def test_sn_rst_parser_negative(text: str):
     warning = parse_rst(text)
     assert isinstance(warning, UnexpectedInput)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        # No leading chars - text is already properly aligned
+        (
+            ".. req:: Title\n",
+            ".. req:: Title\n",
+        ),
+        # Single line without newline - adds newline and strips leading/trailing spaces
+        (
+            ".. req:: Title",
+            ".. req:: Title\n",
+        ),
+        # Single line with 3 leading spaces - strips and adds newline
+        (
+            "   .. req:: Title",
+            ".. req:: Title\n",
+        ),
+        # Multi-line with consistent indentation - no change
+        (
+            ".. req:: Title\n   :option: value\n",
+            ".. req:: Title\n   :option: value\n",
+        ),
+        # Text with 3 leading spaces before directive marker
+        (
+            "   .. req:: 3 leading spaces\n      :option: value\n",
+            ".. req:: 3 leading spaces\n   :option: value\n",
+        ),
+        # Empty string - returns newline (edge case)
+        (
+            "",
+            "",
+        ),
+        # Only whitespace - strips and adds newline
+        (
+            "   ",
+            "   ",
+        ),
+        # No directive marker found - returns as-is with newline added if missing
+        (
+            "This is not a directive",
+            "This is not a directive",
+        ),
+        # Directive marker not at expected position - handles gracefully
+        (
+            "Some text .. req:: Title\n",
+            ".. req:: Title\n",
+        ),
+        # Multi-line with trailing spaces
+        (
+            ".. req:: Title   \n   :option: value   \n",
+            ".. req:: Title   \n   :option: value   \n",
+        ),
+    ],
+)
+def test_preprocess_rst(text: str, expected: str):
+    """Test preprocess_rst function normalizes input for parser."""
+    result = preprocess_rst(text)
+    assert result == expected
