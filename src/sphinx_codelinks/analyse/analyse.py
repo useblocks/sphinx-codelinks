@@ -321,7 +321,7 @@ class SourceAnalyse:
             resolved = None
 
         if resolved and "options" in resolved:
-            # flatten options
+            # flatten options and convert link options values to list if needed
             for key, val in resolved["options"].items():
                 if (
                     key in self.analyse_config.marked_rst_config.link_options
