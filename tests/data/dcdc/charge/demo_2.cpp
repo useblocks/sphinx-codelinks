@@ -35,6 +35,7 @@
   /**
   * @rst
   * .. impl:: Feature G - Data loss prevention
+  *    :id: IMPL_main_demo2_rst
   * @endrst
   * Some description here.
   * [[ IMPL_main_demo2, main func in demo_2]]

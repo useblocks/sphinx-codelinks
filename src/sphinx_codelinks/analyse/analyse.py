@@ -320,14 +320,18 @@ class SourceAnalyse:
             self.handle_rst_warning(resolved, src_comment, rst_text)
             resolved = None
 
-        if resolved:
-            # convert link options values to list
-            for key, val in resolved.items():
+        if resolved and "options" in resolved:
+            # flatten options
+            for key, val in resolved["options"].items():
                 if (
                     key in self.analyse_config.marked_rst_config.link_options
                     and isinstance(val, str)
                 ):
+                    # convert link options values to list
                     resolved[key] = [val.split(",")]
+                else:
+                    resolved[key] = val
+            del resolved["options"]
 
         return MarkedRst(
             filepath,

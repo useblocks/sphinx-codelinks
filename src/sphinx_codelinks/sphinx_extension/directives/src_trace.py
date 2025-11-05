@@ -12,7 +12,7 @@ from sphinx_needs.api import add_need  # type: ignore[import-untyped]
 from sphinx_needs.utils import add_doc  # type: ignore[import-untyped]
 
 from sphinx_codelinks.analyse.analyse import SourceAnalyse
-from sphinx_codelinks.analyse.models import OneLineNeed
+from sphinx_codelinks.analyse.models import MarkedRst, NeedIdRefs, OneLineNeed
 from sphinx_codelinks.config import (
     CodeLinksConfig,
     CodeLinksProjectConfigType,
@@ -43,15 +43,18 @@ def get_rel_path(doc_path: Path, code_path: Path, base_dir: Path) -> tuple[Path,
 
 
 def generate_str_link_name(
-    oneline_need: OneLineNeed,
+    marked_content: OneLineNeed | MarkedRst,
     target_filepath: Path,
     dirs: dict[str, Path],
     local: bool = False,
 ) -> str:
-    if oneline_need.source_map["start"]["row"] == oneline_need.source_map["end"]["row"]:
-        lineno = f"L{oneline_need.source_map['start']['row'] + 1}"
+    if (
+        marked_content.source_map["start"]["row"]
+        == marked_content.source_map["end"]["row"]
+    ):
+        lineno = f"L{marked_content.source_map['start']['row'] + 1}"
     else:
-        lineno = f"L{oneline_need.source_map['start']['row'] + 1}-L{oneline_need.source_map['end']['row'] + 1}"
+        lineno = f"L{marked_content.source_map['start']['row'] + 1}-L{marked_content.source_map['end']['row'] + 1}"
     # url = str(target_filepath.relative_to(target_dir)) + f"#{lineno}"
     if local:
         url = str(target_filepath) + f"#{lineno}"
@@ -245,12 +248,15 @@ class SourceTracingDirective(SphinxDirective):
     ) -> list[nodes.Node]:
         """Render the needs from the virtual docs"""
         rendered_needs: list[nodes.Node] = []
-        for oneline_need in src_analyse.oneline_needs:
+        for marked_content in src_analyse.all_marked_content:
+            if isinstance(marked_content, NeedIdRefs):
+                # skip need_id_refs type
+                continue
             # # add source files into the dependency
             # # https://www.sphinx-doc.org/en/master/extdev/envapi.html#sphinx.environment.BuildEnvironment.note_dependency
-            # self.env.note_dependency(str(oneline_need.filepath.resolve()))
+            # self.env.note_dependency(str(marked_content.filepath.resolve()))
 
-            filepath = src_analyse.analyse_config.src_dir / oneline_need.filepath
+            filepath = src_analyse.analyse_config.src_dir / marked_content.filepath
             target_filepath = dirs["target_dir"] / filepath.relative_to(dirs["src_dir"])
 
             # mapping between lineno and need link in docs for local url
@@ -270,21 +276,21 @@ class SourceTracingDirective(SphinxDirective):
                     Path(self.env.docname), target_filepath, dirs["out_dir"]
                 )
                 local_link_name = generate_str_link_name(
-                    oneline_need,
+                    marked_content,
                     local_rel_path,
                     dirs,
                     local=True,
                 )
             if remote_url_field:
                 remote_link_name = generate_str_link_name(
-                    oneline_need, target_filepath, dirs, local=False
+                    marked_content, target_filepath, dirs, local=False
                 )
 
-            if oneline_need.need:
+            if marked_content.need:
                 # render needs from one-line marker
                 kwargs: dict[str, str | list[str]] = {
                     field_name: field_value
-                    for field_name, field_value in oneline_need.need.items()
+                    for field_name, field_value in marked_content.need.items()
                     if field_name
                     not in [
                         "title",
@@ -297,27 +303,27 @@ class SourceTracingDirective(SphinxDirective):
                 if remote_url_field and remote_link_name is not None:
                     kwargs[remote_url_field] = remote_link_name
 
-                oneline_needs: list[nodes.Node] = add_need(
+                a_need: list[nodes.Node] = add_need(
                     app=self.env.app,  # The Sphinx application object
                     state=self.state,  # The docutils state object
                     docname=self.env.docname,  # The current document name
                     lineno=self.lineno,  # The line number where the directive is used
-                    need_type=str(oneline_need.need["type"]),  # The type of the need
-                    title=str(oneline_need.need["title"]),  # The title of the need
+                    need_type=str(marked_content.need["type"]),  # The type of the need
+                    title=str(marked_content.need["title"]),  # The title of the need
                     **cast(dict[str, Any], kwargs),  # type: ignore[explicit-any]
                 )
-                rendered_needs.extend(oneline_needs)
+                rendered_needs.extend(a_need)
                 if local_url_field:
                     # save the mapping of need links and line numbers of source codes
                     # for the later use in `html-collect-pages`
                     if str(target_filepath) not in file_lineno_href.mappings:
                         file_lineno_href.mappings[str(target_filepath)] = {
-                            oneline_need.source_map["start"]["row"]
-                            + 1: f"{docs_href}#{oneline_need.need['id']}"
+                            marked_content.source_map["start"]["row"]
+                            + 1: f"{docs_href}#{marked_content.need['id']}"
                         }
                     else:
                         file_lineno_href.mappings[str(target_filepath)][
-                            oneline_need.source_map["start"]["row"] + 1
-                        ] = f"{docs_href}#{oneline_need.need['id']}"
+                            marked_content.source_map["start"]["row"] + 1
+                        ] = f"{docs_href}#{marked_content.need['id']}"
 
         return rendered_needs

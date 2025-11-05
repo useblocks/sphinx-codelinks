@@ -4,7 +4,7 @@
 ignore = ["block.title_line"]
 
 [needs]
-id_required = true
+id_required = false
 
 [[needs.types]]
 directive = "feature"

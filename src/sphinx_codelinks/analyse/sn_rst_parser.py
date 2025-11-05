@@ -6,6 +6,10 @@
 from lark import Lark, Transformer, UnexpectedInput, v_args
 
 
+class PreProcessError(Exception):
+    """Custom error for preprocess issues."""
+
+
 @v_args(inline=True)
 class DirectiveTransformer(Transformer):
     def NAME(self, tok):
@@ -118,6 +122,8 @@ _WS: /[ \t]+/
 INDENT_DIRECTIVE: /[ \t]+/
 """
 
+    processed_text = preprocess_rst(text)
+
     parser = Lark(
         grammar,
         start="directive",
@@ -125,13 +131,32 @@ INDENT_DIRECTIVE: /[ \t]+/
         propagate_positions=True,
         maybe_placeholders=False,
     )
-    if "\n" not in text:
-        # to make the grammar happy for single line input
-        text = text.strip() + "\n"
+
     try:
-        tree = parser.parse(text)
+        tree = parser.parse(processed_text)
     except UnexpectedInput as e:
         return e
     transformer = DirectiveTransformer()
     result = transformer.transform(tree)
     return result
+
+
+def preprocess_rst(text: str) -> str:
+    """Only process valid RST directive text by stripping leading spaces before the directive marker."""
+    if not text:
+        # empty string, return as is
+        return text
+    lines = text.splitlines(keepends=True)
+    idx_directive = lines[0].find(
+        ".."
+    )  # expect the first line is the start of the RST directive
+    if idx_directive == -1:
+        # do nothing and let parser to handle it
+        return text
+
+    stripped_lines = [line[idx_directive:] for line in lines]
+    stripped_text = "".join(stripped_lines)
+    if "\n" not in text:
+        # to make the grammar happy for single line input
+        stripped_text = stripped_text.strip() + "\n"
+    return stripped_text
