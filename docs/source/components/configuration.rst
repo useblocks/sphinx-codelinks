@@ -524,10 +524,14 @@ Configuration for marked RST block extraction.
    [codelinks.projects.my_project.analyse.marked_rst]
    start_sequence = "@rst"
    end_sequence = "@endrst"
+   strip_leading_sequences = ["*"]
+   indented_spaces = 3
    link_options = ["links"]
 
 **Configuration fields:**
 
 - ``start_sequence`` (``str``) - Marker that begins an RST block
 - ``end_sequence`` (``str``) - Marker that ends an RST block
+- ``strip_leading_sequences`` (``list[str]``) - List of leading sequences to strip from each line of the RST text between the markers
+- ``indented_spaces`` (``int``) - Number of leading spaces to consider as indentation in the RST text
 - ``link_options`` (``list[str]``) - List of option names whose values should be treated as Sphinx-Needs link fields

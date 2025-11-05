@@ -1,9 +1,47 @@
 """Test script for RST directive Lark parser."""
 
 # ruff: noqa: N802
-from pathlib import Path
-
+# TODO: Not sure Lark is the right tool for this job since the it has a few limitations such as lack of support for dynamic indentation levels while extracting leading spaces in content.
+# Consider switching to Visitor instead of Transformer to have more control on resolving the tree or implement a custom parser if needed.
 from lark import Lark, Transformer, UnexpectedInput, v_args
+
+LARK_GRAMMER = rf"""
+start: directive
+
+directive: INDENT_DIRECTIVE? ".." _WS NAME "::" _NEWLINE? directive_block?
+
+directive_block: inline_title _NEWLINE | inline_title _NEWLINE options_block (_NEWLINE content_block)? | inline_title _NEWLINE _NEWLINE content_block | _NEWLINE content_block
+
+inline_title: TEXT_NO_COLUMN
+
+options_block: option+
+
+option: INDENT OPTION_NAME _WS? OPTION_VALUE? _NEWLINE
+
+content_block: content_line+
+
+content_line: INDENT TEXT _NEWLINE | _NEWLINE
+
+INDENT: {" " * 3}
+
+OPTION_NAME: /:[a-zA-Z0-9_-]+:/
+
+OPTION_VALUE: /[^\n]+/
+
+NAME: /[a-zA-Z0-9_-]+/
+
+TEXT_NO_COLUMN: /(?!.*:[a-zA-Z0-9_-]+:)[^\r\n]+/
+
+TEXT: /[^\r\n]+/
+
+NEWLINE_IN_CONTENT: /\r?\n/
+
+_NEWLINE: /[ \t]*\r?\n/
+
+_WS: /[ \t]+/
+
+INDENT_DIRECTIVE: /[ \t]+/
+"""
 
 
 @v_args(inline=True)
@@ -80,12 +118,46 @@ class DirectiveTransformer(Transformer):
         return need
 
 
-def get_parser() -> Lark:
-    """Get the Lark parser for RST directives."""
-
+def parse_rst(text: str, num_spaces: int = 3) -> dict | UnexpectedInput:
+    """Parse the given RST directive text and return the parsed data."""
     # Load the grammar
-    grammar_path = Path(__file__).parent / "sn_rst.lark"
-    grammar = grammar_path.read_text()
+    grammar = rf"""
+start: directive
+
+directive: INDENT_DIRECTIVE? ".." _WS NAME "::" _NEWLINE? directive_block?
+
+directive_block: inline_title _NEWLINE | inline_title _NEWLINE options_block (_NEWLINE content_block)? | inline_title _NEWLINE _NEWLINE content_block | _NEWLINE content_block
+
+inline_title: TEXT_NO_COLUMN
+
+options_block: option+
+
+option: INDENT OPTION_NAME _WS? OPTION_VALUE? _NEWLINE
+
+content_block: content_line+
+
+content_line: INDENT TEXT _NEWLINE | _NEWLINE
+
+INDENT: "{" " * num_spaces}"
+
+OPTION_NAME: /:[a-zA-Z0-9_-]+:/
+
+OPTION_VALUE: /[^\n]+/
+
+NAME: /[a-zA-Z0-9_-]+/
+
+TEXT_NO_COLUMN: /(?!.*:[a-zA-Z0-9_-]+:)[^\r\n]+/
+
+TEXT: /[^\r\n]+/
+
+NEWLINE_IN_CONTENT: /\r?\n/
+
+_NEWLINE: /[ \t]*\r?\n/
+
+_WS: /[ \t]+/
+
+INDENT_DIRECTIVE: /[ \t]+/
+"""
 
     parser = Lark(
         grammar,
@@ -95,12 +167,6 @@ def get_parser() -> Lark:
         maybe_placeholders=False,
     )
 
-    return parser
-
-
-def parse_rst(text: str) -> dict | UnexpectedInput:
-    """Parse the given RST directive text and return the parsed data."""
-    parser = get_parser()
     try:
         tree = parser.parse(text)
     except UnexpectedInput as e:

@@ -289,7 +289,7 @@ class SourceAnalyse:
         if UNIX_NEWLINE in extracted_rst["rst_text"]:
             rst_text = utils.remove_leading_sequences(
                 extracted_rst["rst_text"],
-                self.analyse_config.marked_rst_config.leading_sequences,
+                self.analyse_config.marked_rst_config.strip_leading_sequences,
             )
         else:
             rst_text = extracted_rst["rst_text"]
@@ -313,10 +313,20 @@ class SourceAnalyse:
                 "column": extracted_rst["end_idx"],
             },
         }
-        resolved = parse_rst(rst_text)
+        resolved = parse_rst(
+            rst_text, self.analyse_config.marked_rst_config.indented_spaces
+        )
         if isinstance(resolved, UnexpectedInput):
             self.handle_rst_warning(resolved, src_comment, rst_text)
             return None
+        if resolved:
+            # convert link options values to list
+            for key, val in resolved.items():
+                if (
+                    key in self.analyse_config.marked_rst_config.link_options
+                    and isinstance(val, str)
+                ):
+                    resolved[key] = [val.split(",")]
 
         return MarkedRst(
             filepath,

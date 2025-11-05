@@ -12,6 +12,6 @@ The parser does't have the Sphinx-Needs directive validation logic. It only chec
 Since the parser does not implement the full reST specification, it has some limitations:
 
 - Comments in the RST text are not supported.
-- The parser expects proper indentation for options and content blocks.
+- The parser expects consistent indentation for options and content blocks.
 - It only takes an inline directive argument/title (no multi-line arguments/titles).
 - It only takes inline option values (no multi-line option values).
