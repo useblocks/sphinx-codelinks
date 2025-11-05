@@ -318,7 +318,8 @@ class SourceAnalyse:
         )
         if isinstance(resolved, UnexpectedInput):
             self.handle_rst_warning(resolved, src_comment, rst_text)
-            return None
+            resolved = None
+
         if resolved:
             # convert link options values to list
             for key, val in resolved.items():

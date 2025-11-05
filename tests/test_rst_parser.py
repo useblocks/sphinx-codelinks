@@ -9,8 +9,23 @@ from sphinx_codelinks.analyse.sn_rst_parser import parse_rst
     [
         # Minimal directive - only type, no title/options/content
         (
+            ".. req::",
+            {"type": "req"},
+        ),
+        # Minimal directive - with trailing space no newline
+        (
+            ".. req::      ",
+            {"type": "req"},
+        ),
+        # Minimal directive - only type, no title/options/content
+        (
             ".. req::\n",
             {"type": "req"},
+        ),
+        # Simple inline title with trailing spaces without newline
+        (
+            ".. req:: title1  ",
+            {"type": "req", "title": "title1"},
         ),
         # Simple inline title on same line as directive marker
         (

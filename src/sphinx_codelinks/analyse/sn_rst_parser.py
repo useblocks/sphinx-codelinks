@@ -5,51 +5,13 @@
 # Consider switching to Visitor instead of Transformer to have more control on resolving the tree or implement a custom parser if needed.
 from lark import Lark, Transformer, UnexpectedInput, v_args
 
-LARK_GRAMMER = rf"""
-start: directive
-
-directive: INDENT_DIRECTIVE? ".." _WS NAME "::" _NEWLINE? directive_block?
-
-directive_block: inline_title _NEWLINE | inline_title _NEWLINE options_block (_NEWLINE content_block)? | inline_title _NEWLINE _NEWLINE content_block | _NEWLINE content_block
-
-inline_title: TEXT_NO_COLUMN
-
-options_block: option+
-
-option: INDENT OPTION_NAME _WS? OPTION_VALUE? _NEWLINE
-
-content_block: content_line+
-
-content_line: INDENT TEXT _NEWLINE | _NEWLINE
-
-INDENT: {" " * 3}
-
-OPTION_NAME: /:[a-zA-Z0-9_-]+:/
-
-OPTION_VALUE: /[^\n]+/
-
-NAME: /[a-zA-Z0-9_-]+/
-
-TEXT_NO_COLUMN: /(?!.*:[a-zA-Z0-9_-]+:)[^\r\n]+/
-
-TEXT: /[^\r\n]+/
-
-NEWLINE_IN_CONTENT: /\r?\n/
-
-_NEWLINE: /[ \t]*\r?\n/
-
-_WS: /[ \t]+/
-
-INDENT_DIRECTIVE: /[ \t]+/
-"""
-
 
 @v_args(inline=True)
 class DirectiveTransformer(Transformer):
     def NAME(self, tok):
         return str(tok)
 
-    def TITLE(self, tok):
+    def TEXT_NO_COLUMN(self, tok):
         return str(tok).strip()
 
     def OPTION_NAME(self, tok):
@@ -61,9 +23,6 @@ class DirectiveTransformer(Transformer):
     def TEXT(self, tok):
         return str(tok)
 
-    def TEXT_NO_COLUMN(self, tok):
-        return str(tok).strip()
-
     def INDENT(self, tok):
         """Return the length of the indent."""
         return len(str(tok))
@@ -72,7 +31,7 @@ class DirectiveTransformer(Transformer):
         return str(tok)
 
     def inline_title(self, text):
-        return {"title": text.strip()}  # strip leading/trailing whitespace
+        return {"title": text}  # strip leading/trailing whitespace
 
     def option(self, _indent, name, value=None):
         return (name, value)
@@ -166,7 +125,9 @@ INDENT_DIRECTIVE: /[ \t]+/
         propagate_positions=True,
         maybe_placeholders=False,
     )
-
+    if "\n" not in text:
+        # to make the grammar happy for single line input
+        text = text.strip() + "\n"
     try:
         tree = parser.parse(text)
     except UnexpectedInput as e:
