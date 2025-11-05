@@ -17,9 +17,7 @@
     "need": {
       "type": "impl",
       "title": "implement dummy function 1",
-      "options": {
-        "id": "IMPL_71"
-      }
+      "id": "IMPL_71"
     },
     "type": "rst"
   },
