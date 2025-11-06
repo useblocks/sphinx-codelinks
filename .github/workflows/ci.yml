@@ -70,7 +70,7 @@ jobs:
         uses: actions/setup-python@v5
 
       - name: Setup rye
-        run: ./.github/actions/setup_rye
+        uses: ./.github/actions/setup_rye
 
       - name: Run tests
         run: rye test -a -- --cov --cov-branch --cov-report=xml
