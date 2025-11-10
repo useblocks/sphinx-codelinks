@@ -214,6 +214,16 @@ def test_sn_rst_parser_negative(text: str):
             ".. req:: Title   \n   :option: value   \n",
             ".. req:: Title   \n   :option: value   \n",
         ),
+        # Multi-line with trailing spaces and content
+        (
+            ".. req:: Title   \n   :option: value   \n\n   This is the content.   \n",
+            ".. req:: Title   \n   :option: value   \n\n   This is the content.\n",
+        ),
+        # Multi-line with trailing and leading spaces and content
+        (
+            "  .. req:: Title   \n     :option: value     \n\n     This is the content.   \n",
+            ".. req:: Title   \n   :option: value   \n\n   This is the content.\n",
+        ),
     ],
 )
 def test_preprocess_rst(text: str, expected: str):

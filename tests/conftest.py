@@ -1,9 +1,12 @@
+from collections.abc import Callable
 import json
 from pathlib import Path
 
+from _pytest.mark import ParameterSet
 from docutils.nodes import document
 import pytest
 from syrupy.extensions.single_file import SingleFileSnapshotExtension, WriteMode
+import yaml
 
 from sphinx_codelinks.config import OneLineCommentStyle
 
@@ -101,3 +104,83 @@ def snapshot_marks(snapshot):
     Sanitize the reqif, to make the snapshots reproducible.
     """
     return snapshot.with_defaults(extension_class=AnchorsSnapshotExtension)
+
+
+def create_parameters(
+    *rel_paths: str, skip_files: None | list[str] = None
+) -> list[ParameterSet]:
+    """Create parameters for a pytest param_file decorator."""
+    paths: list[Path] = []
+    for rel_path in rel_paths:
+        assert not Path(rel_path).is_absolute()
+        path = TEST_DIR.joinpath(rel_path)
+        if path.is_file():
+            paths.append(path)
+        elif path.is_dir():
+            paths.extend(path.glob("*.yaml"))
+        else:
+            raise FileNotFoundError(f"File / folder not found: {path}")
+
+    if skip_files:
+        paths = [
+            path for path in paths if str(path.relative_to(TEST_DIR)) not in skip_files
+        ]
+
+    if not paths:
+        raise FileNotFoundError(f"No files found: {rel_paths}")
+
+    if len(paths) == 1:
+        with paths[0].open(encoding="utf8") as f:
+            try:
+                data = yaml.safe_load(f)
+            except Exception as err:
+                raise OSError(f"Error loading {paths[0]}") from err
+        return [pytest.param(value, id=id) for id, value in data.items()]
+    else:
+        params: list[ParameterSet] = []
+        for subpath in paths:
+            with subpath.open(encoding="utf8") as f:
+                try:
+                    data = yaml.safe_load(f)
+                except Exception as err:
+                    raise OSError(f"Error loading {subpath}") from err
+            for key, value in data.items():
+                params.append(
+                    pytest.param(
+                        value,
+                        id=f"{subpath.relative_to(TEST_DIR).with_suffix('')}-{key}",
+                    )
+                )
+        return params
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    """Generate tests for a ``@pytest.mark.fixture_file`` decorator."""
+    for marker in metafunc.definition.iter_markers(name="fixture_file"):
+        params = create_parameters(*marker.args, **marker.kwargs)
+        metafunc.parametrize(argnames="content", argvalues=params)
+
+
+@pytest.fixture
+def write_fixture_files() -> Callable[[Path, dict[str, str | list[Path]]], None]:
+    def _inner(tmp: Path, content: dict[str, str | list[Path]]) -> None:
+        section_file_mapping: dict[str, Path] = {
+            "ubproject": tmp / "ubproject.toml",
+        }
+        for section, file_path in section_file_mapping.items():
+            if section in content:
+                if isinstance(content[section], str):
+                    file_path.write_text(content[section], encoding="utf-8")  # type: ignore[assignment]
+                else:
+                    raise ValueError(
+                        f"Unsupported content type for section '{section}': {type(content[section])}"
+                    )
+        src_paths: list[Path] = []
+        for key, value in content.items():
+            if key.startswith("dummy") and isinstance(value, str):
+                dummy_file_path = tmp / key
+                dummy_file_path.write_text(value, encoding="utf-8")
+                src_paths.append(dummy_file_path)
+        content["src_paths"] = src_paths
+
+    return _inner

@@ -1,6 +1,8 @@
 # @Test suite for source code analysis and marker extraction, TEST_ANA_1, test, [IMPL_LNK_1, IMPL_ONE_1, IMPL_MRST_1]
+from collections.abc import Callable
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -232,3 +234,39 @@ def test_oneline_parser_warnings_are_collected(tmp_path):
     warning = src_analyse.oneline_warnings[0]
     assert "too_many_fields" in warning.sub_type
     assert warning.lineno == 17
+
+
+@pytest.mark.fixture_file("fixture_files/analyse_rst.yml")
+def test_analyse_rst(
+    tmp_path: Path,
+    content: dict[str, Any],
+    write_fixture_files: Callable[[Path, dict[str, Any]], None],
+    snapshot_marks: str,
+):
+    write_fixture_files(tmp_path, content)
+
+    src_paths = [tmp_path / src_path for src_path in content["src_paths"]]
+    src_analyse_config = SourceAnalyseConfig(
+        src_files=src_paths,
+        src_dir=tmp_path,
+        get_need_id_refs=False,
+        get_oneline_needs=False,
+        get_rst=True,
+    )
+
+    src_analyse = SourceAnalyse(src_analyse_config)
+    src_analyse.run()
+    src_analyse.dump_marked_content(tmp_path)
+    dumped_content = tmp_path / "marked_content.json"
+
+    # assert src_analyse.rst_warnings
+    assert dumped_content.exists()
+
+    with dumped_content.open("r") as f:
+        marked_content = json.load(f)
+    # normalize filepath
+    for obj in marked_content:
+        obj["filepath"] = (
+            Path(obj["filepath"]).relative_to(src_analyse_config.src_dir)
+        ).as_posix()
+    assert marked_content == snapshot_marks
