@@ -3,6 +3,9 @@
 # ruff: noqa: N802
 # TODO: Not sure Lark is the right tool for this job since the it has a few limitations such as lack of support for dynamic indentation levels while extracting leading spaces in content.
 # Consider switching to Visitor instead of Transformer to have more control on resolving the tree or implement a custom parser if needed.
+
+from typing import TypedDict
+
 from lark import Lark, Transformer, UnexpectedInput, v_args
 
 
@@ -10,8 +13,15 @@ class PreProcessError(Exception):
     """Custom error for preprocess issues."""
 
 
+class NeedDirectiveType(TypedDict, total=False):
+    type: str
+    title: str | None
+    options: dict[str, str] | None
+    content: str | None
+
+
 @v_args(inline=True)
-class DirectiveTransformer(Transformer):
+class DirectiveTransformer(Transformer):  # type: ignore[type-arg] # disable type-arg due to lark Transformer generic issue
     def NAME(self, tok):
         return str(tok)
 
@@ -64,7 +74,7 @@ class DirectiveTransformer(Transformer):
         # NAME,, optional title/options/content
         need = {"type": name}
         # flaten optionals
-        flatten_optionals = []
+        flatten_optionals: list[dict[str, str]] = []
         for item in optionals:
             if isinstance(item, tuple):
                 flatten_optionals.extend(item)
@@ -81,7 +91,7 @@ class DirectiveTransformer(Transformer):
         return need
 
 
-def parse_rst(text: str, num_spaces: int = 3) -> dict | UnexpectedInput:
+def parse_rst(text: str, num_spaces: int = 3) -> NeedDirectiveType | UnexpectedInput:
     """Parse the given RST directive text and return the parsed data."""
     # Load the grammar
     grammar = rf"""
@@ -137,7 +147,7 @@ INDENT_DIRECTIVE: /[ \t]+/
     except UnexpectedInput as e:
         return e
     transformer = DirectiveTransformer()
-    result = transformer.transform(tree)
+    result: NeedDirectiveType = transformer.transform(tree)
     return result
 
 

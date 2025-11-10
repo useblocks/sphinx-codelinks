@@ -22,7 +22,7 @@ from sphinx_codelinks.analyse.oneline_parser import (
     OnelineParserInvalidWarning,
     oneline_parser,
 )
-from sphinx_codelinks.analyse.sn_rst_parser import parse_rst
+from sphinx_codelinks.analyse.sn_rst_parser import NeedDirectiveType, parse_rst
 from sphinx_codelinks.config import (
     UNIX_NEWLINE,
     OneLineCommentStyle,
@@ -313,25 +313,30 @@ class SourceAnalyse:
                 "column": extracted_rst["end_idx"],
             },
         }
-        resolved = parse_rst(
+        need_directive: None | NeedDirectiveType | UnexpectedInput = None
+        need_directive = parse_rst(
             rst_text, self.analyse_config.marked_rst_config.indented_spaces
         )
-        if isinstance(resolved, UnexpectedInput):
-            self.handle_rst_warning(resolved, src_comment, rst_text)
-            resolved = None
+        if isinstance(need_directive, UnexpectedInput):
+            self.handle_rst_warning(need_directive, src_comment, rst_text)
+            need_directive = None
 
-        if resolved and "options" in resolved:
+        resolved: dict[str, str | list[str]] = (
+            {key: val for key, val in need_directive.items() if key != "options"}  # type: ignore[misc] # type `object` is filtered out by the condition
+            if need_directive
+            else {}
+        )
+        if need_directive and "options" in need_directive:
             # flatten options and convert link options values to list if needed
-            for key, val in resolved["options"].items():
+            for key, val in need_directive["options"].items():  # type: ignore[union-attr] # options existence checked
                 if (
                     key in self.analyse_config.marked_rst_config.link_options
                     and isinstance(val, str)
                 ):
                     # convert link options values to list
-                    resolved[key] = [val.split(",")]
+                    resolved[key] = val.split(",")
                 else:
                     resolved[key] = val
-            del resolved["options"]
 
         return MarkedRst(
             filepath,
@@ -340,11 +345,11 @@ class SourceAnalyse:
             src_comment,
             tagged_scope,
             rst_text,
-            resolved,
+            resolved if resolved else None,
         )
 
     def handle_rst_warning(
-        self, warning: UnexpectedInput, src_comment: SourceComment, rst_text
+        self, warning: UnexpectedInput, src_comment: SourceComment, rst_text: str
     ) -> None:
         """Handle RST parsing warnings."""
         if not src_comment.source_file:
