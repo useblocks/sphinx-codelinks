@@ -296,7 +296,7 @@ class SourceAnalyse:
             # -1 for last line of the marker
             end_row = start_row + extracted_rst["rst_text"].count(UNIX_NEWLINE) - 1
             end_column = len(
-                rst_text.splitlines()[(end_row - start_row)]
+                extracted_rst["rst_text"].splitlines()[(end_row - start_row)]
             )  # This is the line before the multiline end marker
         else:
             # single line rst marker
