@@ -349,6 +349,8 @@ def remove_leading_sequences(text: str, leading_sequences: list[str]) -> str:
 
 
 class ExtractedRstType(TypedDict):
+    """RST text extracted from comments and its position info in the context of the comment."""
+
     rst_text: str
     row_offset: int
     start_idx: int

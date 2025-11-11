@@ -293,16 +293,33 @@ class SourceAnalyse:
                 self.analyse_config.marked_rst_config.strip_leading_sequences,
             )
             start_column = 0  # multi-line rst always start at column 0 of the start mark's next line
-            # -2 for last line of marker and row_offset is 0-indexed
+            # -1 for last line of the marker
             end_row = start_row + extracted_rst["rst_text"].count(UNIX_NEWLINE) - 1
             end_column = len(
-                extracted_rst["rst_text"].split(UNIX_NEWLINE)[-2]
-            )  # last line is only the end marker
+                rst_text.splitlines()[(end_row - start_row)]
+            )  # This is the line before the multiline end marker
         else:
+            # single line rst marker
+            lines = text.splitlines()
             rst_text = extracted_rst["rst_text"]
-            start_column = extracted_rst["start_idx"]
+            column_offset = 0  # offset before the comment start
+            if src_comment.node.start_point.row == src_comment.node.end_point.row:
+                # single-line comment
+                column_offset = src_comment.node.start_point.column
+            start_column = (
+                lines[extracted_rst["row_offset"]].find(
+                    self.analyse_config.marked_rst_config.start_sequence
+                )
+                + len(self.analyse_config.marked_rst_config.start_sequence)
+                + column_offset
+            )  # single-line rst start column
             end_row = start_row
-            end_column = extracted_rst["end_idx"]
+            end_column = (
+                lines[extracted_rst["row_offset"]].rfind(
+                    self.analyse_config.marked_rst_config.end_sequence
+                )
+                + column_offset
+            )  # single-line rst end column
         remote_url = self.git_remote_url
         if self.git_remote_url and self.git_commit_rev:
             remote_url = utils.form_https_url(
