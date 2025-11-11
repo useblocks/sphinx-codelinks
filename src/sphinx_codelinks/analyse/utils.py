@@ -386,7 +386,7 @@ def extract_rst(
     if start_idx == -1 or end_idx == -1:
         return None
     rst_text = text[start_idx + len(start_marker) : end_idx]
-    row_offset = len(text[:start_idx].splitlines())
+    row_offset = text[:start_idx].count(UNIX_NEWLINE)
     if not rst_text.strip():
         # empty string is out of the interest
         return None
@@ -406,7 +406,8 @@ def extract_rst(
     rst_text = rst_text[first_newline_idx + len(UNIX_NEWLINE) :]
     multiline_rst: ExtractedRstType = {
         "rst_text": rst_text,
-        "row_offset": row_offset,
+        "row_offset": row_offset
+        + 1,  # +1 for the rst text starts from the next line of start marker
         "start_idx": start_idx
         + len(start_marker)
         + first_newline_idx

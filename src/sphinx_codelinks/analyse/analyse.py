@@ -286,14 +286,23 @@ class SourceAnalyse:
         )
         if not extracted_rst:
             return None
+        start_row = src_comment.node.start_point.row + extracted_rst["row_offset"]
         if UNIX_NEWLINE in extracted_rst["rst_text"]:
             rst_text = utils.remove_leading_sequences(
                 extracted_rst["rst_text"],
                 self.analyse_config.marked_rst_config.strip_leading_sequences,
             )
+            start_column = 0  # multi-line rst always start at column 0 of the start mark's next line
+            # -2 for last line of marker and row_offset is 0-indexed
+            end_row = start_row + extracted_rst["rst_text"].count(UNIX_NEWLINE) - 1
+            end_column = len(
+                extracted_rst["rst_text"].split(UNIX_NEWLINE)[-2]
+            )  # last line is only the end marker
         else:
             rst_text = extracted_rst["rst_text"]
-        lineno = src_comment.node.start_point.row + extracted_rst["row_offset"] + 1
+            start_column = extracted_rst["start_idx"]
+            end_row = start_row
+            end_column = extracted_rst["end_idx"]
         remote_url = self.git_remote_url
         if self.git_remote_url and self.git_commit_rev:
             remote_url = utils.form_https_url(
@@ -301,16 +310,16 @@ class SourceAnalyse:
                 self.git_commit_rev,
                 self.project_path,
                 filepath,
-                lineno,
+                start_row + 1,
             )
         source_map: SourceMap = {
             "start": {
-                "row": lineno - 1,
-                "column": extracted_rst["start_idx"],
+                "row": start_row,
+                "column": start_column,
             },
             "end": {
-                "row": lineno - 1,
-                "column": extracted_rst["end_idx"],
+                "row": end_row,
+                "column": end_column,
             },
         }
         need_directive: None | NeedDirectiveType | UnexpectedInput = None
