@@ -1,0 +1,21 @@
+oneline_rst_marker:
+  dummy_1.c: |
+    // @rst.. impl:: implement main function @endrst
+    int main() {
+      return 0;
+    }
+
+multiline_rst_marker:
+  dummy_1.c: |
+    /*
+      @rst
+      .. impl:: implement main function
+         :id: REQ_001
+         :status: test
+
+         This is content for the main function implementation.
+      @endrst
+    */
+    int main() {
+      return 0;
+    }

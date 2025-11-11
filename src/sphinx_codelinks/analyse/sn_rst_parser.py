@@ -8,6 +8,8 @@ from typing import TypedDict
 
 from lark import Lark, Transformer, UnexpectedInput, v_args
 
+from sphinx_codelinks.config import UNIX_NEWLINE
+
 
 class PreProcessError(Exception):
     """Custom error for preprocess issues."""
@@ -152,11 +154,17 @@ INDENT_DIRECTIVE: /[ \t]+/
 
 
 def preprocess_rst(text: str) -> str:
-    """Only process valid RST directive text by stripping leading spaces before the directive marker."""
+    """Process valid RST directive text before parsing.
+
+    The followings are processed:
+    - Stripe leading spaces before the directive marker to get relative indentations.
+    - Stripe trailing spaces at the end
+    - Ensure the text ends with a newline.
+    """
     if not text:
         # empty string, return as is
         return text
-    lines = text.splitlines(keepends=True)
+    lines = text.splitlines(keepends=False)
     idx_directive = lines[0].find(
         ".."
     )  # expect the first line is the start of the RST directive
@@ -164,9 +172,9 @@ def preprocess_rst(text: str) -> str:
         # do nothing and let parser to handle it
         return text
 
+    # remove leading spaces for the relative indentation
     stripped_lines = [line[idx_directive:] for line in lines]
-    stripped_text = "".join(stripped_lines)
-    if "\n" not in text:
-        # to make the grammar happy for single line input
-        stripped_text = stripped_text.strip() + "\n"
+    stripped_text = UNIX_NEWLINE.join(stripped_lines)
+    # remove trailing spaces and make sure it ends with newline
+    stripped_text = stripped_text.strip() + "\n"
     return stripped_text

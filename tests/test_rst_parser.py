@@ -212,7 +212,7 @@ def test_sn_rst_parser_negative(text: str):
         # Multi-line with trailing spaces
         (
             ".. req:: Title   \n   :option: value   \n",
-            ".. req:: Title   \n   :option: value   \n",
+            ".. req:: Title   \n   :option: value\n",
         ),
         # Multi-line with trailing spaces and content
         (
@@ -222,7 +222,7 @@ def test_sn_rst_parser_negative(text: str):
         # Multi-line with trailing and leading spaces and content
         (
             "  .. req:: Title   \n     :option: value     \n\n     This is the content.   \n",
-            ".. req:: Title   \n   :option: value   \n\n   This is the content.\n",
+            ".. req:: Title   \n   :option: value     \n\n   This is the content.\n",
         ),
     ],
 )
