@@ -254,6 +254,14 @@ def test_analyse_rst(
         get_rst=True,
     )
 
+    if "marked_rst_config" in content:
+        src_analyse_config.marked_rst_config.strip_leading_sequences = content[
+            "marked_rst_config"
+        ].get(
+            "strip_leading_sequences",
+            src_analyse_config.marked_rst_config.strip_leading_sequences,
+        )
+
     src_analyse = SourceAnalyse(src_analyse_config)
     src_analyse.run()
     src_analyse.dump_marked_content(tmp_path)
