@@ -30,7 +30,8 @@ Features
 .. feature:: Discover Source Code Files
    :id: FE_DISCOVERY
 
-   Discover source code files in a specified root directory. The root directory shall be configurable.
+   Discover source code files in a specified root directory.
+   The root directory shall be configurable.
 
 .. feature:: C Language Support
    :id: FE_C_SUPPORT

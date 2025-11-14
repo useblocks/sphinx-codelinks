@@ -37,7 +37,7 @@ style = "node"
 [[needs.types]]
 directive = "test"
 title = "Test"
-prefix = "T_"
+prefix = "TEST_"
 color = "#DarkTurquoise"
 style = "node"
 

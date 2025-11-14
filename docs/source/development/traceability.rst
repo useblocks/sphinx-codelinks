@@ -12,5 +12,4 @@ Testing
 -------
 
 .. src-trace::
-   :project: sphinx_codelinks
-   :directory: tests
+   :project: tests
