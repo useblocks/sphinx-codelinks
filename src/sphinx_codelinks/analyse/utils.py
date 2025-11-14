@@ -14,7 +14,9 @@ from sphinx_codelinks.source_discover.config import CommentType
 
 # Language-specific node types for scope detection
 SCOPE_NODE_TYPES = {
+    # @Python Scope Node Types, IMPL_PY_2, impl, [FE_PY]
     CommentType.python: {"function_definition", "class_definition"},
+    # @C and C++ Scope Node Types, IMPL_C_2, impl, [FE_C_SUPPORT, FE_CPP]
     CommentType.cpp: {"function_definition", "class_definition"},
     CommentType.cs: {"method_declaration", "class_declaration", "property_declaration"},
     CommentType.yaml: {"block_mapping_pair", "block_sequence_item", "document"},

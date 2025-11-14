@@ -13,6 +13,7 @@ from sphinx_codelinks.source_discover.config import (
 )
 
 
+# @Source discovery, IMPL_DC_1, impl, [FE_DEF]
 class SourceDiscover:
     def __init__(self, src_discover_config: SourceDiscoverConfig):
         self.src_discover_config = src_discover_config

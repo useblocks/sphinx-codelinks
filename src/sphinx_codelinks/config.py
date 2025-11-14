@@ -19,7 +19,9 @@ UNIX_NEWLINE = "\n"
 
 
 COMMENT_MARKERS = {
+    # @Support C and C++ style comments, IMPL_C_1, impl, [FE_C_SUPPORT, FE_CPP]
     CommentType.cpp: ["//", "/*"],
+    # @Support Python style comments, IMPL_PY_1, impl, [FE_PY]
     CommentType.python: ["#"],
     CommentType.cs: ["//", "/*", "///"],
 }
@@ -794,6 +796,9 @@ def convert_analyse_config(
     if src_discover:
         analyse_config_dict["src_files"] = src_discover.source_paths
         analyse_config_dict["src_dir"] = src_discover.src_discover_config.src_dir
+        analyse_config_dict["comment_type"] = (
+            src_discover.src_discover_config.comment_type
+        )
 
     return SourceAnalyseConfig(**analyse_config_dict)
 
@@ -856,4 +861,6 @@ def generate_project_configs(
         )
         analyse_config = convert_analyse_config(analyse_section_config)
         analyse_config.get_oneline_needs = True  # force to get oneline_need
+        # Copy comment_type from source_discover_config to analyse_config
+        analyse_config.comment_type = source_discover_config.comment_type
         project_config["analyse_config"] = analyse_config
