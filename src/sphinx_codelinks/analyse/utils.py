@@ -18,6 +18,15 @@ SCOPE_NODE_TYPES = {
     CommentType.cpp: {"function_definition", "class_definition"},
     CommentType.cs: {"method_declaration", "class_declaration", "property_declaration"},
     CommentType.yaml: {"block_mapping_pair", "block_sequence_item", "document"},
+    # @Rust Scope Node Types, IMPL_RUST_2, impl, [FE_RUST];
+    CommentType.rust: {
+        "function_item",
+        "struct_item",
+        "enum_item",
+        "impl_item",
+        "trait_item",
+        "mod_item",
+    },
 }
 
 # initialize logger
@@ -45,6 +54,10 @@ PYTHON_QUERY = """
 CPP_QUERY = """(comment) @comment"""
 C_SHARP_QUERY = """(comment) @comment"""
 YAML_QUERY = """(comment) @comment"""
+RUST_QUERY = """
+    (line_comment) @comment
+    (block_comment) @comment
+"""
 
 
 def is_text_file(filepath: Path, sample_size: int = 2048) -> bool:
@@ -83,6 +96,11 @@ def init_tree_sitter(comment_type: CommentType) -> tuple[Parser, Query]:
 
         parsed_language = Language(tree_sitter_yaml.language())
         query = Query(parsed_language, YAML_QUERY)
+    elif comment_type == CommentType.rust:
+        import tree_sitter_rust  # noqa: PLC0415
+
+        parsed_language = Language(tree_sitter_rust.language())
+        query = Query(parsed_language, RUST_QUERY)
     else:
         raise ValueError(f"Unsupported comment style: {comment_type}")
     parser = Parser(parsed_language)
