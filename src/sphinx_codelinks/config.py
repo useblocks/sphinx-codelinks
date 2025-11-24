@@ -803,9 +803,8 @@ def convert_analyse_config(
         except ValueError:
             # If invalid comment_type, keep the string value
             # Validation will catch this error later
-            analyse_config_dict["comment_type"] = (
-                src_discover.src_discover_config.comment_type
-            )  # type: ignore[typeddict-item]
+            comment_type_str: str = src_discover.src_discover_config.comment_type
+            analyse_config_dict["comment_type"] = comment_type_str  # type: ignore[typeddict-item]
 
     return SourceAnalyseConfig(**analyse_config_dict)
 
