@@ -796,9 +796,16 @@ def convert_analyse_config(
     if src_discover:
         analyse_config_dict["src_files"] = src_discover.source_paths
         analyse_config_dict["src_dir"] = src_discover.src_discover_config.src_dir
-        analyse_config_dict["comment_type"] = CommentType(
-            src_discover.src_discover_config.comment_type
-        )
+        try:
+            analyse_config_dict["comment_type"] = CommentType(
+                src_discover.src_discover_config.comment_type
+            )
+        except ValueError:
+            # If invalid comment_type, keep the string value
+            # Validation will catch this error later
+            analyse_config_dict["comment_type"] = (
+                src_discover.src_discover_config.comment_type
+            )  # type: ignore[typeddict-item]
 
     return SourceAnalyseConfig(**analyse_config_dict)
 
@@ -862,5 +869,12 @@ def generate_project_configs(
         analyse_config = convert_analyse_config(analyse_section_config)
         analyse_config.get_oneline_needs = True  # force to get oneline_need
         # Copy comment_type from source_discover_config to analyse_config
-        analyse_config.comment_type = CommentType(source_discover_config.comment_type)
+        try:
+            analyse_config.comment_type = CommentType(
+                source_discover_config.comment_type
+            )
+        except ValueError:
+            # If invalid comment_type, keep the string value
+            # Validation will catch this error later
+            analyse_config.comment_type = source_discover_config.comment_type  # type: ignore[assignment]
         project_config["analyse_config"] = analyse_config
