@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from lark import UnexpectedInput
 from tree_sitter import Node as TreeSitterNode
@@ -56,6 +56,8 @@ class AnalyseWarning:
 
 
 class SourceAnalyse:
+    """Analyse source files from a single project."""
+
     def __init__(
         self,
         analyse_config: SourceAnalyseConfig,
@@ -434,6 +436,11 @@ class SourceAnalyse:
             logger.info(f"Oneline needs extracted: {len(self.oneline_needs)}")
         if self.analyse_config.get_rst:
             logger.info(f"Marked rst extracted: {len(self.marked_rst)}")
+            cnt_resolved = 0
+            for rst in self.marked_rst:
+                if rst.need:
+                    cnt_resolved += 1
+            logger.info(f"Marked rst valid to need: {cnt_resolved}")
 
     def merge_marked_content(self) -> None:
         self.all_marked_content.extend(self.need_id_refs)
@@ -445,6 +452,10 @@ class SourceAnalyse:
         )
 
     def dump_marked_content(self, outdir: Path) -> None:
+        """Dump marked content to the given output directory.
+
+        This function is mainly for API users who want to dump marked content separately.
+        """
         output_path = outdir / "marked_content.json"
         if not output_path.parent.exists():
             output_path.parent.mkdir(parents=True)
@@ -454,6 +465,25 @@ class SourceAnalyse:
         with output_path.open("w") as f:
             json.dump(to_dump, f)
         logger.info(f"Marked content dumped to {output_path}")
+
+    def dump_warnings(self, outdir: Path) -> None:
+        """Dump warnings to the given output directory.
+
+        This function is mainly for API users who want to dump warnings separately.
+        """
+        output_path = outdir / "analyse_warnings.json"
+        if not output_path.parent.exists():
+            output_path.parent.mkdir(parents=True)
+        current_warnings: list[AnalyseWarningType] = [
+            cast(AnalyseWarningType, _warning.__dict__)
+            for _warning in list(self.rst_warnings) + list(self.oneline_warnings)
+        ]
+        with output_path.open("w") as f:
+            json.dump(
+                current_warnings,
+                f,
+            )
+        logger.info(f"Warnings dumped to {output_path}")
 
     def run(self) -> None:
         self.create_src_objects()

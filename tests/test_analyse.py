@@ -267,7 +267,6 @@ def test_analyse_rst(
     src_analyse.dump_marked_content(tmp_path)
     dumped_content = tmp_path / "marked_content.json"
 
-    # assert src_analyse.rst_warnings
     assert dumped_content.exists()
 
     with dumped_content.open("r") as f:
@@ -278,3 +277,20 @@ def test_analyse_rst(
             Path(obj["filepath"]).relative_to(src_analyse_config.src_dir)
         ).as_posix()
     assert marked_content == snapshot_marks
+    normalize_file_path(marked_content, src_analyse_config.src_dir)
+    assert marked_content == snapshot_marks
+
+    if "warnings_cnt" in content:
+        assert len(src_analyse.rst_warnings) == content["warnings_cnt"]
+        src_analyse.dump_warnings(tmp_path)
+        dumped_warnings = tmp_path / "analyse_warnings.json"
+        assert dumped_warnings.exists()
+
+
+def normalize_file_path(analysed_content: list[dict[str, Any]], src_dir: Path) -> None:
+    """Normalize the file paths in the analysed content to be relative to src_dir.
+
+    It is for the test results to be consistent across different environments.
+    """
+    for obj in analysed_content:
+        obj["filepath"] = (Path(obj["filepath"]).relative_to(src_dir)).as_posix()

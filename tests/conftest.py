@@ -99,9 +99,9 @@ class AnchorsSnapshotExtension(SingleFileSnapshotExtension):
 
 @pytest.fixture
 def snapshot_marks(snapshot):
-    """Snapshot fixture for reqif.
+    """Snapshot fixture for markers.
 
-    Sanitize the reqif, to make the snapshots reproducible.
+    Sanitize the markers, to make the snapshots reproducible.
     """
     return snapshot.with_defaults(extension_class=AnchorsSnapshotExtension)
 
