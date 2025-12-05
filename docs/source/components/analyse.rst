@@ -225,7 +225,7 @@ For comprehensive information about one-line needs configuration and usage, see 
 
       [
          {
-            "filepath": "/home/jui-wen/git_repo/ub/sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
+            "filepath": "./sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
             "remote_url": "https://github.com/useblocks/sphinx-codelinks/blob/951e40e7845f06d5cfc4ca20ebb984308fdaf985/tests/data/oneline_comment_default/default_oneliners.c#L1",
             "source_map": {
                   "start": { "row": 0, "column": 4 },
@@ -241,7 +241,7 @@ For comprehensive information about one-line needs configuration and usage, see 
             "type": "need"
          },
          {
-            "filepath": "/home/jui-wen/git_repo/ub/sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
+            "filepath": "./sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
             "remote_url": "https://github.com/useblocks/sphinx-codelinks/blob/951e40e7845f06d5cfc4ca20ebb984308fdaf985/tests/data/oneline_comment_default/default_oneliners.c#L4",
             "source_map": {
                   "start": { "row": 3, "column": 4 },
@@ -257,7 +257,7 @@ For comprehensive information about one-line needs configuration and usage, see 
             "type": "need"
          },
          {
-            "filepath": "/home/jui-wen/git_repo/ub/sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
+            "filepath": "./sphinx-codelinks/tests/data/oneline_comment_default/default_oneliners.c",
             "remote_url": "https://github.com/useblocks/sphinx-codelinks/blob/951e40e7845f06d5cfc4ca20ebb984308fdaf985/tests/data/oneline_comment_default/default_oneliners.c#L7",
             "source_map": {
                   "start": { "row": 6, "column": 4 },
