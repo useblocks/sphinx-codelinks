@@ -25,6 +25,54 @@ from .conftest import ONELINE_COMMENT_STYLE, ONELINE_COMMENT_STYLE_DEFAULT
                 "end_column": 17,
             },
         ),
+        # Test case for leading space after start sequence (bug fix)
+        (
+            f"@ title 1, IMPL_1 {UNIX_NEWLINE}",
+            {
+                "title": "title 1",
+                "id": "IMPL_1",
+                "type": "impl",
+                "links": [],
+                "start_column": 1,
+                "end_column": 18,
+            },
+        ),
+        # Test case for multiple leading spaces after start sequence
+        (
+            f"@   title 1, IMPL_1 {UNIX_NEWLINE}",
+            {
+                "title": "title 1",
+                "id": "IMPL_1",
+                "type": "impl",
+                "links": [],
+                "start_column": 1,
+                "end_column": 20,
+            },
+        ),
+        # Test case for trailing space before end sequence
+        (
+            f"@title 1, IMPL_1  {UNIX_NEWLINE}",
+            {
+                "title": "title 1",
+                "id": "IMPL_1",
+                "type": "impl",
+                "links": [],
+                "start_column": 1,
+                "end_column": 18,
+            },
+        ),
+        # Test case for both leading and trailing spaces
+        (
+            f"@  title 1, IMPL_1   {UNIX_NEWLINE}",
+            {
+                "title": "title 1",
+                "id": "IMPL_1",
+                "type": "impl",
+                "links": [],
+                "start_column": 1,
+                "end_column": 21,
+            },
+        ),
     ],
 )
 def test_oneline_parser_default_config_positive(
