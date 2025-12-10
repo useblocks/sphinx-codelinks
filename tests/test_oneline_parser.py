@@ -82,6 +82,88 @@ def test_oneline_parser_default_config_positive(
     assert oneline_need == result
 
 
+# Test case for space as field separator (as mentioned by Kilian)
+# Example: @Implementation <field1> <field2>
+ONELINE_COMMENT_STYLE_SPACE_SEPARATOR = OneLineCommentStyle(
+    start_sequence="@",
+    end_sequence=UNIX_NEWLINE,
+    field_split_char=" ",
+    needs_fields=[
+        {"name": "title"},
+        {"name": "id"},
+        {"name": "type", "default": "impl"},
+    ],
+)
+
+
+@pytest.mark.parametrize(
+    "oneline, result",
+    [
+        # Basic space-separated fields
+        (
+            f"@Implementation IMPL_1{UNIX_NEWLINE}",
+            {
+                "title": "Implementation",
+                "id": "IMPL_1",
+                "type": "impl",
+                "start_column": 1,
+                "end_column": 22,
+            },
+        ),
+        # Space separator with explicit type
+        (
+            f"@MyFeature FEAT_001 feature{UNIX_NEWLINE}",
+            {
+                "title": "MyFeature",
+                "id": "FEAT_001",
+                "type": "feature",
+                "start_column": 1,
+                "end_column": 27,
+            },
+        ),
+        # Leading space after @ (the bug Kilian reported)
+        (
+            f"@ Implementation IMPL_2{UNIX_NEWLINE}",
+            {
+                "title": "Implementation",
+                "id": "IMPL_2",
+                "type": "impl",
+                "start_column": 1,
+                "end_column": 23,
+            },
+        ),
+        # Trailing space before newline
+        (
+            f"@Implementation IMPL_3 {UNIX_NEWLINE}",
+            {
+                "title": "Implementation",
+                "id": "IMPL_3",
+                "type": "impl",
+                "start_column": 1,
+                "end_column": 23,
+            },
+        ),
+        # Multiple leading spaces after @
+        (
+            f"@  Title ID_456{UNIX_NEWLINE}",
+            {
+                "title": "Title",
+                "id": "ID_456",
+                "type": "impl",
+                "start_column": 1,
+                "end_column": 15,
+            },
+        ),
+    ],
+)
+def test_oneline_parser_space_separator(
+    oneline: str, result: dict[str, str | list[str]]
+) -> None:
+    """Test oneline parser with space as field separator."""
+    oneline_need = oneline_parser(oneline, ONELINE_COMMENT_STYLE_SPACE_SEPARATOR)
+    assert oneline_need == result
+
+
 @pytest.mark.parametrize(
     "oneline, result",
     [
