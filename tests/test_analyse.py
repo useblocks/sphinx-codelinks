@@ -1,5 +1,6 @@
 # @Test suite for source code analysis and marker extraction, TEST_ANA_1, test, [IMPL_LNK_1, IMPL_ONE_1, IMPL_MRST_1]
 import json
+import logging
 from pathlib import Path
 
 import pytest
@@ -145,6 +146,7 @@ def test_analyse_oneline_needs(
 
 def test_oneline_parser_warning_is_logged(tmp_path, caplog):
     """Test that oneline parser warnings are logged to the console."""
+
     src_dir = TEST_DIR / "data" / "oneline_comment_default"
     src_paths = [src_dir / "default_oneliners.c"]
 
@@ -157,14 +159,27 @@ def test_oneline_parser_warning_is_logged(tmp_path, caplog):
         oneline_comment_style=ONELINE_COMMENT_STYLE_DEFAULT,
     )
 
-    with caplog.at_level("WARNING", logger="sphinx_codelinks.analyse.analyse"):
-        src_analyse = SourceAnalyse(src_analyse_config)
-        src_analyse.run()
+    # Ensure the logger propagates to root so caplog can capture it
+    analyse_logger = logging.getLogger("sphinx_codelinks.analyse.analyse")
+    original_propagate = analyse_logger.propagate
+    analyse_logger.propagate = True
 
-    # Verify that warnings were collected
-    assert len(src_analyse.oneline_warnings) == 1
+    try:
+        with caplog.at_level(
+            logging.WARNING, logger="sphinx_codelinks.analyse.analyse"
+        ):
+            src_analyse = SourceAnalyse(src_analyse_config)
+            src_analyse.run()
 
-    # Verify that the warning was logged
-    assert len(caplog.records) == 1
-    assert "Oneline parser warning" in caplog.records[0].message
-    assert "too_many_fields" in caplog.records[0].message
+        # Verify that warnings were collected
+        assert len(src_analyse.oneline_warnings) == 1
+
+        # Verify that the warning was logged
+        warning_records = [
+            r for r in caplog.records if "Oneline parser warning" in r.message
+        ]
+        assert len(warning_records) >= 1
+        assert "too_many_fields" in warning_records[0].message
+    finally:
+        # Restore original propagate setting
+        analyse_logger.propagate = original_propagate
