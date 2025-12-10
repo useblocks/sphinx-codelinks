@@ -207,13 +207,6 @@ class SourceAnalyse:
                     resolved.sub_type.value,
                 )
                 self.oneline_warnings.append(warning)
-                logger.warning(
-                    "Oneline parser warning in %s:%d - %s: %s",
-                    src_comment.source_file.filepath,
-                    lineno,
-                    resolved.sub_type.value,
-                    resolved.msg,
-                )
                 row_offset += 1
                 continue
             yield resolved, row_offset
