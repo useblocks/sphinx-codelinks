@@ -141,3 +141,30 @@ def test_analyse_oneline_needs(
     for src_file in src_analyse.src_files:
         cnt_comments += len(src_file.src_comments)
     assert cnt_comments == result["num_comments"]
+
+
+def test_oneline_parser_warning_is_logged(tmp_path, caplog):
+    """Test that oneline parser warnings are logged to the console."""
+    src_dir = TEST_DIR / "data" / "oneline_comment_default"
+    src_paths = [src_dir / "default_oneliners.c"]
+
+    src_analyse_config = SourceAnalyseConfig(
+        src_files=src_paths,
+        src_dir=src_dir,
+        get_need_id_refs=False,
+        get_oneline_needs=True,
+        get_rst=False,
+        oneline_comment_style=ONELINE_COMMENT_STYLE_DEFAULT,
+    )
+
+    with caplog.at_level("WARNING", logger="sphinx_codelinks.analyse.analyse"):
+        src_analyse = SourceAnalyse(src_analyse_config)
+        src_analyse.run()
+
+    # Verify that warnings were collected
+    assert len(src_analyse.oneline_warnings) == 1
+
+    # Verify that the warning was logged
+    assert len(caplog.records) == 1
+    assert "Oneline parser warning" in caplog.records[0].message
+    assert "too_many_fields" in caplog.records[0].message

@@ -198,14 +198,21 @@ class SourceAnalyse:
                 if not src_comment.source_file:
                     row_offset += 1
                     continue
-                self.oneline_warnings.append(
-                    AnalyseWarning(
-                        str(src_comment.source_file.filepath),
-                        src_comment.node.start_point.row + row_offset + 1,
-                        resolved.msg,
-                        MarkedContentType.need,
-                        resolved.sub_type.value,
-                    )
+                lineno = src_comment.node.start_point.row + row_offset + 1
+                warning = AnalyseWarning(
+                    str(src_comment.source_file.filepath),
+                    lineno,
+                    resolved.msg,
+                    MarkedContentType.need,
+                    resolved.sub_type.value,
+                )
+                self.oneline_warnings.append(warning)
+                logger.warning(
+                    "Oneline parser warning in %s:%d - %s: %s",
+                    src_comment.source_file.filepath,
+                    lineno,
+                    resolved.sub_type.value,
+                    resolved.msg,
                 )
                 row_offset += 1
                 continue
