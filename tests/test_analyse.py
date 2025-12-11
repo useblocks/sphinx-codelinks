@@ -210,13 +210,20 @@ def test_git_root_auto_detection_when_not_configured(tmp_path):
     # We just verify it's not None (since this test runs in the sphinx-codelinks repo)
     assert src_analyse.git_root is not None
     assert (src_analyse.git_root / ".git").exists()
-        oneline_comment_style=ONELINE_COMMENT_STYLE_DEFAULT,
-    )
+
 
 def test_oneline_parser_warnings_are_collected(tmp_path):
     """Test that oneline parser warnings are collected for later output."""
     src_dir = TEST_DIR / "data" / "oneline_comment_default"
     src_paths = [src_dir / "default_oneliners.c"]
+    src_analyse_config = SourceAnalyseConfig(
+        src_files=src_paths,
+        src_dir=src_dir,
+        get_need_id_refs=False,
+        get_oneline_needs=True,
+        get_rst=False,
+        oneline_comment_style=ONELINE_COMMENT_STYLE_DEFAULT,
+    )
     src_analyse = SourceAnalyse(src_analyse_config)
     src_analyse.run()
 
