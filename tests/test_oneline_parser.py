@@ -154,6 +154,17 @@ ONELINE_COMMENT_STYLE_SPACE_SEPARATOR = OneLineCommentStyle(
                 "end_column": 15,
             },
         ),
+        # Title contain spaces
+        (
+            f"@  Title\ escape\ space ID_456{UNIX_NEWLINE}",
+            {
+                "title": "Title escape space",
+                "id": "ID_456",
+                "type": "impl",
+                "start_column": 1,
+                "end_column": 30,
+            },
+        ),
     ],
 )
 def test_oneline_parser_space_separator(
