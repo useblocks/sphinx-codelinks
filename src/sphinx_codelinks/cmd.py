@@ -157,6 +157,15 @@ def analyse(  # noqa: PLR0912   # for CLI, so it needs the branches
     codelinks_config.projects = specifed_project_configs
     analyse_projects = AnalyseProjects(codelinks_config)
     analyse_projects.run()
+
+    # Output warnings to console for CLI users
+    for src_analyse in analyse_projects.projects_analyse.values():
+        for warning in src_analyse.oneline_warnings:
+            logger.warning(
+                f"Oneline parser warning in {warning.file_path}:{warning.lineno} "
+                f"- {warning.sub_type}: {warning.msg}",
+            )
+
     analyse_projects.dump_markers()
 
 
