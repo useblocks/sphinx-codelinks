@@ -341,7 +341,7 @@ class SourceAnalyse:
                 "column": end_column,
             },
         }
-        need_directive: None | NeedDirectiveType | UnexpectedInput = None
+        need_directive: None | NeedDirectiveType | UnexpectedInput
         need_directive = parse_rst(
             rst_text, self.analyse_config.marked_rst_config.indented_spaces
         )
@@ -362,7 +362,7 @@ class SourceAnalyse:
                     and isinstance(val, str)
                 ):
                     # convert link options values to list
-                    resolved[key] = val.split(",")
+                    resolved[key] = [item.strip() for item in val.split(",")]
                 else:
                     resolved[key] = val
 

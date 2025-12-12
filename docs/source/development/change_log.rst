@@ -17,7 +17,7 @@ New and Improved
   The resolved RST blocks will be dumped into the JSON output along with other extracted markers.
   To make the parser more stable, 3 new configuration options are added to control the parsing behavior:
 
-  - ``leading_sequences``: List of leading character sequences to strip from each line.
+  - ``strip_leading_sequences``: List of leading character sequences to strip from each line.
 
     This option allows users to specify a list of leading character sequences (e.g., ``*``, ``-``) that should be stripped
     from each line of the marked RST block before parsing.

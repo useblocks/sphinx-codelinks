@@ -1,7 +1,11 @@
-"""Test script for RST directive Lark parser."""
+"""Parse reStructuredText (RST) directives using the Lark parser.
+
+This module provides functionality to parse RST directive blocks and extract their components,
+such as directive type, title, options, and content for further use by add_need() in src-trace directive.
+"""
 
 # ruff: noqa: N802
-# TODO: Not sure Lark is the right tool for this job since the it has a few limitations such as lack of support for dynamic indentation levels while extracting leading spaces in content.
+# TODO: Not sure Lark is the right tool for this job since it has a few limitations such as lack of support for dynamic indentation levels while extracting leading spaces in content.
 # Consider switching to Visitor instead of Transformer to have more control on resolving the tree or implement a custom parser if needed.
 
 from typing import TypedDict
@@ -9,10 +13,6 @@ from typing import TypedDict
 from lark import Lark, Transformer, UnexpectedInput, v_args
 
 from sphinx_codelinks.config import UNIX_NEWLINE
-
-
-class PreProcessError(Exception):
-    """Custom error for preprocess issues."""
 
 
 class NeedDirectiveType(TypedDict, total=False):
@@ -66,7 +66,7 @@ class DirectiveTransformer(Transformer):  # type: ignore[type-arg] # disable typ
             return line[1].rstrip()
 
     def content_block(self, *lines):
-        # items is list of lines
+        # items are list of lines
         return {"content": "\n".join(lines)}
 
     def directive_block(self, *blocks):
@@ -75,7 +75,7 @@ class DirectiveTransformer(Transformer):  # type: ignore[type-arg] # disable typ
     def directive(self, name, *optionals):
         # NAME,, optional title/options/content
         need = {"type": name}
-        # flaten optionals
+        # flatten optionals
         flatten_optionals: list[dict[str, str]] = []
         for item in optionals:
             if isinstance(item, tuple):
@@ -157,8 +157,8 @@ def preprocess_rst(text: str) -> str:
     """Process valid RST directive text before parsing.
 
     The followings are processed:
-    - Stripe leading spaces before the directive marker to get relative indentations.
-    - Stripe trailing spaces at the end
+    - Strip leading spaces before the directive marker to get relative indentations.
+    - Strip trailing spaces at the end
     - Ensure the text ends with a newline.
     """
     if not text:
