@@ -271,12 +271,6 @@ def test_analyse_rst(
 
     with dumped_content.open("r") as f:
         marked_content = json.load(f)
-    # normalize filepath
-    for obj in marked_content:
-        obj["filepath"] = (
-            Path(obj["filepath"]).relative_to(src_analyse_config.src_dir)
-        ).as_posix()
-    assert marked_content == snapshot_marks
     normalize_file_path(marked_content, src_analyse_config.src_dir)
     assert marked_content == snapshot_marks
 

@@ -21,7 +21,7 @@
       "id": "REQ_001",
       "links": [
         "IMPL_001",
-        " IMPL_002"
+        "IMPL_002"
       ]
     },
     "type": "rst"

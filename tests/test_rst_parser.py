@@ -128,24 +128,6 @@ from sphinx_codelinks.analyse.sn_rst_parser import parse_rst, preprocess_rst
                 "content": ".. commentline\nContent without blank line.",
             },
         ),
-        (
-            """.. test-case:: test_xyz
-   :file: test_reports/abc.xml
-   :suite: test_abc
-   :case: test_xyz
-   :id: SW_TEST_CASE_XYZ
-   :release: abc-1.2.3
-   :uplink: SW_UNIT_IF_XYZ
-
-   Test case to verify xyz does behavior abc
-    """,
-            {
-                "type": "test-case",
-                "title": "comment in content",
-                "options": {"option": "value"},
-                "content": ".. commentline\nContent without blank line.",
-            },
-        ),
     ],
 )
 def test_sn_rst_parser_positive(text: str, expected: dict):
