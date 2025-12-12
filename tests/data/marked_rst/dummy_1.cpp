@@ -10,7 +10,7 @@
      //...
  }
 
- // @rst..impl:: implement main function @endrst
+ // @rst.. impl:: implement main function @endrst
 int main() {
    std::cout << "Starting demo_1..." << std::endl;
    dummy_func1();

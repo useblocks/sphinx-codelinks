@@ -3,8 +3,9 @@ from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
+from lark import UnexpectedInput
 from tree_sitter import Node as TreeSitterNode
 
 from sphinx_codelinks.analyse import utils
@@ -21,6 +22,7 @@ from sphinx_codelinks.analyse.oneline_parser import (
     OnelineParserInvalidWarning,
     oneline_parser,
 )
+from sphinx_codelinks.analyse.sn_rst_parser import NeedDirectiveType, parse_rst
 from sphinx_codelinks.config import (
     UNIX_NEWLINE,
     OneLineCommentStyle,
@@ -54,6 +56,8 @@ class AnalyseWarning:
 
 
 class SourceAnalyse:
+    """Analyse source files from a single project."""
+
     def __init__(
         self,
         analyse_config: SourceAnalyseConfig,
@@ -80,6 +84,7 @@ class SourceAnalyse:
             self.git_root if self.git_root else self.analyse_config.src_dir
         )
         self.oneline_warnings: list[AnalyseWarning] = []
+        self.rst_warnings: list[AnalyseWarning] = []
 
     def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
         """Load source files and extract their content."""
@@ -283,11 +288,40 @@ class SourceAnalyse:
         )
         if not extracted_rst:
             return None
+        start_row = src_comment.node.start_point.row + extracted_rst["row_offset"]
         if UNIX_NEWLINE in extracted_rst["rst_text"]:
-            rst_text = utils.remove_leading_sequences(extracted_rst["rst_text"], ["*"])
+            rst_text = utils.remove_leading_sequences(
+                extracted_rst["rst_text"],
+                self.analyse_config.marked_rst_config.strip_leading_sequences,
+            )
+            start_column = 0  # multi-line rst always start at column 0 of the start mark's next line
+            # -1 for last line of the marker
+            end_row = start_row + extracted_rst["rst_text"].count(UNIX_NEWLINE) - 1
+            end_column = len(
+                extracted_rst["rst_text"].splitlines()[(end_row - start_row)]
+            )  # This is the line before the multiline end marker
         else:
+            # single line rst marker
+            lines = text.splitlines()
             rst_text = extracted_rst["rst_text"]
-        lineno = src_comment.node.start_point.row + extracted_rst["row_offset"] + 1
+            column_offset = 0  # offset before the comment start
+            if src_comment.node.start_point.row == src_comment.node.end_point.row:
+                # single-line comment
+                column_offset = src_comment.node.start_point.column
+            start_column = (
+                lines[extracted_rst["row_offset"]].find(
+                    self.analyse_config.marked_rst_config.start_sequence
+                )
+                + len(self.analyse_config.marked_rst_config.start_sequence)
+                + column_offset
+            )  # single-line rst start column
+            end_row = start_row
+            end_column = (
+                lines[extracted_rst["row_offset"]].rfind(
+                    self.analyse_config.marked_rst_config.end_sequence
+                )
+                + column_offset
+            )  # single-line rst end column
         remote_url = self.git_remote_url
         if self.git_remote_url and self.git_commit_rev:
             remote_url = utils.form_https_url(
@@ -295,18 +329,43 @@ class SourceAnalyse:
                 self.git_commit_rev,
                 self.project_path,
                 filepath,
-                lineno,
+                start_row + 1,
             )
         source_map: SourceMap = {
             "start": {
-                "row": lineno - 1,
-                "column": extracted_rst["start_idx"],
+                "row": start_row,
+                "column": start_column,
             },
             "end": {
-                "row": lineno - 1,
-                "column": extracted_rst["end_idx"],
+                "row": end_row,
+                "column": end_column,
             },
         }
+        need_directive: None | NeedDirectiveType | UnexpectedInput
+        need_directive = parse_rst(
+            rst_text, self.analyse_config.marked_rst_config.indented_spaces
+        )
+        if isinstance(need_directive, UnexpectedInput):
+            self.handle_rst_warning(need_directive, src_comment, rst_text)
+            need_directive = None
+
+        resolved: dict[str, str | list[str]] = (
+            {key: val for key, val in need_directive.items() if key != "options"}  # type: ignore[misc] # type `object` is filtered out by the condition
+            if need_directive
+            else {}
+        )
+        if need_directive and "options" in need_directive:
+            # flatten options and convert link options values to list if needed
+            for key, val in need_directive["options"].items():  # type: ignore[union-attr] # options existence checked
+                if (
+                    key in self.analyse_config.marked_rst_config.link_options
+                    and isinstance(val, str)
+                ):
+                    # convert link options values to list
+                    resolved[key] = [item.strip() for item in val.split(",")]
+                else:
+                    resolved[key] = val
+
         return MarkedRst(
             filepath,
             remote_url,
@@ -314,6 +373,24 @@ class SourceAnalyse:
             src_comment,
             tagged_scope,
             rst_text,
+            resolved if resolved else None,
+        )
+
+    def handle_rst_warning(
+        self, warning: UnexpectedInput, src_comment: SourceComment, rst_text: str
+    ) -> None:
+        """Handle RST parsing warnings."""
+        if not src_comment.source_file:
+            return
+        lineno = src_comment.node.start_point.row + warning.line + 1
+        self.rst_warnings.append(
+            AnalyseWarning(
+                str(src_comment.source_file.filepath),
+                lineno,
+                f"{warning.get_context(rst_text)}\n{warning!s}",
+                MarkedContentType.rst,
+                "parsing_error",
+            )
         )
 
     def extract_marked_content(self) -> None:
@@ -359,6 +436,11 @@ class SourceAnalyse:
             logger.info(f"Oneline needs extracted: {len(self.oneline_needs)}")
         if self.analyse_config.get_rst:
             logger.info(f"Marked rst extracted: {len(self.marked_rst)}")
+            cnt_resolved = 0
+            for rst in self.marked_rst:
+                if rst.need:
+                    cnt_resolved += 1
+            logger.info(f"Marked rst valid to need: {cnt_resolved}")
 
     def merge_marked_content(self) -> None:
         self.all_marked_content.extend(self.need_id_refs)
@@ -370,6 +452,10 @@ class SourceAnalyse:
         )
 
     def dump_marked_content(self, outdir: Path) -> None:
+        """Dump marked content to the given output directory.
+
+        This function is mainly for API users who want to dump marked content separately.
+        """
         output_path = outdir / "marked_content.json"
         if not output_path.parent.exists():
             output_path.parent.mkdir(parents=True)
@@ -379,6 +465,25 @@ class SourceAnalyse:
         with output_path.open("w") as f:
             json.dump(to_dump, f)
         logger.info(f"Marked content dumped to {output_path}")
+
+    def dump_warnings(self, outdir: Path) -> None:
+        """Dump warnings to the given output directory.
+
+        This function is mainly for API users who want to dump warnings separately.
+        """
+        output_path = outdir / "analyse_warnings.json"
+        if not output_path.parent.exists():
+            output_path.parent.mkdir(parents=True)
+        current_warnings: list[AnalyseWarningType] = [
+            cast(AnalyseWarningType, _warning.__dict__)
+            for _warning in list(self.rst_warnings) + list(self.oneline_warnings)
+        ]
+        with output_path.open("w") as f:
+            json.dump(
+                current_warnings,
+                f,
+            )
+        logger.info(f"Warnings dumped to {output_path}")
 
     def run(self) -> None:
         self.create_src_objects()

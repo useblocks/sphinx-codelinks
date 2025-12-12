@@ -15,6 +15,7 @@ src_dir = "../tests/data/dcdc" # Relative path from this TOML config to the sour
 [codelinks.projects.dcdc.analyse]
 get_need_id_refs = false
 get_oneline_needs = true
+get_rst = true
 
 [codelinks.projects.dcdc.analyse.oneline_comment_style]
 # Configuration for oneline comment style

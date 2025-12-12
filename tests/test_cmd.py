@@ -304,7 +304,7 @@ def test_write_rst_invalid_json(tmp_path: Path) -> None:
 )
 def test_write_rst_negative(json_objs: list[dict], output_lines, tmp_path) -> None:
     to_dump = {"project_1": json_objs}
-    jsonpath = Path("invalid_objs.json")
+    jsonpath = tmp_path / "invalid_objs.json"
     with jsonpath.open("w") as f:
         json.dump(to_dump, f)
     outpath = tmp_path / "needextend.rst"

@@ -382,6 +382,7 @@ Configures how **Sphinx-CodeLinks** analyse source files to extract markers from
    [codelinks.projects.my_project.analyse.marked_rst]
    start_sequence = "@rst"
    end_sequence = "@endrst"
+   link_options = ["links"]
 
 get_need_id_refs
 ^^^^^^^^^^^^^^^^
@@ -389,7 +390,7 @@ get_need_id_refs
 Enables the extraction of need IDs from source code comments. When enabled, **SourceAnalyse** will parse comments for specific markers that indicate need IDs, allowing them to be extracted for further usages.
 
 **Type:** ``bool``
-**Default:** ``False``
+**Default:** ``True``
 
 .. code-block:: toml
 
@@ -510,6 +511,8 @@ Configuration for Sphinx-Needs ID reference extraction.
 
 - ``markers`` (``list[str]``) - List of marker strings that identify need ID references
 
+.. _analyse_marked_rst:
+
 analyse.marked_rst
 ^^^^^^^^^^^^^^^^^^
 
@@ -523,8 +526,14 @@ Configuration for marked RST block extraction.
    [codelinks.projects.my_project.analyse.marked_rst]
    start_sequence = "@rst"
    end_sequence = "@endrst"
+   strip_leading_sequences = ["*"]
+   indented_spaces = 3
+   link_options = ["links"]
 
 **Configuration fields:**
 
 - ``start_sequence`` (``str``) - Marker that begins an RST block
 - ``end_sequence`` (``str``) - Marker that ends an RST block
+- ``strip_leading_sequences`` (``list[str]``) - List of leading sequences to strip from each line of the RST text between the markers
+- ``indented_spaces`` (``int``) - Number of leading spaces to consider as indentation in the RST text
+- ``link_options`` (``list[str]``) - List of option names whose values should be treated as Sphinx-Needs link fields

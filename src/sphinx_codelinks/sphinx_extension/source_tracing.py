@@ -181,9 +181,6 @@ def set_config_to_sphinx(
 
 def update_sn_extra_options(app: Sphinx, config: _SphinxConfig) -> None:
     src_trace_sphinx_config = CodeLinksConfig.from_sphinx(config)
-    add_extra_option(app, "project")
-    add_extra_option(app, "file")
-    add_extra_option(app, "directory")
     if src_trace_sphinx_config.set_local_url:
         add_extra_option(app, src_trace_sphinx_config.local_url_field)
     if src_trace_sphinx_config.set_remote_url:

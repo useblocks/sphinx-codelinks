@@ -83,4 +83,5 @@ class OneLineNeed(Metadata):
 @dataclass
 class MarkedRst(Metadata):
     rst: str
+    need: dict[str, str | list[str]] | None = None
     type: MarkedContentType = field(init=False, default=MarkedContentType.rst)

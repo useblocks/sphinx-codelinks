@@ -20,6 +20,11 @@ logger.addHandler(console)
 
 
 class AnalyseProjects:
+    """Analyse multiple projects based on the given CodeLinksConfig.
+
+    This class uses SourceAnalyse for each project defined in the CodeLinksConfig.
+    """
+
     warning_filepath: Path = Path("warnings") / "codelinks_warnings.json"
 
     def __init__(self, codelink_config: CodeLinksConfig) -> None:
@@ -67,14 +72,20 @@ class AnalyseProjects:
         return loaded_warnings
 
     def update_warnings(self) -> None:
+        """Update and dump warnings from all projects' analyses."""
         current_warnings: list[AnalyseWarningType] = [
             cast(AnalyseWarningType, _warning.__dict__)
             for analyse in self.projects_analyse.values()
-            for _warning in analyse.oneline_warnings
+            for _warning in list(analyse.rst_warnings) + list(analyse.oneline_warnings)
         ]
+
+        if not current_warnings:
+            logger.info("No warnings to dump.")
+            return
         self.dump_warnings(current_warnings)
 
     def dump_warnings(self, warnings: list[AnalyseWarningType]) -> None:
+        """Dump warnings to the configured warnings path."""
         if not self.warnings_path.parent.exists():
             self.warnings_path.parent.mkdir(parents=True)
         with self.warnings_path.open("w") as f:
@@ -82,3 +93,4 @@ class AnalyseProjects:
                 warnings,
                 f,
             )
+        logger.info(f"Warnings dumped to {self.warnings_path}")

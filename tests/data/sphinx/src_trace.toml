@@ -16,6 +16,8 @@ exclude = ["dcdc/src/ubt/ubt.cpp"]
 include = ["**/*.cpp", "**/*.hpp"]
 gitignore = true
 
+[codelinks.projects.dcdc.analyse]
+get_rst = true
 
 [codelinks.projects.dcdc.analyse.oneline_comment_style]
 start_sequence = "[["
