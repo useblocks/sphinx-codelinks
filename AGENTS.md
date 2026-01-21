@@ -12,7 +12,7 @@ sphinx-codelinks is a Sphinx extension that provides fast source code traceabili
 - **Multiple languages**: Support for various programming languages via tree-sitter parsers
 - **CLI interface**: Command-line tools for analyzing code and generating RST documentation
 
-The project integrates with [Sphinx-Needs](https://sphinxcontrib-needs.readthedocs.io/) to provide seamless source code traceability in technical documentation.
+The project integrates with [Sphinx-Needs](https://sphinx-needs.readthedocs.io/) to provide seamless source code traceability in technical documentation.
 
 ## Repository Structure
 
