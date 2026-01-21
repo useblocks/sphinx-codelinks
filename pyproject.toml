@@ -44,6 +44,8 @@ testing = [
   "syrupy>=4.9.1",
   "psutil>=7.0.0",
   "moto ~= 5.0",
+  "toml>=0.10.2",
+  "furo>=2024.5.6",
 ]
 docs = [
   "furo>=2024.5.6",
@@ -55,6 +57,7 @@ docs = [
 ]
 mypy = [
   "mypy>=1.12.1",
+  "pydantic ~= 2.9",
   "types-docutils",
   "types-Pygments",
   "types-psutil>=7.0.0.20250218",

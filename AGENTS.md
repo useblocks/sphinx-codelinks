@@ -68,39 +68,39 @@ All commands should be run via [`tox`](https://tox.wiki) for consistency. The pr
 ### Testing
 
 ```bash
-# Run all tests across Python/Sphinx versions
+# Run default test environment
 tox
 
-# Run tests for a specific Python version
-tox -e py312
-
 # Run tests for specific Python/Sphinx combination
-tox -e py312-sphinx7
+tox -e py312-sphinx8
 
 # Run a specific test file
-tox -e py312 -- tests/test_analyse.py
+tox -e py312-sphinx8 -- tests/test_analyse.py
 
 # Run a specific test function
-tox -e py312 -- tests/test_analyse.py::test_function_name
+tox -e py312-sphinx8 -- tests/test_analyse.py::test_function_name
 
 # Run with coverage
-tox -e py312 -- --cov=sphinx_codelinks
+tox -e py312-sphinx8 -- --cov=sphinx_codelinks
 
 # Update snapshot test fixtures
-tox -e py312 -- --snapshot-update
+tox -e py312-sphinx8 -- --snapshot-update
 ```
 
 ### Documentation
 
 ```bash
 # Build docs (clean)
-tox -e docs
+tox -e docs-clean
 
 # Build docs (incremental, after clean build)
-CLEAN=0 tox -e docs
+tox -e docs-update
 
 # Build with different builder (e.g., linkcheck)
-BUILDER=linkcheck tox -e docs
+BUILDER=linkcheck tox -e docs-clean
+
+# Live rebuild with browser auto-reload
+tox -e docs-live
 ```
 
 ### Code Quality
@@ -385,10 +385,10 @@ The CLI uses Typer for command definitions:
 
 ## Debugging
 
-- Use `--pdb` with pytest to drop into debugger on failures: `tox -e py312 -- --pdb`
-- Use `-v` for verbose test output: `tox -e py312 -- -v`
-- Build docs with `-T` flag for full tracebacks: `BUILDER=html tox -e docs -- -T`
-- Set logging level in tests: `tox -e py312 -- --log-cli-level=DEBUG`
+- Use `--pdb` with pytest to drop into debugger on failures: `tox -e py312-sphinx8 -- --pdb`
+- Use `-v` for verbose test output: `tox -e py312-sphinx8 -- -v`
+- Build docs with `-T` flag for full tracebacks: `tox -e docs-clean -- -T`
+- Set logging level in tests: `tox -e py312-sphinx8 -- --log-cli-level=DEBUG`
 - Use `debug.py` module functions for development debugging
 
 ## Common Patterns
