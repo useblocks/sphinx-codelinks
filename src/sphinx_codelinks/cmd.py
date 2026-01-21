@@ -167,6 +167,7 @@ def analyse(  # noqa: PLR0912   # for CLI, so it needs the branches
             )
 
     analyse_projects.dump_markers()
+    analyse_projects.update_warnings()
 
 
 @app.command(no_args_is_help=True)

@@ -1,0 +1,97 @@
+oneline_rst_marker:
+  dummy_1.c: |
+    // @rst.. impl:: implement main function @endrst
+    int main() {
+      return 0;
+    }
+
+multiline_rst_marker:
+  dummy_1.c: |
+    /*
+      @rst
+      .. impl:: implement main function
+         :id: REQ_001
+         :status: test
+
+         This is content for the main function implementation.
+      @endrst
+    */
+    int main() {
+      return 0;
+    }
+
+leading_asterisk_rst_marker:
+  dummy_1.c: |
+    /*
+     * @rst
+     * .. impl:: implement main function
+     *    :id: REQ_001
+     *    :status: test
+     *
+     *    This is content for the main function implementation.
+     * @endrst
+    */
+    int main() {
+      return 0;
+    }
+
+leading_asterisks_rst_marker:
+  marked_rst_config:
+    strip_leading_sequences:
+    - '**'
+  dummy_1.c: |
+    /**
+     ** @rst
+     ** .. impl:: implement main function
+     **    :id: REQ_001
+     **    :status: test
+     **
+     **    This is content for the main function implementation.
+     ** @endrst
+    **/
+    int main() {
+      return 0;
+    }
+
+link_options_rst_marker:
+  dummy_1.c: |
+    /*
+     * @rst
+     * .. impl:: implement main function
+     *    :id: REQ_001
+     *    :links: IMPL_001, IMPL_002
+     *
+     *    This is content for the main function implementation.
+     * @endrst
+    */
+    int main() {
+      return 0;
+    }
+
+warning_invalid_type:
+  dummy_1.c: |
+    /*
+     * @rst
+     * .. imp@:: implement main function
+     *    :id: REQ_001
+     *    :links: IMPL_001, IMPL_002
+     *
+     *    This is content for the main function implementation.
+     * @endrst
+    */
+    int main() {
+      return 0;
+    }
+    /*
+     * @rst
+     * .. impl:: implement main function
+     *    :id: REQ_002
+     *    :links: IMPL_001, IMPL_002
+     *
+     *    This is content for the main function implementation.
+     * @endrst
+    */
+    int func1() {
+      return 0;
+    }
+  warnings_cnt: 1

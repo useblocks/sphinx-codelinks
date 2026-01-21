@@ -62,6 +62,7 @@ Contents
    components/cli
    components/configuration
    components/directive
+   components/rst_parser
    components/oneline
    components/analyse
    components/discover

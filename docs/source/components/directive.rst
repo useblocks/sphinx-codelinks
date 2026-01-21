@@ -3,7 +3,29 @@
 Directive
 =========
 
-.. attention:: ``src-trace`` directive currently only supports :ref:`one-line need definition <oneline>`.
+.. attention:: ``src-trace`` directive does NOT support :ref:`Sphinx-Needs ID Refs <analyse_need_id_refs>`.
+
+``src-trace`` Directive generates Sphinx-Needs items from source code comments. There are two ways to define need items in source code:
+
+1. **One-line need definition**: Define needs in a single line comment.
+
+   Example in C++:
+
+   .. code-block:: cpp
+
+      // @ title, id_123, implementation, [link1, link2]
+
+2. **RST block need definition**: Define needs in a RST block comment.
+
+   Example in C++:
+
+   .. code-block:: cpp
+
+      /*
+       .. implementation:: title
+         :id: id_123
+         :links: link1, link2
+      */
 
 ``CodeLinks`` provides ``src-trace`` directive and it can be used in the following ways:
 

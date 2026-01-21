@@ -73,6 +73,9 @@ class NeedIdRefsConfig:
 class MarkedRstConfigType(TypedDict):
     start_sequence: str
     end_sequence: str
+    strip_leading_sequences: list[str]
+    indented_spaces: int
+    link_options: list[str]
 
 
 @dataclass
@@ -83,10 +86,26 @@ class MarkedRstConfig:
 
     start_sequence: str = field(default="@rst", metadata={"schema": {"type": "string"}})
     """Chars sequence to indicate the start of the rst text."""
+
     end_sequence: str = field(
         default="@endrst", metadata={"schema": {"type": "string"}}
     )
     """Chars sequence to indicate the end of the rst text."""
+
+    strip_leading_sequences: list[str] = field(
+        default_factory=lambda: ["*"],
+        metadata={"schema": {"type": "array", "items": {"type": "string"}}},
+    )
+    """List of leading sequences to be stripped from each line of the rst text."""
+
+    indented_spaces: int = field(default=3, metadata={"schema": {"type": "integer"}})
+    """The number of leading spaces to be considered as indentation in the rst text."""
+
+    link_options: list[str] = field(
+        default_factory=lambda: ["links"],
+        metadata={"schema": {"type": "array", "items": {"type": "string"}}},
+    )
+    """List of options in the rst directive that contain links."""
 
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]

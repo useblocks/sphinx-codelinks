@@ -1,0 +1,23 @@
+[
+  {
+    "filepath": "dummy_1.c",
+    "remote_url": null,
+    "source_map": {
+      "start": {
+        "row": 0,
+        "column": 7
+      },
+      "end": {
+        "row": 0,
+        "column": 41
+      }
+    },
+    "tagged_scope": "int main() {\n  return 0;\n}",
+    "rst": ".. impl:: implement main function ",
+    "need": {
+      "type": "impl",
+      "title": "implement main function"
+    },
+    "type": "rst"
+  }
+]
