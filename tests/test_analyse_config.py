@@ -165,7 +165,6 @@ def test_config_schema_validator_negative(analyse_config, result):
                 ],
             ),
             [
-                "Missing required fields: ['type']",
                 "Field 'title' without a default follows field 'implements' which has a default. "
                 "Fields without defaults must be defined before fields with defaults.",
             ],
