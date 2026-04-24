@@ -130,6 +130,9 @@ def test_schema_positive(config):
                 "exclude": ["charge/*.cpp"],
                 "include": ["**/*.cpp"],
             },
+            # With ignore-python, include patterns whitelist files (overriding
+            # gitignore) and exclude patterns are applied after, so both
+            # charge/*.cpp files are excluded resulting in 2 instead of 4.
             2,
             "",
         ),

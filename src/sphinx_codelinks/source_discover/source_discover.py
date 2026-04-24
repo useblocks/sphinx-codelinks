@@ -70,6 +70,8 @@ class SourceDiscover:
                 continue
             if self.file_types and filepath.suffix.lower() not in self.file_types:
                 continue
+            # resolve() produces canonical absolute paths; follow_links only
+            # controls whether the walker descends into symlinked directories
             discovered_files.append(filepath.resolve())
 
         sorted_filepaths = sorted(
