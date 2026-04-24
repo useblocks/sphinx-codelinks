@@ -1,4 +1,6 @@
 # @Test suite for source file discovery with gitignore support, TEST_DISC_1, test, [IMPL_DISC_1]
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -9,6 +11,8 @@ from sphinx_codelinks.source_discover.config import (
     SourceDiscoverConfigType,
 )
 from sphinx_codelinks.source_discover.source_discover import SourceDiscover
+
+FIXTURES_PATH = Path(__file__).parent / "data" / "discover_fixtures.json"
 
 
 @pytest.mark.parametrize(
@@ -223,3 +227,58 @@ def test_follow_links(tmp_path: Path) -> None:
     discovered_names = {p.name for p in discover_follow.source_paths}
     assert "direct.cpp" in discovered_names
     assert "source.cpp" in discovered_names
+
+
+def _load_discover_fixtures() -> list[dict]:
+    with open(FIXTURES_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+@pytest.mark.parametrize(
+    "case",
+    _load_discover_fixtures(),
+    ids=lambda c: c["name"],
+)
+def test_discover_fixture(case: dict, tmp_path: Path) -> None:
+    """Run portable discovery test cases from the shared JSON fixture."""
+    # Create files
+    for rel_path, content in case["files"].items():
+        file_path = tmp_path / rel_path
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(content, encoding="utf-8")
+
+    # Optionally initialise a git repo (required for .gitignore support)
+    if case.get("git_init", False):
+        subprocess.run(
+            ["git", "init"],
+            cwd=str(tmp_path),
+            check=True,
+            capture_output=True,
+        )
+
+    cfg = case["config"]
+    src_dir = tmp_path / cfg["src_dir"]
+
+    config = SourceDiscoverConfig(
+        src_dir=src_dir,
+        include=cfg.get("include", []),
+        exclude=cfg.get("exclude", []),
+        gitignore=cfg.get("gitignore", True),
+        comment_type=cfg.get("comment_type", "cpp"),
+    )
+
+    discover = SourceDiscover(config)
+
+    # Convert discovered paths to paths relative to tmp_path for comparison
+    discovered_relative = sorted(
+        str(p.relative_to(tmp_path)) for p in discover.source_paths
+    )
+
+    # Normalise expected paths to use the OS path separator
+    expected = sorted(
+        str(Path(p)) for p in case["expected"]
+    )
+
+    assert discovered_relative == expected, (
+        f"Case '{case['name']}': expected {expected}, got {discovered_relative}"
+    )

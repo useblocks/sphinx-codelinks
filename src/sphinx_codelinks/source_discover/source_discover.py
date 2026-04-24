@@ -52,11 +52,17 @@ class SourceDiscover:
         if not src_dir.is_dir():
             return []
 
+        gitignore = self.src_discover_config.gitignore
+
         builder = WalkBuilder(str(src_dir))
+        # Replicate the Rust ignore crate's standard_filters(gitignore)
+        # followed by hidden(false), matching ubc_codelinks behaviour.
+        builder.ignore(gitignore)
+        builder.parents(gitignore)
+        builder.git_ignore(gitignore)
+        builder.git_global(gitignore)
+        builder.git_exclude(gitignore)
         builder.hidden(False)
-        builder.git_ignore(self.src_discover_config.gitignore)
-        builder.git_global(False)
-        builder.git_exclude(False)
         builder.follow_links(self.src_discover_config.follow_links)
 
         override_builder = self._build_overrides()
