@@ -60,6 +60,15 @@ from sphinx_codelinks.source_discover.source_discover import SourceDiscover
                 "Schema validation error in field 'comment_type': ['cpp', 'hpp'] is not of type 'string'"
             ],
         ),
+        (
+            {
+                "src_dir": "/path/to/root",
+                "follow_links": "not_a_bool",
+            },
+            [
+                "Schema validation error in field 'follow_links': 'not_a_bool' is not of type 'boolean'"
+            ],
+        ),
     ],
 )
 def test_schema_negative(config, msgs):
@@ -85,6 +94,10 @@ def test_schema_negative(config, msgs):
             "include": ["include1", "include2"],
             "gitignore": True,
             "comment_type": "python",
+        },
+        {
+            "src_dir": "/path/to/root",
+            "follow_links": True,
         },
     ],
 )
@@ -117,7 +130,7 @@ def test_schema_positive(config):
                 "exclude": ["charge/*.cpp"],
                 "include": ["**/*.cpp"],
             },
-            4,
+            2,
             "",
         ),
         (
@@ -174,3 +187,36 @@ def test_comment_filetype(
     )
     source_discover = SourceDiscover(config)
     assert len(source_discover.source_paths) == nums_files
+
+
+def test_follow_links(tmp_path: Path) -> None:
+    """Test that follow_links controls whether symbolic links are followed."""
+    # Create a real directory with a source file
+    real_dir = tmp_path / "real"
+    real_dir.mkdir()
+    (real_dir / "source.cpp").write_text("// test")
+
+    # Create a project directory with a symlink to the real directory
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    (project_dir / "direct.cpp").write_text("// direct")
+    link = project_dir / "linked"
+    link.symlink_to(real_dir)
+
+    # Without follow_links, symlinked files should not be discovered
+    config_no_follow = SourceDiscoverConfig(
+        src_dir=project_dir, gitignore=False, follow_links=False
+    )
+    discover_no_follow = SourceDiscover(config_no_follow)
+    discovered_names = {p.name for p in discover_no_follow.source_paths}
+    assert "direct.cpp" in discovered_names
+    assert "source.cpp" not in discovered_names
+
+    # With follow_links, symlinked files should be discovered
+    config_follow = SourceDiscoverConfig(
+        src_dir=project_dir, gitignore=False, follow_links=True
+    )
+    discover_follow = SourceDiscover(config_follow)
+    discovered_names = {p.name for p in discover_follow.source_paths}
+    assert "direct.cpp" in discovered_names
+    assert "source.cpp" in discovered_names
