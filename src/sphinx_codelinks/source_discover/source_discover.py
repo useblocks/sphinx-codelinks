@@ -27,14 +27,13 @@ class SourceDiscover:
         Include patterns are added as whitelist globs.
         Exclude patterns are added as negated globs (prefixed with ``!``).
         """
-        src_dir = str(self.src_discover_config.src_dir)
         has_include = bool(self.src_discover_config.include)
         has_exclude = bool(self.src_discover_config.exclude)
 
         if not has_include and not has_exclude:
             return None
 
-        ob = OverrideBuilder(src_dir)
+        ob = OverrideBuilder(self.src_discover_config.src_dir)
 
         if has_include:
             for pattern in self.src_discover_config.include:
@@ -54,7 +53,7 @@ class SourceDiscover:
 
         gitignore = self.src_discover_config.gitignore
 
-        builder = WalkBuilder(str(src_dir))
+        builder = WalkBuilder(src_dir)
         # Replicate the Rust ignore crate's standard_filters(gitignore)
         # followed by hidden(false), matching ubc_codelinks behaviour.
         builder.ignore(gitignore)

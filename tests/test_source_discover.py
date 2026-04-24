@@ -1,7 +1,7 @@
 # @Test suite for source file discovery with gitignore support, TEST_DISC_1, test, [IMPL_DISC_1]
 import json
-import subprocess
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -230,7 +230,7 @@ def test_follow_links(tmp_path: Path) -> None:
 
 
 def _load_discover_fixtures() -> list[dict]:
-    with open(FIXTURES_PATH, encoding="utf-8") as f:
+    with FIXTURES_PATH.open(encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -250,7 +250,7 @@ def test_discover_fixture(case: dict, tmp_path: Path) -> None:
     # Optionally initialise a git repo (required for .gitignore support)
     if case.get("git_init", False):
         subprocess.run(
-            ["git", "init"],
+            ["git", "init"],  # noqa: S607
             cwd=str(tmp_path),
             check=True,
             capture_output=True,
@@ -275,9 +275,7 @@ def test_discover_fixture(case: dict, tmp_path: Path) -> None:
     )
 
     # Normalise expected paths to use the OS path separator
-    expected = sorted(
-        str(Path(p)) for p in case["expected"]
-    )
+    expected = sorted(str(Path(p)) for p in case["expected"])
 
     assert discovered_relative == expected, (
         f"Case '{case['name']}': expected {expected}, got {discovered_relative}"
