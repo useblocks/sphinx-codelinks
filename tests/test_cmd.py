@@ -1,6 +1,7 @@
 # @Test suite for CLI commands including analyse, discover, and write, TEST_CLI_1, test, [IMPL_CLI_ANALYZE, IMPL_CLI_DISCOVER, IMPL_CLI_WRITE]
 import json
 from pathlib import Path
+import re
 
 import pytest
 import toml
@@ -52,8 +53,6 @@ def _normalize_output(text: str) -> str:
     Typer wraps error messages in rich panels whose line breaks depend on terminal
     width, which can cause substring assertions to fail.
     """
-    import re
-
     # Remove box-drawing characters (─│╭╮╯╰) and collapse resulting whitespace
     text = re.sub(r"[─│╭╮╯╰]", " ", text)
     return re.sub(r"\s+", " ", text).strip()
