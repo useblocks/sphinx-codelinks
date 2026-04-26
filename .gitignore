@@ -1,3 +1,5 @@
+.DS_Store
+
 # python generated files
 .ruff_cache
 .pytest_cache
@@ -26,3 +28,5 @@ coverage.xml
 invalid_objs.json
 
 .tox
+
+output/
