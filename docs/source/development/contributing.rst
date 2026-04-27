@@ -24,11 +24,12 @@ Install Dependencies
 
 ``CodeLinks`` uses `tox <https://tox.wiki/>`_ (with `tox-uv <https://github.com/tox-dev/tox-uv>`_) to manage development tasks.
 
-Install tox:
+Install tox with pip or uv:
 
 .. code-block:: bash
 
    pip install tox tox-uv
+   uv tool install tox --with tox-uv
 
 Formatting, Linting and Typing
 ------------------------------
