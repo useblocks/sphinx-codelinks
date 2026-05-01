@@ -1455,3 +1455,213 @@ def test_yaml_inline_comments_comprehensive(
         assert expected_associations[i] in structure_text, (
             f"Comment {i} '{comment.text.decode('utf-8')}' -> Expected '{expected_associations[i]}' in '{structure_text}'"
         )
+
+
+# ========== parse_single_directive tests ==========
+
+
+@pytest.mark.parametrize(
+    ("rst_text", "expected"),
+    [
+        # Minimal directive, no options or content
+        (
+            ".. req:: My Requirement",
+            {
+                "name": "req",
+                "argument": "My Requirement",
+                "options": {},
+                "content": "",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": None,
+            },
+        ),
+        # Directive with options
+        (
+            ".. impl:: Some Title\n   :id: IMPL_71\n   :status: open",
+            {
+                "name": "impl",
+                "argument": "Some Title",
+                "options": {"id": "IMPL_71", "status": "open"},
+                "content": "",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": None,
+            },
+        ),
+        # Directive with options and content
+        (
+            ".. spec:: Spec Title\n   :id: SPEC_1\n\n   This is the body.",
+            {
+                "name": "spec",
+                "argument": "Spec Title",
+                "options": {"id": "SPEC_1"},
+                "content": "This is the body.",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": 3,
+            },
+        ),
+        # Directive with multi-line content
+        (
+            ".. req:: Title\n   :id: R1\n\n   Line one.\n\n   Line two.",
+            {
+                "name": "req",
+                "argument": "Title",
+                "options": {"id": "R1"},
+                "content": "Line one.\n\nLine two.",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": 3,
+            },
+        ),
+        # Leading/trailing blank lines (no extra content)
+        (
+            "\n\n.. req:: Title\n   :id: X\n\n",
+            {
+                "name": "req",
+                "argument": "Title",
+                "options": {"id": "X"},
+                "content": "",
+                "has_extra_content": False,
+                "directive_line_offset": 2,
+                "content_line_offset": None,
+            },
+        ),
+        # Extra content after the directive
+        (
+            ".. req:: Title\n   :id: X\n\nSomething else here",
+            {
+                "name": "req",
+                "argument": "Title",
+                "options": {"id": "X"},
+                "content": "",
+                "has_extra_content": True,
+                "directive_line_offset": 0,
+                "content_line_offset": None,
+            },
+        ),
+        # No argument
+        (
+            ".. note::\n\n   A note body.",
+            {
+                "name": "note",
+                "argument": "",
+                "options": {},
+                "content": "A note body.",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": 2,
+            },
+        ),
+        # Content only (no options)
+        (
+            ".. warning::\n\n   Be careful!",
+            {
+                "name": "warning",
+                "argument": "",
+                "options": {},
+                "content": "Be careful!",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": 2,
+            },
+        ),
+        # Namespaced directive (e.g. std:req)
+        (
+            ".. std:req:: Namespaced\n   :id: NS1",
+            {
+                "name": "std:req",
+                "argument": "Namespaced",
+                "options": {"id": "NS1"},
+                "content": "",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": None,
+            },
+        ),
+        # Multi-line option value (continuation lines)
+        (
+            ".. impl:: Title\n   :id: ML1\n   :links: A,\n      B, C",
+            {
+                "name": "impl",
+                "argument": "Title",
+                "options": {"id": "ML1", "links": "A, B, C"},
+                "content": "",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": None,
+            },
+        ),
+        # Multi-line option value with content after
+        (
+            ".. impl:: Title\n   :id: ML2\n   :tags: x,\n      y\n\n   Body text.",
+            {
+                "name": "impl",
+                "argument": "Title",
+                "options": {"id": "ML2", "tags": "x, y"},
+                "content": "Body text.",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": 5,
+            },
+        ),
+        # Option with empty value
+        (
+            ".. impl:: Title\n   :id: EV1\n   :delete:",
+            {
+                "name": "impl",
+                "argument": "Title",
+                "options": {"id": "EV1", "delete": ""},
+                "content": "",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": None,
+            },
+        ),
+        # Multiple continuation lines for one option, then a new option
+        (
+            ".. impl:: Title\n   :links: A,\n      B,\n      C\n   :status: open",
+            {
+                "name": "impl",
+                "argument": "Title",
+                "options": {"links": "A, B, C", "status": "open"},
+                "content": "",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": None,
+            },
+        ),
+        # Content directly after directive (no options, no blank line)
+        (
+            ".. note::\n   Direct content.",
+            {
+                "name": "note",
+                "argument": "",
+                "options": {},
+                "content": "Direct content.",
+                "has_extra_content": False,
+                "directive_line_offset": 0,
+                "content_line_offset": 1,
+            },
+        ),
+    ],
+)
+def test_parse_single_directive(rst_text, expected):
+    result = utils.parse_single_directive(rst_text)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "rst_text",
+    [
+        # Plain text, no directive
+        "Just some plain text.",
+        # Empty string
+        "",
+        # Only blank lines
+        "\n\n\n",
+    ],
+)
+def test_parse_single_directive_returns_none(rst_text):
+    assert utils.parse_single_directive(rst_text) is None

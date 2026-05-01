@@ -2,6 +2,7 @@ from collections.abc import ByteString, Callable
 import configparser
 import logging
 from pathlib import Path
+import re
 from typing import TypedDict
 from urllib.request import pathname2url
 
@@ -353,6 +354,170 @@ class ExtractedRstType(TypedDict):
     row_offset: int
     start_idx: int
     end_idx: int
+
+
+class ParsedDirective(TypedDict):
+    """A single parsed RST directive."""
+
+    name: str
+    argument: str
+    options: dict[str, str]
+    content: str
+    has_extra_content: bool
+    directive_line_offset: int
+    """0-based line index of the ``.. name::`` line within the input text."""
+    content_line_offset: int | None
+    """0-based line index where the directive content starts within the input text.
+
+    ``None`` if the directive has no content body.
+    """
+
+
+_RE_DIRECTIVE = re.compile(r"^(\s*)\.\.\s+([\w:.+-]+)\s*::\s*(.*)")
+_RE_OPTION = re.compile(r"^\s+:([^:]+):\s*(.*)")
+
+
+def _parse_options(body_lines: list[str]) -> tuple[dict[str, str], int]:
+    """Parse field-list options from the start of directive body lines.
+
+    Supports multi-line option values: continuation lines must be indented
+    and are joined with a single space.
+
+    :return: Tuple of (options dict, content_start index into body_lines).
+    """
+    options: dict[str, str] = {}
+    content_start = 0
+    current_key: str | None = None
+    for j, line in enumerate(body_lines):
+        if not line.strip():
+            # Blank line ends the option block.
+            content_start = j + 1
+            current_key = None
+            break
+        opt_match = _RE_OPTION.match(line)
+        if opt_match:
+            current_key = opt_match.group(1).strip()
+            options[current_key] = opt_match.group(2).strip()
+            content_start = j + 1
+        elif current_key is not None and line[:1] == " ":
+            # Continuation line for the previous option value.
+            # NOTE: In standard RST (docutils),
+            # continuation indent is measured relative to the field body
+            # start.  Here any leading space is accepted, which is looser
+            # but correct within a directive body where all lines are
+            # already indented past the directive marker.
+            prev = options[current_key]
+            continuation = line.strip()
+            options[current_key] = f"{prev} {continuation}" if prev else continuation
+            content_start = j + 1
+        else:
+            content_start = j
+            break
+    else:
+        content_start = len(body_lines)
+    return options, content_start
+
+
+def _extract_content(
+    body_lines: list[str], content_start: int
+) -> tuple[list[str], int]:
+    """Extract and dedent the content portion of a directive body.
+
+    :return: Tuple of (dedented content lines, number of leading blank lines removed).
+    """
+    content_lines = body_lines[content_start:]
+    content_blanks_removed = 0
+    while content_lines and not content_lines[0].strip():
+        content_lines.pop(0)
+        content_blanks_removed += 1
+    while content_lines and not content_lines[-1].strip():
+        content_lines.pop()
+    if content_lines:
+        min_indent = min(
+            len(cl) - len(cl.lstrip()) for cl in content_lines if cl.strip()
+        )
+        content_lines = [cl[min_indent:] if cl.strip() else "" for cl in content_lines]
+    return content_lines, content_blanks_removed
+
+
+def parse_single_directive(rst_text: str) -> ParsedDirective | None:
+    """Parse a single RST directive from text.
+
+    Expects text whose first non-blank line is a directive, e.g.::
+
+        .. need-type:: argument
+           :option: value
+
+           Content body here.
+
+    :param rst_text: The RST text to parse.
+    :return: Parsed directive, or ``None`` if the first non-blank line
+        is not a directive.
+    """
+    lines = rst_text.splitlines()
+
+    # Find directive on the first non-blank line
+    dir_idx: int | None = None
+    dir_match: re.Match[str] | None = None
+    for i, line in enumerate(lines):
+        if line.strip():
+            dir_match = _RE_DIRECTIVE.match(line)
+            if dir_match:
+                dir_idx = i
+            break
+
+    if dir_idx is None or dir_match is None:
+        return None
+
+    dir_indent = len(dir_match.group(1))
+    name = dir_match.group(2)
+    # NOTE: In standard RST (docutils), directive
+    # arguments may span multiple lines before the first field-list
+    # marker.  Here only the ``.. name::`` line is captured; this is
+    # sufficient for NeedDirective where the argument is a single-line
+    # title.
+    argument = dir_match.group(3).strip()
+
+    # Collect body: indented (or blank) lines after the directive.
+    # body_end tracks the last non-blank indented line so trailing
+    # blank lines between the directive and outside content are excluded.
+    body_end = dir_idx
+    for i in range(dir_idx + 1, len(lines)):
+        line = lines[i]
+        if not line.strip():
+            continue
+        if len(line) - len(line.lstrip()) > dir_indent:
+            body_end = i
+        else:
+            break
+
+    body_lines = lines[dir_idx + 1 : body_end + 1]
+
+    options, content_start = _parse_options(body_lines)
+    content_lines, content_blanks_removed = _extract_content(body_lines, content_start)
+    content = "\n".join(content_lines)
+
+    # Extra content = any non-blank line outside the directive body.
+    has_extra = any(lines[i].strip() for i in range(body_end + 1, len(lines)))
+
+    # Line offsets relative to the start of rst_text (0-based).
+    directive_line_offset = dir_idx
+    if content_lines:
+        content_line_offset: int | None = (
+            dir_idx + 1 + content_start + content_blanks_removed
+        )
+    else:
+        content_line_offset = None
+
+    return ParsedDirective(
+        name=name,
+        argument=argument,
+        options=options,
+        content=content,
+        has_extra_content=has_extra,
+        directive_line_offset=directive_line_offset,
+        content_line_offset=content_line_offset,
+    )
 
 
 # @Extract reStructuredText blocks embedded in comments, IMPL_RST_1, impl, [FE_RST_EXTRACTION]

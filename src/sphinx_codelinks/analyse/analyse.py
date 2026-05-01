@@ -76,9 +76,7 @@ class SourceAnalyse:
         self.git_commit_rev: str | None = (
             utils.get_current_rev(self.git_root) if self.git_root else None
         )
-        self.project_path: Path = (
-            self.git_root if self.git_root else self.analyse_config.src_dir
-        )
+        self.project_path: Path = self.git_root or self.analyse_config.src_dir
         self.oneline_warnings: list[AnalyseWarning] = []
 
     def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
