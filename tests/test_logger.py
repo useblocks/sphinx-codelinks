@@ -1,4 +1,4 @@
-# @Test suite for the environment-aware logging facade, TEST_LOG_1, test, [IMPL_LOG_ROUTING]
+# Test suite for the environment-aware logging facade (issue #72).
 import importlib
 import logging
 

@@ -309,12 +309,9 @@ def get_current_rev(git_root: Path) -> str | None:
         return None
     head_content = head_path.read_text().strip()
     if not head_content.startswith("ref: "):
-        logger.warning(
-            f"Expect starting with 'ref: ' in {head_path}",
-            subtype="git_head",
-            location=str(head_path),
-        )
-        return None
+        # Detached HEAD (e.g. CI checkouts): .git/HEAD holds the commit SHA
+        # directly, which is exactly the rev we want.
+        return head_content
 
     ref_path = git_root / ".git" / head_content.split(":", 1)[1].strip()
     if not ref_path.exists():
