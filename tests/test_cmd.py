@@ -246,7 +246,7 @@ def test_analyse_config_negative(
     ]
     result = runner.invoke(app, options)
     assert result.exit_code != 0
-    normalized = _normalize_output(result.stdout)
+    normalized = _normalize_output(result.output)
     for line in output_lines:
         assert line in normalized
 
@@ -280,7 +280,7 @@ def test_analyse_project_negative(projects, output_lines, tmp_path: Path) -> Non
     options.extend(projects_config)
     result = runner.invoke(app, options)
     assert result.exit_code != 0
-    normalized = _normalize_output(result.stdout)
+    normalized = _normalize_output(result.output)
     for line in output_lines:
         assert line in normalized
 
@@ -306,7 +306,7 @@ def test_write_rst_invalid_json(tmp_path: Path) -> None:
     result = runner.invoke(app, options)
 
     assert result.exit_code != 0
-    assert "Expecting" in result.stdout
+    assert "Expecting" in result.output
 
 
 @pytest.mark.parametrize(
@@ -351,7 +351,7 @@ def test_write_rst_negative(json_objs: list[dict], output_lines, tmp_path) -> No
     result = runner.invoke(app, options)
 
     assert result.exit_code != 0
-    normalized = _normalize_output(result.stdout)
+    normalized = _normalize_output(result.output)
     for line in output_lines:
         assert line in normalized
 
