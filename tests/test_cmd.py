@@ -116,6 +116,25 @@ def test_analyse_outputs_warnings(tmp_path: Path) -> None:
     assert "too_many_fields" in result.output
 
 
+def test_analyse_progress_shown_by_default_and_hidden_when_quiet(
+    tmp_path: Path,
+) -> None:
+    """Routine progress is shown on the CLI by default and silenced by --quiet."""
+    config_path = DATA_DIR / "configs" / "minimum_config.toml"
+
+    result = runner.invoke(
+        app, ["analyse", str(config_path), "--outdir", str(tmp_path)]
+    )
+    assert result.exit_code == 0
+    assert "Source files loaded" in result.output
+
+    quiet_result = runner.invoke(
+        app, ["analyse", str(config_path), "--outdir", str(tmp_path), "--quiet"]
+    )
+    assert quiet_result.exit_code == 0
+    assert "Source files loaded" not in quiet_result.output
+
+
 @pytest.mark.parametrize(
     ("options", "stdout"),
     [

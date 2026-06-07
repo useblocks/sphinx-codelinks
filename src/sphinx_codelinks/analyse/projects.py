@@ -1,5 +1,4 @@
 import json
-import logging
 from pathlib import Path
 from typing import cast
 
@@ -9,14 +8,9 @@ from sphinx_codelinks.analyse.analyse import (
     SourceAnalyse,
 )
 from sphinx_codelinks.config import CodeLinksConfig, CodeLinksProjectConfigType
+from sphinx_codelinks.logger import get_logger
 
-# initialize logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-# log to the console
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-logger.addHandler(console)
+logger = get_logger(__name__)
 
 
 class AnalyseProjects:
