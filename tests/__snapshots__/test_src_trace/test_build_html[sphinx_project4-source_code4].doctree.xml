@@ -1,0 +1,5 @@
+<document source="<source>">
+    <target anonymous="" ids="RST_IMPL_1" refid="RST_IMPL_1">
+    <Need classes="need need-impl" ids="RST_IMPL_1" refid="RST_IMPL_1">
+        <paragraph>
+            This need was defined inside an @rst block.

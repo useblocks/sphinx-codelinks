@@ -5,14 +5,17 @@ from typing import Any, ClassVar, cast
 
 from docutils import nodes
 from docutils.parsers.rst import directives
+from docutils.statemachine import StringList
 from packaging.version import Version
 import sphinx
 from sphinx.util.docutils import SphinxDirective
 from sphinx_needs.api import add_need  # type: ignore[import-untyped]
+from sphinx_needs.directives.need import NeedDirective  # type: ignore[import-untyped]
 from sphinx_needs.utils import add_doc  # type: ignore[import-untyped]
 
 from sphinx_codelinks.analyse.analyse import SourceAnalyse
-from sphinx_codelinks.analyse.models import OneLineNeed
+from sphinx_codelinks.analyse.models import Metadata
+from sphinx_codelinks.analyse.utils import parse_single_directive
 from sphinx_codelinks.config import (
     CodeLinksConfig,
     CodeLinksProjectConfigType,
@@ -43,7 +46,7 @@ def get_rel_path(doc_path: Path, code_path: Path, base_dir: Path) -> tuple[Path,
 
 
 def generate_str_link_name(
-    oneline_need: OneLineNeed,
+    oneline_need: Metadata,
     target_filepath: Path,
     dirs: dict[str, Path],
     local: bool = False,
@@ -178,6 +181,16 @@ class SourceTracingDirective(SphinxDirective):
             local_url_field,
             remote_url_field,
             dirs,
+        )
+
+        # render needs from marked RST blocks
+        rendered_needs.extend(
+            self.render_marked_rst_needs(
+                src_analyse,
+                local_url_field,
+                remote_url_field,
+                dirs,
+            )
         )
 
         # for post-processing of need links
@@ -322,3 +335,101 @@ class SourceTracingDirective(SphinxDirective):
                         ] = f"{docs_href}#{oneline_need.need['id']}"
 
         return rendered_needs
+
+    def render_marked_rst_needs(
+        self,
+        src_analyse: SourceAnalyse,
+        local_url_field: str | None,
+        remote_url_field: str | None,
+        dirs: dict[str, Path],
+    ) -> list[nodes.Node]:
+        """Render needs from marked RST blocks (``@rst ... @endrst``).
+
+        Each block is expected to contain a single need directive.
+        Warnings are emitted when the block does not contain a directive
+        or contains content outside the directive.
+        """
+        rendered_nodes: list[nodes.Node] = []
+        for marked_rst in src_analyse.marked_rst:
+            parsed = parse_single_directive(marked_rst.rst)
+            src_file = str(marked_rst.filepath)
+            src_line = marked_rst.source_map["start"]["row"] + 1
+
+            if parsed is None:
+                logger.warning(
+                    f"No directive found in marked RST block [{src_file}:{src_line}]",
+                    location=(self.env.docname, self.lineno),
+                )
+                continue
+
+            if parsed["has_extra_content"]:
+                logger.warning(
+                    "Content found outside directive in marked RST block "
+                    f"[{src_file}:{src_line}]; "
+                    "only a single directive is supported",
+                    location=(self.env.docname, self.lineno),
+                )
+
+            # Build content StringList with source mapping
+            content_lines = parsed["content"].splitlines() if parsed["content"] else []
+            content_offset = self.content_offset
+            if parsed["content_line_offset"] is not None:
+                content_offset = src_line - 1 + parsed["content_line_offset"]
+            content = StringList(content_lines, source=src_file)
+
+            # Build arguments list (title)
+            arguments = [parsed["argument"]] if parsed["argument"] else []
+
+            # Options are passed as raw strings without conversion or
+            # validation here; NeedDirective uses a DummyOptionSpec that
+            # accepts all keys as strings, and performs its own key-by-key
+            # validation inside run().
+            # NOTE: DummyOptionSpec was added in sphinx-needs v6
+            # (d09332d); earlier versions use a fixed option_spec.
+            options: dict[str, str | None] = dict(parsed["options"])
+
+            # Inject URL fields
+            filepath = src_analyse.analyse_config.src_dir / marked_rst.filepath
+            target_filepath = dirs["target_dir"] / filepath.relative_to(dirs["src_dir"])
+
+            if local_url_field:
+                target_filepath.parent.mkdir(parents=True, exist_ok=True)
+                target_filepath.write_text(filepath.read_text())
+                local_rel_path, _ = get_rel_path(
+                    Path(self.env.docname), target_filepath, dirs["out_dir"]
+                )
+                options[local_url_field] = generate_str_link_name(
+                    marked_rst, local_rel_path, dirs, local=True
+                )
+            if remote_url_field:
+                options[remote_url_field] = generate_str_link_name(
+                    marked_rst, target_filepath, dirs, local=False
+                )
+
+            directive_lineno = src_line + parsed["directive_line_offset"]
+
+            # Instantiate NeedDirective directly rather than using add_need(),
+            # so that it can process the full directive body (content, options)
+            # through its own run() logic.  We pass the real state/state_machine
+            # from the enclosing SphinxDirective — no mocking needed.
+            need_directive = NeedDirective(
+                name=parsed["name"],
+                arguments=arguments,
+                options=options,
+                content=content,
+                lineno=directive_lineno,
+                content_offset=content_offset,
+                block_text="",
+                state=self.state,
+                state_machine=self.state_machine,
+            )
+            try:
+                rendered_nodes.extend(need_directive.run())
+            except Exception as exc:
+                logger.warning(
+                    "Failed to render directive in marked RST block "
+                    f"[{src_file}:{src_line}]: {exc}",
+                    location=(self.env.docname, self.lineno),
+                )
+
+        return rendered_nodes

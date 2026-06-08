@@ -1,0 +1,8 @@
+<document source="<source>">
+    <target anonymous="" ids="OL_IMPL_1" refid="OL_IMPL_1">
+    <Need classes="need need-impl" ids="OL_IMPL_1" refid="OL_IMPL_1">
+    <target anonymous="" ids="RST_IMPL_2" refid="RST_IMPL_2">
+    <Need classes="need need-impl" ids="RST_IMPL_2" refid="RST_IMPL_2">
+        <paragraph>
+            This is a detailed need from an @rst block,
+            coexisting with a one-line need.
