@@ -127,13 +127,13 @@ def test_analyse_logs_per_project_summary_and_gates_detail(tmp_path: Path) -> No
     assert result.exit_code == 0
     assert "codelinks [" in result.output
     assert "markers" in result.output
-    assert "oneline-needs" not in result.output
+    assert "oneline need" not in result.output
 
     # --verbose: per-type breakdown also shown
     verbose_result = runner.invoke(app, [*base, "--verbose"])
     assert verbose_result.exit_code == 0
     assert "codelinks [" in verbose_result.output
-    assert "oneline-needs" in verbose_result.output
+    assert "oneline need" in verbose_result.output
 
     # --quiet: summary silenced
     quiet_result = runner.invoke(app, [*base, "--quiet"])

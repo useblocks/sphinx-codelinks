@@ -30,6 +30,11 @@ from sphinx_codelinks.logger import get_logger
 logger = get_logger(__name__)
 
 
+def _count(n: int, noun: str) -> str:
+    """Format ``n noun`` with a naive (append-s) plural for progress summaries."""
+    return f"{n} {noun}" if n == 1 else f"{n} {noun}s"
+
+
 class AnalyseWarningType(TypedDict):
     file_path: str
     lineno: int
@@ -376,12 +381,12 @@ class SourceAnalyse:
         """Emit a per-project marker (default-visible) plus a -v breakdown."""
         label = f"codelinks [{self.name}]" if self.name else "codelinks"
         logger.info(
-            f"{label}: {len(self.src_files)} files, "
-            f"{len(self.all_marked_content)} markers"
+            f"{label}: {_count(len(self.src_files), 'file')}, "
+            f"{_count(len(self.all_marked_content), 'marker')}"
         )
         logger.debug(
-            f"{label}: {len(self.src_comments)} comments, "
-            f"{len(self.oneline_needs)} oneline-needs, "
-            f"{len(self.need_id_refs)} id-refs, "
-            f"{len(self.marked_rst)} marked-rst"
+            f"{label}: {_count(len(self.src_comments), 'comment')}, "
+            f"{_count(len(self.oneline_needs), 'oneline need')}, "
+            f"{_count(len(self.need_id_refs), 'id-ref')}, "
+            f"{_count(len(self.marked_rst), 'marked-rst block')}"
         )
