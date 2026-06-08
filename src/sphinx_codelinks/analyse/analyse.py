@@ -51,7 +51,10 @@ class SourceAnalyse:
     def __init__(
         self,
         analyse_config: SourceAnalyseConfig,
+        *,
+        name: str = "",
     ) -> None:
+        self.name = name
         self.analyse_config = analyse_config
         self.src_files: list[SourceFile] = []
         self.src_comments: list[SourceComment] = []
@@ -103,9 +106,6 @@ class SourceAnalyse:
             src_file.add_comments(src_comments)
             self.src_files.append(src_file)
             self.src_comments.extend(src_comments)
-
-        logger.info(f"Source files loaded: {len(self.src_files)}")
-        logger.info(f"Source comments extracted: {len(self.src_comments)}")
 
     def extract_marker(
         self,
@@ -347,13 +347,6 @@ class SourceAnalyse:
                 if marked_rst:
                     self.marked_rst.append(marked_rst)
 
-        if self.analyse_config.get_need_id_refs:
-            logger.info(f"Need-id-refs extracted: {len(self.need_id_refs)}")
-        if self.analyse_config.get_oneline_needs:
-            logger.info(f"Oneline needs extracted: {len(self.oneline_needs)}")
-        if self.analyse_config.get_rst:
-            logger.info(f"Marked rst extracted: {len(self.marked_rst)}")
-
     def merge_marked_content(self) -> None:
         self.all_marked_content.extend(self.need_id_refs)
         self.oneline_needs.sort(key=lambda x: x.source_map["start"]["row"])
@@ -372,9 +365,23 @@ class SourceAnalyse:
         ]
         with output_path.open("w") as f:
             json.dump(to_dump, f)
-        logger.info(f"Marked content dumped to {output_path}")
 
     def run(self) -> None:
         self.create_src_objects()
         self.extract_marked_content()
         self.merge_marked_content()
+        self._log_summary()
+
+    def _log_summary(self) -> None:
+        """Emit a per-project marker (default-visible) plus a -v breakdown."""
+        label = f"codelinks [{self.name}]" if self.name else "codelinks"
+        logger.info(
+            f"{label}: {len(self.src_files)} files, "
+            f"{len(self.all_marked_content)} markers"
+        )
+        logger.debug(
+            f"{label}: {len(self.src_comments)} comments, "
+            f"{len(self.oneline_needs)} oneline-needs, "
+            f"{len(self.need_id_refs)} id-refs, "
+            f"{len(self.marked_rst)} marked-rst"
+        )

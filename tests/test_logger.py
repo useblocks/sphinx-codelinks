@@ -59,6 +59,17 @@ def test_cli_backend_quiet_suppresses_info_but_keeps_warning(capsys):
     assert "git root not found" in captured.err
 
 
+def test_cli_backend_debug_is_gated_by_verbose(capsys):
+    """CLI frontend: detailed debug output is hidden by default, shown with -v."""
+    logmod.configure_cli(verbose=False, quiet=False)
+    logmod.get_logger("sphinx_codelinks.analyse.sample").debug("breakdown detail")
+    assert "breakdown detail" not in capsys.readouterr().out
+
+    logmod.configure_cli(verbose=True, quiet=False)
+    logmod.get_logger("sphinx_codelinks.analyse.sample").debug("breakdown detail")
+    assert "breakdown detail" in capsys.readouterr().out
+
+
 class _ListHandler(logging.Handler):
     def __init__(self) -> None:
         super().__init__()
@@ -69,8 +80,8 @@ class _ListHandler(logging.Handler):
 
 
 def test_sphinx_backend_routes_through_sphinx_logging():
-    """Sphinx frontend: records flow through the ``sphinx.`` namespace;
-    progress is VERBOSE and warnings carry the codelinks type/subtype."""
+    """Sphinx frontend: info is default-visible (INFO), debug is -v only
+    (VERBOSE), warnings carry the codelinks type/subtype; all under sphinx.*"""
     logmod.configure_sphinx()
 
     handler = _ListHandler()
@@ -80,7 +91,8 @@ def test_sphinx_backend_routes_through_sphinx_logging():
     sphinx_logger.setLevel(VERBOSE)
     try:
         log = logmod.get_logger("sphinx_codelinks.analyse.sample")
-        log.info("files loaded: 3")
+        log.info("project summary")
+        log.debug("breakdown detail")
         log.warning("git root not found", subtype="git_root", location="x.cpp")
     finally:
         sphinx_logger.removeHandler(handler)
@@ -91,8 +103,11 @@ def test_sphinx_backend_routes_through_sphinx_logging():
         rec.name == "sphinx.sphinx_codelinks.analyse.sample" for rec in handler.records
     )
 
-    info_records = [r for r in handler.records if "files loaded" in r.getMessage()]
-    assert info_records and info_records[0].levelno == VERBOSE
+    info_records = [r for r in handler.records if "project summary" in r.getMessage()]
+    assert info_records and info_records[0].levelno == logging.INFO
+
+    debug_records = [r for r in handler.records if "breakdown detail" in r.getMessage()]
+    assert debug_records and debug_records[0].levelno == VERBOSE
 
     warn_records = [
         r for r in handler.records if "git root not found" in r.getMessage()

@@ -116,23 +116,29 @@ def test_analyse_outputs_warnings(tmp_path: Path) -> None:
     assert "too_many_fields" in result.output
 
 
-def test_analyse_progress_shown_by_default_and_hidden_when_quiet(
-    tmp_path: Path,
-) -> None:
-    """Routine progress is shown on the CLI by default and silenced by --quiet."""
+def test_analyse_logs_per_project_summary_and_gates_detail(tmp_path: Path) -> None:
+    """Each project gets a default-visible ``codelinks [<project>]`` summary with
+    counts; the per-type breakdown is gated behind --verbose; --quiet silences it."""
     config_path = DATA_DIR / "configs" / "minimum_config.toml"
+    base = ["analyse", str(config_path), "--outdir", str(tmp_path)]
 
-    result = runner.invoke(
-        app, ["analyse", str(config_path), "--outdir", str(tmp_path)]
-    )
+    # default: per-project summary shown, breakdown hidden
+    result = runner.invoke(app, base)
     assert result.exit_code == 0
-    assert "Source files loaded" in result.output
+    assert "codelinks [" in result.output
+    assert "markers" in result.output
+    assert "oneline-needs" not in result.output
 
-    quiet_result = runner.invoke(
-        app, ["analyse", str(config_path), "--outdir", str(tmp_path), "--quiet"]
-    )
+    # --verbose: per-type breakdown also shown
+    verbose_result = runner.invoke(app, [*base, "--verbose"])
+    assert verbose_result.exit_code == 0
+    assert "codelinks [" in verbose_result.output
+    assert "oneline-needs" in verbose_result.output
+
+    # --quiet: summary silenced
+    quiet_result = runner.invoke(app, [*base, "--quiet"])
     assert quiet_result.exit_code == 0
-    assert "Source files loaded" not in quiet_result.output
+    assert "codelinks [" not in quiet_result.output
 
 
 @pytest.mark.parametrize(

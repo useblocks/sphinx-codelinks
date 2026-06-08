@@ -26,7 +26,7 @@ class AnalyseProjects:
 
     def run(self) -> None:
         for project, config in self.projects_configs.items():
-            src_analyse = SourceAnalyse(config["analyse_config"])
+            src_analyse = SourceAnalyse(config["analyse_config"], name=project)
             src_analyse.run()
             self.projects_analyse[project] = src_analyse
 
@@ -40,7 +40,7 @@ class AnalyseProjects:
         }
         with output_path.open("w") as f:
             json.dump(to_dump, f)
-        logger.info(f"Marked content dumped to {output_path}")
+        logger.debug(f"codelinks: marked content dumped to {output_path}")
 
     @classmethod
     def load_warnings(cls, warnings_dir: Path) -> list[AnalyseWarning] | None:

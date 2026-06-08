@@ -124,6 +124,8 @@ class _Backend(Protocol):
     the ones it does not need.
     """
 
+    def debug(self, name: str, msg: str, location: str | None, /) -> None: ...
+
     def info(self, name: str, msg: str, location: str | None, /) -> None: ...
 
     def warning(
@@ -138,6 +140,9 @@ class _StdlibBackend:
     INFO records are dropped and WARNING+ reaches stderr via ``lastResort``.
     """
 
+    def debug(self, name: str, msg: str, _location: str | None, /) -> None:
+        logging.getLogger(name).debug(msg)
+
     def info(self, name: str, msg: str, _location: str | None, /) -> None:
         logging.getLogger(name).info(msg)
 
@@ -150,8 +155,12 @@ class _StdlibBackend:
 class _CliBackend:
     """CLI backend: route through the rich :data:`logger`.
 
-    Progress is INFO (stdout, hidden by ``--quiet``); warnings go to stderr.
+    The summary is INFO (stdout, hidden by ``--quiet``); the breakdown is DEBUG
+    (stdout, shown only with ``--verbose``); warnings go to stderr.
     """
+
+    def debug(self, _name: str, msg: str, _location: str | None, /) -> None:
+        logger.debug(msg)
 
     def info(self, _name: str, msg: str, _location: str | None, /) -> None:
         logger.info(msg)
@@ -167,17 +176,21 @@ class _CliBackend:
 class _SphinxBackend:
     """Sphinx backend: route through ``sphinx.util.logging``.
 
-    Progress is emitted at VERBOSE (shown only with ``sphinx-build -v``);
-    warnings carry ``type="codelinks"`` plus a subtype so they are suppressible
-    via ``suppress_warnings`` and rendered on the Sphinx warning stream.
+    The summary is INFO (shown in a normal build's status stream); the breakdown
+    is VERBOSE (shown only with ``sphinx-build -v``); warnings carry
+    ``type="codelinks"`` plus a subtype so they are suppressible via
+    ``suppress_warnings`` and rendered on the Sphinx warning stream.
     """
 
     # Sphinx >= 8 renders the warning type itself; older versions need it
     # appended to the message (mirrors sphinx-needs' logging helper).
     _show_warning_types = _sphinx_version_info >= (8,)
 
-    def info(self, name: str, msg: str, _location: str | None, /) -> None:
+    def debug(self, name: str, msg: str, _location: str | None, /) -> None:
         sphinx_logging.getLogger(name).verbose(msg)
+
+    def info(self, name: str, msg: str, _location: str | None, /) -> None:
+        sphinx_logging.getLogger(name).info(msg)
 
     def warning(
         self, name: str, msg: str, subtype: str, location: str | None, /
@@ -214,6 +227,9 @@ class CodelinksLogger:
 
     def __init__(self, name: str) -> None:
         self._name = name
+
+    def debug(self, msg: str, *, location: str | None = None) -> None:
+        _dispatch.backend.debug(self._name, msg, location)
 
     def info(self, msg: str, *, location: str | None = None) -> None:
         _dispatch.backend.info(self._name, msg, location)
