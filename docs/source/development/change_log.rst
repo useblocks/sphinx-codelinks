@@ -7,6 +7,8 @@ Upcoming
 --------
 
 - ⬆️ Support and test sphinx-needs v5-8
+- 📚 Documented C# language support in ``features.rst``
+- 🧪 Added Sphinx integration test for C# source files
 
 .. _`release:1.2.0`:
 
