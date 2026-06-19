@@ -8,6 +8,7 @@ from tree_sitter import Language, Parser, Query
 from tree_sitter import Node as TreeSitterNode
 import tree_sitter_c_sharp
 import tree_sitter_cpp
+import tree_sitter_go
 import tree_sitter_python
 import tree_sitter_rust
 import tree_sitter_yaml
@@ -53,6 +54,14 @@ def init_yaml_tree_sitter() -> tuple[Parser, Query]:
 def init_rust_tree_sitter() -> tuple[Parser, Query]:
     parsed_language = Language(tree_sitter_rust.language())
     query = Query(parsed_language, utils.RUST_QUERY)
+    parser = Parser(parsed_language)
+    return parser, query
+
+
+@pytest.fixture(scope="session")
+def init_go_tree_sitter() -> tuple[Parser, Query]:
+    parsed_language = Language(tree_sitter_go.language())
+    query = Query(parsed_language, utils.GO_QUERY)
     parser = Parser(parsed_language)
     return parser, query
 
@@ -816,6 +825,166 @@ def test_yaml_comment(code, num_comments, result, init_yaml_tree_sitter):
 
 
 @pytest.mark.parametrize(
+    ("code", "num_comments", "result"),
+    [
+        (
+            b"""
+                // @req-id: need_001
+                func dummyFunc1() {
+                }
+            """,
+            1,
+            "// @req-id: need_001",
+        ),
+        (
+            b"""
+                func dummyFunc1() {
+                // @req-id: need_001
+                }
+            """,
+            1,
+            "// @req-id: need_001",
+        ),
+        (
+            b"""
+                /* @req-id: need_001 */
+                func dummyFunc1() {
+                }
+            """,
+            1,
+            "/* @req-id: need_001 */",
+        ),
+        (
+            b"""
+                //  @req-id: need_001
+                //
+                //
+                func dummyFunc1() {
+                }
+            """,
+            3,
+            "//  @req-id: need_001",
+        ),
+    ],
+)
+def test_go_comment(code, num_comments, result, init_go_tree_sitter):
+    parser, query = init_go_tree_sitter
+    comments: list[TreeSitterNode] = utils.extract_comments(code, parser, query)
+    comments.sort(key=lambda x: x.start_point.row)
+    assert len(comments) == num_comments
+    assert comments[0].text
+    assert comments[0].text.decode("utf-8") == result
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
+                // @req-id: need_001
+                func dummyFunc1() {
+                }
+            """,
+            "func dummyFunc1()",
+        ),
+        (
+            b"""
+                func dummyFunc2() {
+                }
+                // @req-id: need_001
+                func dummyFunc1() {
+                }
+            """,
+            "func dummyFunc1()",
+        ),
+        (
+            b"""
+                /* @req-id: need_001 */
+                func dummyFunc1() {
+                }
+            """,
+            "func dummyFunc1()",
+        ),
+    ],
+)
+def test_find_associated_scope_go(code, result, init_go_tree_sitter):
+    parser, query = init_go_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_associated_scope(
+        comments[0], CommentType.go
+    )
+    assert node
+    assert node.text
+    go_def = node.text.decode("utf-8")
+    assert result in go_def
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
+                // @req-id: need_001
+                func dummyFunc1() {
+                }
+            """,
+            "func dummyFunc1()",
+        ),
+        (
+            b"""
+                // @req-id: need_001
+                type DummyStruct struct {
+                    Field int
+                }
+            """,
+            "type DummyStruct struct",
+        ),
+    ],
+)
+def test_find_next_scope_go(code, result, init_go_tree_sitter):
+    parser, query = init_go_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_next_scope(comments[0], CommentType.go)
+    assert node
+    assert node.text
+    go_def = node.text.decode("utf-8")
+    assert result in go_def
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
+                func dummyFunc1() {
+                    // @req-id: need_001
+                }
+            """,
+            "func dummyFunc1()",
+        ),
+        (
+            b"""
+                func dummyFunc1() {
+                    /* @req-id: need_001 */
+                }
+            """,
+            "func dummyFunc1()",
+        ),
+    ],
+)
+def test_find_enclosing_scope_go(code, result, init_go_tree_sitter):
+    parser, query = init_go_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_enclosing_scope(
+        comments[0], CommentType.go
+    )
+    assert node
+    assert node.text
+    go_def = node.text.decode("utf-8")
+    assert result in go_def
+
+
+@pytest.mark.parametrize(
     ("git_url", "rev", "project_path", "filepath", "lineno", "result"),
     [
         (
@@ -927,6 +1096,17 @@ def test_get_current_rev(git_repo: tuple[Path, str]) -> None:
     repo_path, _ = git_repo
     current_rev = get_current_commit_hash(repo_path)
     assert current_rev == utils.get_current_rev(repo_path)
+
+
+def test_get_current_rev_detached_head(tmp_path: Path) -> None:
+    """In a detached HEAD (e.g. CI checkouts) .git/HEAD holds the commit SHA
+    directly; get_current_rev returns it rather than warning and giving up."""
+    git_root = tmp_path / "repo"
+    (git_root / ".git").mkdir(parents=True)
+    sha = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+    (git_root / ".git" / "HEAD").write_text(f"{sha}\n")
+
+    assert utils.get_current_rev(git_root) == sha
 
 
 @pytest.mark.parametrize(

@@ -1,12 +1,12 @@
 from collections.abc import Callable
+from dataclasses import replace
 import os
 from pathlib import Path
 from typing import Any, ClassVar, cast
 
 from docutils import nodes
 from docutils.parsers.rst import directives
-from packaging.version import Version
-import sphinx
+from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
 from sphinx_needs.api import add_need  # type: ignore[import-untyped]
 from sphinx_needs.utils import add_doc  # type: ignore[import-untyped]
@@ -21,14 +21,6 @@ from sphinx_codelinks.config import (
 from sphinx_codelinks.source_discover.config import SourceDiscoverConfig
 from sphinx_codelinks.source_discover.source_discover import SourceDiscover
 from sphinx_codelinks.sphinx_extension.debug import measure_time
-
-sphinx_version = sphinx.__version__
-
-
-if Version(sphinx_version) >= Version("1.6"):
-    from sphinx.util import logging
-else:
-    import logging  # type: ignore[no-redef]
 
 logger = logging.getLogger(__name__)
 
@@ -113,17 +105,29 @@ class SourceTracingDirective(SphinxDirective):
         for source_file in source_files:
             self.env.note_dependency(str(source_file.resolve()))
 
-        analyse_config = src_trace_conf["analyse_config"]
-        analyse_config.src_dir = src_dir
-        analyse_config.src_files = source_files
+        # ``analyse_config`` is stored in the ``src_trace_projects`` config value,
+        # which is registered with ``rebuild="env"`` and therefore persisted into
+        # ``environment.pickle``. Mutating it in place would make Sphinx compare the
+        # build-populated object against the freshly generated (empty) config on the
+        # next build and report ``[config changed ('src_trace_projects')]`` every
+        # time, forcing a full re-read. Build a per-directive copy instead so the
+        # stored config value stays equal to what ``generate_project_configs`` yields.
+        base_analyse_config = src_trace_conf["analyse_config"]
         # git_root shall be relative to the config file's location (if provided)
-        if analyse_config.git_root:
+        git_root = base_analyse_config.git_root
+        if git_root:
             conf_dir = Path(self.env.app.confdir)
             if src_trace_sphinx_config.config_from_toml:
                 src_trace_toml_path = Path(src_trace_sphinx_config.config_from_toml)
                 conf_dir = conf_dir / src_trace_toml_path.parent
-            analyse_config.git_root = (conf_dir / analyse_config.git_root).resolve()
-        src_analyse = SourceAnalyse(analyse_config)
+            git_root = (conf_dir / git_root).resolve()
+        analyse_config = replace(
+            base_analyse_config,
+            src_dir=src_dir,
+            src_files=source_files,
+            git_root=git_root,
+        )
+        src_analyse = SourceAnalyse(analyse_config, name=project)
         src_analyse.run()
 
         dirs = {
