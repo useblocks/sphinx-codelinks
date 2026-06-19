@@ -14,18 +14,20 @@ validation (an untyped field defaults to ``""``, which is not stripped and trips
 """
 
 from collections.abc import Callable
+from inspect import signature
 import json
 from pathlib import Path
 import shutil
 
-from packaging.version import Version
 import pytest
 from sphinx.testing.util import SphinxTestApp
-import sphinx_needs  # type: ignore[import-untyped]
+from sphinx_needs.api import add_extra_option  # type: ignore[import-untyped]
 
-# The needs_schema_definitions / schema-validation feature was introduced in
-# sphinx-needs 6.0.0; skip on older versions that do not support it.
-SN_SUPPORTS_SCHEMAS = Version(sphinx_needs.__version__) >= Version("6.0.0")
+# Schema validation (needs_schema_definitions) arrived in sphinx-needs 6.0.0,
+# the same release where add_extra_option gained its ``schema`` keyword. Probe
+# that keyword to gate the test, instead of pulling in ``packaging`` for a
+# version comparison.
+SN_SUPPORTS_SCHEMAS = "schema" in signature(add_extra_option).parameters
 
 
 @pytest.mark.skipif(
@@ -33,19 +35,19 @@ SN_SUPPORTS_SCHEMAS = Version(sphinx_needs.__version__) >= Version("6.0.0")
     reason="needs_schema_definitions requires sphinx-needs>=6.0.0",
 )
 def test_strict_schema_ignores_unset_codelinks_fields(
-    tmpdir: Path,
+    tmp_path: Path,
     make_app: Callable[..., SphinxTestApp],
 ) -> None:
     this_file_dir = Path(__file__).parent
     sphinx_project = Path("doc_test") / "schema_strictness"
-    sphinx_src_dir = tmpdir / sphinx_project
+    sphinx_src_dir = tmp_path / sphinx_project
     shutil.copytree(
         this_file_dir / sphinx_project,
         sphinx_src_dir,
         dirs_exist_ok=True,
     )
 
-    app: SphinxTestApp = make_app(srcdir=Path(sphinx_src_dir), freshenv=True)
+    app: SphinxTestApp = make_app(srcdir=sphinx_src_dir, freshenv=True)
     app.build()
 
     report = json.loads(
@@ -53,7 +55,7 @@ def test_strict_schema_ignores_unset_codelinks_fields(
     )
 
     # Schema validation actually ran over our need ...
-    assert report.get("validated_needs_count", 0) >= 1
+    assert report["validated_needs_count"] >= 1
 
     # ... and produced no violations. If sphinx-codelinks registered its fields
     # untyped (default ""), REQ_1 would carry empty project/file/directory values

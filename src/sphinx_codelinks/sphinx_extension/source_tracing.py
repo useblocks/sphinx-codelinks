@@ -1,17 +1,16 @@
 from collections.abc import Iterator  # only in python 3.11 afterwards
 import contextlib
+from inspect import signature
 from pathlib import Path
 from timeit import default_timer as timer  # Used for timing measurements
 import tomllib
 from typing import Any, cast
 
-from packaging.version import Version
 from sphinx.application import Sphinx
 from sphinx.config import Config as _SphinxConfig
 from sphinx.environment import BuildEnvironment
 from sphinx.util import logging
 from sphinx.util.fileutil import copy_asset
-import sphinx_needs  # type: ignore[import-untyped]
 from sphinx_needs.api import (  # type: ignore[import-untyped]
     add_extra_option,
     add_need_type,
@@ -43,8 +42,9 @@ except ImportError:  # sphinx-needs < 8 has no add_field
     _add_field = None
 
 # add_extra_option only accepts a schema on sphinx-needs >= 6 (where schema
-# validation exists); older versions take just (app, name).
-_USE_FIELD_SCHEMA = Version(sphinx_needs.__version__) >= Version("6.0.0")
+# validation exists); older versions take just (app, name). Probe the signature
+# instead of comparing versions, so no ``packaging`` dependency is needed.
+_USE_FIELD_SCHEMA = "schema" in signature(add_extra_option).parameters
 
 
 def _register_sn_field(app: Sphinx, name: str, description: str) -> None:
