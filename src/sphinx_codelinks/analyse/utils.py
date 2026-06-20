@@ -12,14 +12,22 @@ from sphinx_codelinks.config import UNIX_NEWLINE, CommentCategory
 from sphinx_codelinks.logger import get_logger
 from sphinx_codelinks.source_discover.config import CommentType
 
-# Language-specific node types for scope detection
+# Language-specific node types for scope detection.
+#
+# YAML and JSONC are intentionally absent. They are data formats, not code, so a
+# comment associates with the surrounding data structure (key/value pair, list
+# item, or scalar) rather than with an enclosing or following declaration. That
+# needs a different algorithm (inline same-row association first, scalar targets,
+# grammar-specific traversal), implemented in find_yaml_associated_structure and
+# find_jsonc_associated_structure and dispatched from find_associated_scope.
+# Those bespoke finders never read this table (only find_next_scope and
+# find_enclosing_scope do), so an entry here would be dead.
 SCOPE_NODE_TYPES = {
     # @Python Scope Node Types, IMPL_PY_2, impl, [FE_PY]
     CommentType.python: {"function_definition", "class_definition"},
     # @C and C++ Scope Node Types, IMPL_C_2, impl, [FE_C_SUPPORT, FE_CPP]
     CommentType.cpp: {"function_definition", "class_definition"},
     CommentType.cs: {"method_declaration", "class_declaration", "property_declaration"},
-    CommentType.yaml: {"block_mapping_pair", "block_sequence_item", "document"},
     # @Rust Scope Node Types, IMPL_RUST_2, impl, [FE_RUST];
     CommentType.rust: {
         "function_item",
@@ -36,8 +44,6 @@ SCOPE_NODE_TYPES = {
         "type_declaration",
         "type_spec",
     },
-    # @JSONC Scope Node Types, IMPL_JSONC_2, impl, [FE_JSONC]
-    CommentType.jsonc: {"pair", "object", "array", "document"},
 }
 
 logger = get_logger(__name__)
@@ -277,6 +283,7 @@ def find_yaml_associated_structure(node: TreeSitterNode) -> TreeSitterNode | Non
     return None
 
 
+# @JSONC comment-to-structure association, IMPL_JSONC_2, impl, [FE_JSONC]
 def find_jsonc_associated_structure(node: TreeSitterNode) -> TreeSitterNode | None:
     """Find the JSON structure (key/value pair, value, list item) for a comment.
 
