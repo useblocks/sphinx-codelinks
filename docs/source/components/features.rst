@@ -81,6 +81,30 @@ Features
    .. fault:: Sphinx-codelinks halucinates traceability objects in C++
       :id: FAULT_CPP_2
 
+.. feature:: C# Language Support
+   :id: FE_CSHARP
+
+   Support for defining traceability objects in C# source code.
+
+   The C# language parser leverages tree-sitter to accurately identify and extract
+   comments from C# source files, including single-line (``//``), multi-line (``/* */``),
+   and documentation (``///``) comment styles. This ensures that traceability markers are
+   correctly associated with the appropriate code structures such as classes, methods, and
+   properties.
+
+   Key capabilities:
+
+   * Detection of inline, block, and documentation comments
+   * Association of comments with method, class, and property declarations
+   * Support for standard C# comment conventions
+   * Accurate scope detection for nested structures
+
+   .. fault:: Traceability objects are not detected in C# language
+      :id: FAULT_CSHARP_1
+
+   .. fault:: Sphinx-codelinks halucinates traceability objects in C#
+      :id: FAULT_CSHARP_2
+
 .. feature:: Python Language Support
    :id: FE_PY
 
@@ -157,6 +181,58 @@ Features
 
    .. fault:: Sphinx-codelinks halucinates traceability objects in Rust
       :id: FAULT_RUST_2
+
+.. feature:: Go Language Support
+   :id: FE_GO
+
+   Support for defining traceability objects in Go source files via one-line comment annotations.
+
+   The Go language parser leverages tree-sitter to accurately identify and extract
+   comments from Go source files, including single-line (``//``) and multi-line
+   (``/* */``) comment styles. This ensures that traceability markers are correctly
+   associated with the appropriate code structures such as functions, methods, types,
+   and structs.
+
+   Key capabilities:
+
+   * Detection of inline and block comments
+   * Association of comments with function and method declarations
+   * Support for standard Go comment conventions
+   * Accurate scope detection for nested structures
+   * File extension ``.go`` auto-discovered when ``comment_type = "go"``
+
+   .. fault:: Traceability objects are not detected in Go language
+      :id: FAULT_GO_1
+
+   .. fault:: Sphinx-codelinks halucinates traceability objects in Go
+      :id: FAULT_GO_2
+
+.. feature:: JSONC Language Support
+   :id: FE_JSONC
+
+   Support for defining traceability objects in JSON with Comments (JSONC) files.
+
+   The JSONC parser leverages tree-sitter to identify and extract single-line (``//``)
+   and multi-line (``/* */``) comments from JSON data, associating each marker with the
+   surrounding data structure such as the key/value pair, array item, or object it
+   annotates.
+
+   ``.jsonc`` files are always parsed as JSONC. A ``.json`` file is only treated as JSONC
+   when it opens with a comment (e.g. the mode line ``// -*- mode: jsonc -*-``), following
+   the `JSONC filename convention <https://jsonc.org/#filename-extension>`_.
+
+   Key capabilities:
+
+   * Detection of inline and leading comments
+   * Association of comments with key/value pairs and array items
+   * Support for both ``//`` and ``/* */`` comment styles
+   * Opt-in handling of ``.json`` files via a leading comment
+
+   .. fault:: Traceability objects are not detected in JSONC
+      :id: FAULT_JSONC_1
+
+   .. fault:: Sphinx-codelinks hallucinates traceability objects in JSONC
+      :id: FAULT_JSONC_2
 
 .. feature:: Customized comment styles
    :id: FE_CMT
