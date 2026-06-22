@@ -55,7 +55,7 @@ def test_analyse(src_dir, src_paths, tmp_path, snapshot_marks):
 
 
 @pytest.mark.parametrize(
-    "src_dir, src_paths , oneline_comment_style, result",
+    "src_dir, src_paths, comment_type, oneline_comment_style, result",
     [
         (
             TEST_DIR / "data" / "dcdc",
@@ -65,6 +65,7 @@ def test_analyse(src_dir, src_paths, tmp_path, snapshot_marks):
                 TEST_DIR / "data" / "dcdc" / "discharge" / "demo_3.cpp",
                 TEST_DIR / "data" / "dcdc" / "supercharge.cpp",
             ],
+            "cpp",
             ONELINE_COMMENT_STYLE,
             {
                 "num_src_files": 4,
@@ -79,6 +80,7 @@ def test_analyse(src_dir, src_paths, tmp_path, snapshot_marks):
             [
                 TEST_DIR / "data" / "oneline_comment_basic" / "basic_oneliners.c",
             ],
+            "cpp",
             ONELINE_COMMENT_STYLE,
             {
                 "num_src_files": 1,
@@ -94,6 +96,7 @@ def test_analyse(src_dir, src_paths, tmp_path, snapshot_marks):
             [
                 TEST_DIR / "data" / "oneline_comment_default" / "default_oneliners.c",
             ],
+            "cpp",
             ONELINE_COMMENT_STYLE_DEFAULT,
             {
                 "num_src_files": 1,
@@ -109,6 +112,7 @@ def test_analyse(src_dir, src_paths, tmp_path, snapshot_marks):
             [
                 TEST_DIR / "data" / "rust" / "demo.rs",
             ],
+            "rust",
             ONELINE_COMMENT_STYLE_DEFAULT,
             {
                 "num_src_files": 1,
@@ -118,10 +122,25 @@ def test_analyse(src_dir, src_paths, tmp_path, snapshot_marks):
                 "num_oneline_warnings": 0,
             },
         ),
+        (
+            TEST_DIR / "data" / "typescript",
+            [
+                TEST_DIR / "data" / "typescript" / "demo.ts",
+            ],
+            "ts",
+            ONELINE_COMMENT_STYLE_DEFAULT,
+            {
+                "num_src_files": 1,
+                "num_uncached_files": 1,
+                "num_cached_files": 0,
+                "num_comments": 4,
+                "num_oneline_warnings": 0,
+            },
+        ),
     ],
 )
 def test_analyse_oneline_needs(
-    tmp_path, src_dir, src_paths, oneline_comment_style, result
+    tmp_path, src_dir, src_paths, comment_type, oneline_comment_style, result
 ):
     src_analyse_config = SourceAnalyseConfig(
         src_files=src_paths,
@@ -130,6 +149,7 @@ def test_analyse_oneline_needs(
         get_oneline_needs=True,
         get_rst=False,
         oneline_comment_style=oneline_comment_style,
+        comment_type=comment_type,
     )
     src_analyse = SourceAnalyse(src_analyse_config)
     src_analyse.run()

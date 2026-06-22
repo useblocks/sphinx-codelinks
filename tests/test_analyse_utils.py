@@ -10,6 +10,7 @@ import tree_sitter_c_sharp
 import tree_sitter_cpp
 import tree_sitter_python
 import tree_sitter_rust
+import tree_sitter_typescript
 import tree_sitter_yaml
 
 from sphinx_codelinks.analyse import utils
@@ -53,6 +54,14 @@ def init_yaml_tree_sitter() -> tuple[Parser, Query]:
 def init_rust_tree_sitter() -> tuple[Parser, Query]:
     parsed_language = Language(tree_sitter_rust.language())
     query = Query(parsed_language, utils.RUST_QUERY)
+    parser = Parser(parsed_language)
+    return parser, query
+
+
+@pytest.fixture(scope="session")
+def init_typescript_tree_sitter() -> tuple[Parser, Query]:
+    parsed_language = Language(tree_sitter_typescript.language_typescript())
+    query = Query(parsed_language, utils.TYPE_SCRIPT_QUERY)
     parser = Parser(parsed_language)
     return parser, query
 
@@ -370,6 +379,41 @@ def test_find_associated_scope_rust(code, result, init_rust_tree_sitter):
     [
         (
             b"""
+                // @req-id: need_001
+                function dummyFunc1() {
+                }
+            """,
+            "function dummyFunc1()",
+        ),
+        (
+            b"""
+                class DummyClass {
+                    // @req-id: need_001
+                    method1() {
+                    }
+                }
+            """,
+            "method1()",
+        ),
+    ],
+)
+def test_find_associated_scope_typescript(code, result, init_typescript_tree_sitter):
+    parser, query = init_typescript_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_associated_scope(
+        comments[0], CommentType.ts
+    )
+    assert node
+    assert node.text
+    ts_def = node.text.decode("utf-8")
+    assert result in ts_def
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
                 def dummy_func1():
                     # @req-id: need_001
                     pass
@@ -513,6 +557,29 @@ def test_find_next_scope_csharp(code, result, init_csharp_tree_sitter):
     parser, query = init_csharp_tree_sitter
     comments = utils.extract_comments(code, parser, query)
     node: TreeSitterNode | None = utils.find_next_scope(comments[0], CommentType.cs)
+    assert node
+    assert node.text
+    func_def = node.text.decode("utf-8")
+    assert result in func_def
+
+
+@pytest.mark.parametrize(
+    ("code", "result"),
+    [
+        (
+            b"""
+                // @req-id: need_001
+                function dummyFunc1() {
+                }
+            """,
+            "function dummyFunc1()",
+        ),
+    ],
+)
+def test_find_next_scope_typescript(code, result, init_typescript_tree_sitter):
+    parser, query = init_typescript_tree_sitter
+    comments = utils.extract_comments(code, parser, query)
+    node: TreeSitterNode | None = utils.find_next_scope(comments[0], CommentType.ts)
     assert node
     assert node.text
     func_def = node.text.decode("utf-8")
@@ -766,6 +833,37 @@ def test_python_comment(code, num_comments, result, init_python_tree_sitter):
 )
 def test_csharp_comment(code, num_comments, result, init_csharp_tree_sitter):
     parser, query = init_csharp_tree_sitter
+    comments: list[TreeSitterNode] = utils.extract_comments(code, parser, query)
+    comments.sort(key=lambda x: x.start_point.row)
+    assert len(comments) == num_comments
+    assert comments[0].text
+    assert comments[0].text.decode("utf-8") == result
+
+
+@pytest.mark.parametrize(
+    ("code", "num_comments", "result"),
+    [
+        (
+            b"""
+                // @req-id: need_001
+                function dummyFunc1() {
+                }
+            """,
+            1,
+            "// @req-id: need_001",
+        ),
+        (
+            b"""
+                /* @req-id: need_001 */
+                const value = 1;
+            """,
+            1,
+            "/* @req-id: need_001 */",
+        ),
+    ],
+)
+def test_typescript_comment(code, num_comments, result, init_typescript_tree_sitter):
+    parser, query = init_typescript_tree_sitter
     comments: list[TreeSitterNode] = utils.extract_comments(code, parser, query)
     comments.sort(key=lambda x: x.start_point.row)
     assert len(comments) == num_comments

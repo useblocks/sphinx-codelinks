@@ -19,6 +19,13 @@ SCOPE_NODE_TYPES = {
     # @C and C++ Scope Node Types, IMPL_C_2, impl, [FE_C_SUPPORT, FE_CPP]
     CommentType.cpp: {"function_definition", "class_definition"},
     CommentType.cs: {"method_declaration", "class_declaration", "property_declaration"},
+    CommentType.ts: {
+        "function_declaration",
+        "class_declaration",
+        "method_definition",
+        "lexical_declaration",
+        "variable_declaration",
+    },
     CommentType.yaml: {"block_mapping_pair", "block_sequence_item", "document"},
     # @Rust Scope Node Types, IMPL_RUST_2, impl, [FE_RUST];
     CommentType.rust: {
@@ -55,6 +62,7 @@ PYTHON_QUERY = """
             """
 CPP_QUERY = """(comment) @comment"""
 C_SHARP_QUERY = """(comment) @comment"""
+TYPE_SCRIPT_QUERY = """(comment) @comment"""
 YAML_QUERY = """(comment) @comment"""
 RUST_QUERY = """
     (line_comment) @comment
@@ -94,6 +102,11 @@ def init_tree_sitter(comment_type: CommentType) -> tuple[Parser, Query]:
 
         parsed_language = Language(tree_sitter_c_sharp.language())
         query = Query(parsed_language, C_SHARP_QUERY)
+    elif comment_type == CommentType.ts:
+        import tree_sitter_typescript  # noqa: PLC0415
+
+        parsed_language = Language(tree_sitter_typescript.language_typescript())
+        query = Query(parsed_language, TYPE_SCRIPT_QUERY)
     elif comment_type == CommentType.yaml:
         import tree_sitter_yaml  # noqa: PLC0415
 

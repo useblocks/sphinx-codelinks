@@ -7,6 +7,10 @@ Upcoming
 --------
 
 - ⬆️ Support and test sphinx-needs v5-8
+- ✨ Added TypeScript comment type support for source discovery and analysis.
+
+  TypeScript files can now be processed using ``comment_type = "ts"``.
+  Source discovery supports both ``.ts`` and ``.tsx`` extensions by default.
 
 .. _`release:1.2.0`:
 
@@ -31,7 +35,6 @@ New and Improved
   Warning messages now include more context to help diagnose parsing issues.
 
 - 📚 Added traceability page to the documentation.
-
 - 📚 Added ``features.rst`` page documenting the full feature set with source tracing.
 
 Fixes
@@ -40,7 +43,6 @@ Fixes
 - 🐛 Fixed space handling in marker extraction.
 
   Leading and trailing spaces in extracted marker content are now correctly stripped.
-
 
 .. _`release:1.1.0`:
 
