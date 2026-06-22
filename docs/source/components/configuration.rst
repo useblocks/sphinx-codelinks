@@ -304,11 +304,11 @@ Specifies the comment syntax style used in the source code files. This determine
        ``/* */`` (multi-line),
        ``///`` (XML doc comments)
      - ``.cs``
-    * - TypeScript
-       - ``"ts"``
-       - ``//`` (single-line),
-          ``/* */`` (multi-line)
-       - ``.ts``, ``.tsx``
+   * - TypeScript
+     - ``"ts"``
+     - ``//`` (single-line),
+       ``/* */`` (multi-line)
+     - ``.ts``, ``.tsx``
    * - YAML
      - ``"yaml"``
      - ``#`` (single-line)
