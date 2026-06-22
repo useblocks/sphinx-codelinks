@@ -3,6 +3,14 @@
 Changelog
 =========
 
+Under development
+-----------------
+
+- ✨ Added TypeScript comment type support for source discovery and analysis.
+
+  TypeScript files can now be processed using ``comment_type = "ts"``.
+  Source discovery supports both ``.ts`` and ``.tsx`` extensions by default.
+
 .. _`release:1.3.0`:
 
 1.3.0
@@ -22,11 +30,6 @@ New and Improved
 
   Comments in JSONC files are now parsed for need ID references and one-line need definitions.
   ``.json`` files are also checked when they begin with a comment (see jsonc.org).
-
-- ✨ Added TypeScript comment type support for source discovery and analysis.
-
-  TypeScript files can now be processed using ``comment_type = "ts"``.
-  Source discovery supports both ``.ts`` and ``.tsx`` extensions by default.
 
 - 👌 Replaced ``gitignore-parser`` with ``ignore-python`` for source discovery.
 
