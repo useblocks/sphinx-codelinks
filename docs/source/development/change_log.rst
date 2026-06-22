@@ -6,10 +6,16 @@ Changelog
 Under development
 -----------------
 
+New and Improved
+................
+
 - ✨ Added TypeScript comment type support for source discovery and analysis.
 
   TypeScript files can now be processed using ``comment_type = "ts"``.
   Source discovery supports both ``.ts`` and ``.tsx`` extensions by default.
+
+Fixes
+.....
 
 .. _`release:1.3.0`:
 
