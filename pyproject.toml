@@ -34,6 +34,9 @@ dependencies = [
   "tree-sitter-json>=0.24.8",
 ]
 
+[project.optional-dependencies]
+cpp = ["libclang>=18"]
+
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
@@ -48,6 +51,7 @@ testing = [
   "moto ~= 5.0",
   "toml>=0.10.2",
   "furo>=2024.5.6",
+  "libclang>=18",
 ]
 docs = [
   "furo>=2024.5.6",
