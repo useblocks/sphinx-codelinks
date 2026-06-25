@@ -79,7 +79,7 @@ def load_flags_map(db_path: Path) -> dict[Path, list[str]]:
         directory = Path(entry["directory"])
         file_field = entry["file"]
         abs_file = (directory / file_field).resolve()
-        flags[abs_file] = filter_args(argv, str(abs_file))
+        flags[abs_file] = filter_args(argv, file_field)
     return flags
 
 
