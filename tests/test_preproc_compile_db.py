@@ -63,7 +63,7 @@ def test_load_flags_map_command_and_arguments_forms(tmp_path: Path):
                 },
                 {
                     "directory": str(tmp_path),
-                    "command": f"clang++ -DB=2 -c {b}",
+                    "command": "clang++ -DB=2 -c b.cpp",
                     "file": "b.cpp",
                 },
             ]
@@ -73,6 +73,35 @@ def test_load_flags_map_command_and_arguments_forms(tmp_path: Path):
     flags = compile_db.load_flags_map(db)
     assert flags[a.resolve()] == ["-DA=1"]
     assert flags[b.resolve()] == ["-DB=2"]
+
+
+def test_load_flags_map_relative_input_path_stripped(tmp_path: Path):
+    """Regression: entry whose arguments reference input by relative subdir path must be stripped.
+
+    When directory = tmp_path, file = "src/a.cpp", and arguments contains "src/a.cpp",
+    the old code passed abs_file to filter_args. The input_names set only includes
+    the basename "a.cpp" and the absolute path — NOT the relative "src/a.cpp" — so
+    the relative path leaked as a spurious positional argument.
+    """
+    src = tmp_path / "src"
+    src.mkdir()
+    a = src / "a.cpp"
+    a.write_text("")
+    db = tmp_path / "compile_commands.json"
+    db.write_text(
+        json.dumps(
+            [
+                {
+                    "directory": str(tmp_path),
+                    "file": "src/a.cpp",
+                    "arguments": ["clang++", "-DA=1", "-c", "src/a.cpp"],
+                }
+            ]
+        )
+    )
+
+    flags = compile_db.load_flags_map(db)
+    assert flags[a.resolve()] == ["-DA=1"]
 
 
 def test_defines_to_args(tmp_path: Path):
