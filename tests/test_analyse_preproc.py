@@ -167,3 +167,38 @@ def test_libclang_skip_file_absent_from_compile_commands(tmp_path):
     assert "IMPL_HALF" not in ids
     assert "IMPL_AFTER" not in ids
     assert "IMPL_MID" not in ids
+
+
+def test_libclang_active_matches_golden():
+    """Cross-impl parity: Python libclang output matches shared Rust golden."""
+    cfg = SourceAnalyseConfig(
+        src_files=[FIXTURE],
+        src_dir=FIXTURE.parent,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(defines=["VARIANT_A=1", "PLATFORM_LINUX=1", "PROTOCOL_VERSION=3"]),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()
+
+    # Project each OneLineNeed to a dict matching the golden schema.
+    projected = [
+        {
+            "id": n.need["id"],
+            "title": n.need["title"],
+            "type": n.need["type"],
+            "links": n.need["links"],
+            "line": n.source_map["start"]["row"] + 1,
+        }
+        for n in analyse.oneline_needs
+    ]
+    projected.sort(key=lambda x: x["line"])
+
+    # Load the golden and sort by line.
+    golden_path = FIXTURE.parent / "variants_branching.expected.json"
+    with golden_path.open() as f:
+        golden = json.load(f)
+    golden.sort(key=lambda x: x["line"])
+
+    assert projected == golden
