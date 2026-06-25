@@ -110,8 +110,11 @@ force-sort-within-sections = true
 "**/tests/*" = [
   "ARG001",  # unused-function-argument - fixtures
   "ARG005",  # unused-lambda-argument - monkeypatches
+  "E402",    # module-import-not-at-top - pytest.importorskip guard pattern
+  "PLC0415", # import-outside-top-level - inline imports in test bodies
   "PLR2004", # magic-value-comparison - valueable for tests
   "S101",    # assert - needed for tests
+  "SIM300",  # yoda-conditions - assert order in tests is intentional
 ]
 "src/sphinx_codelinks/sphinx_extension/debug.py" = [
   "T201",  # print - used for output
