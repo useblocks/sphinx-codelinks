@@ -112,6 +112,39 @@ class SourceAnalyse:
             self.src_files.append(src_file)
             self.src_comments.extend(src_comments)
 
+    def _resolve_preproc_args(self, src_path: Path) -> list[str]:
+        from sphinx_codelinks.analyse.preproc import compile_db  # noqa: PLC0415
+
+        preproc = self.analyse_config.preprocessor
+        if preproc is None:
+            return []
+        db_path = preproc.compile_commands
+        if db_path is None:
+            db_path = compile_db.find_compile_db(src_path, self.project_path)
+        if db_path is not None and db_path.is_file():
+            flags = compile_db.load_flags_map(db_path)
+            args = flags.get(src_path.absolute().resolve())
+            if args is not None:
+                return args
+        # Fallback: manual defines applied globally.
+        return compile_db.defines_to_args(preproc.defines, preproc.includes)
+
+    def create_src_objects_libclang(self) -> None:
+        from sphinx_codelinks.analyse.preproc import libclang_parser  # noqa: PLC0415
+
+        for src_path in self.analyse_config.src_files:
+            if not utils.is_text_file(src_path):
+                continue
+            args = self._resolve_preproc_args(src_path)
+            comments = libclang_parser.extract_active_comments(src_path, args)
+            if not comments:
+                continue
+            src_comments = [SourceComment(c) for c in comments]
+            src_file = SourceFile(src_path.absolute())
+            src_file.add_comments(src_comments)
+            self.src_files.append(src_file)
+            self.src_comments.extend(src_comments)
+
     def extract_marker(
         self,
         text: str,
@@ -327,9 +360,12 @@ class SourceAnalyse:
             )
             if not filepath:
                 continue
-            tagged_scope: TreeSitterNode | None = utils.find_associated_scope(
-                src_comment.node, self.analyse_config.comment_type
-            )
+            if getattr(src_comment.node, "is_libclang", False):
+                tagged_scope: TreeSitterNode | None = None
+            else:
+                tagged_scope = utils.find_associated_scope(
+                    src_comment.node, self.analyse_config.comment_type
+                )
             if self.analyse_config.get_need_id_refs:
                 anchors = self.extract_anchors(
                     text, filepath, tagged_scope, src_comment
@@ -372,7 +408,15 @@ class SourceAnalyse:
             json.dump(to_dump, f)
 
     def run(self) -> None:
-        self.create_src_objects()
+        from sphinx_codelinks.config import CommentType  # noqa: PLC0415
+
+        if (
+            self.analyse_config.preprocessor is not None
+            and self.analyse_config.comment_type == CommentType.cpp
+        ):
+            self.create_src_objects_libclang()
+        else:
+            self.create_src_objects()
         self.extract_marked_content()
         self.merge_marked_content()
         self._log_summary()
