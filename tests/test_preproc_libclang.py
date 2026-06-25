@@ -4,7 +4,7 @@ import pytest
 
 clang = pytest.importorskip("clang.cindex")
 
-from sphinx_codelinks.analyse.preproc import loader
+from sphinx_codelinks.analyse.preproc import libclang_parser, loader
 
 
 def test_load_clang_cindex_returns_module():
@@ -42,3 +42,42 @@ def test_skipped_ranges_on_simple_ifdef(tmp_path: Path):
         sr.start_line <= 2 <= sr.end_line and sr.file == Path(str(src))
         for sr in skipped
     )
+
+
+FIXTURE = Path(__file__).parent / "data" / "preproc" / "variants_branching.cpp"
+
+
+def _titles(comments):
+    out = []
+    for c in comments:
+        text = c.text.decode("utf-8")
+        if "@" in text:
+            out.append(text)
+    return out
+
+
+def test_extract_active_comments_variant_a_active():
+    args = [
+        "-std=c++17",
+        "-DVARIANT_A=1",
+        "-DPLATFORM_LINUX=1",
+        "-DPROTOCOL_VERSION=3",
+    ]
+    comments = libclang_parser.extract_active_comments(FIXTURE, args)
+    titles = _titles(comments)
+    joined = "\n".join(titles)
+    assert "IMPL_ALWAYS" in joined
+    assert "IMPL_VAR_A" in joined          # active branch
+    assert "IMPL_VAR_B" not in joined      # inactive #else -> EXCLUDED
+    assert "IMPL_PROTO_3" in joined        # PROTOCOL_VERSION >= 3 active
+    assert "IMPL_LINUX_A" in joined        # both defined
+
+
+def test_extract_active_comments_variant_b_active():
+    args = ["-std=c++17", "-DPROTOCOL_VERSION=1"]  # VARIANT_A undefined
+    comments = libclang_parser.extract_active_comments(FIXTURE, args)
+    joined = "\n".join(_titles(comments))
+    assert "IMPL_VAR_B" in joined          # #else branch now active
+    assert "IMPL_VAR_A" not in joined      # inactive -> EXCLUDED
+    assert "IMPL_PROTO_3" not in joined    # version < 3 -> EXCLUDED
+    assert "IMPL_LINUX_A" not in joined     # VARIANT_A undefined -> EXCLUDED
