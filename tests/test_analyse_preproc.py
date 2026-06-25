@@ -41,3 +41,86 @@ def test_libclang_engine_other_variant():
     assert "IMPL_VAR_B" in ids
     assert "IMPL_VAR_A" not in ids
     assert "IMPL_PROTO_3" not in ids
+
+
+def test_libclang_engine_via_compile_commands(tmp_path):
+    db = tmp_path / "compile_commands.json"
+    db.write_text(
+        json.dumps(
+            [
+                {
+                    "directory": str(FIXTURE.parent),
+                    "arguments": [
+                        "clang++", "-std=c++17", "-DVARIANT_A=1",
+                        "-DPROTOCOL_VERSION=3", "-c", str(FIXTURE),
+                    ],
+                    "file": str(FIXTURE),
+                }
+            ]
+        )
+    )
+    cfg = SourceAnalyseConfig(
+        src_files=[FIXTURE],
+        src_dir=FIXTURE.parent,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(compile_commands=db),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()
+    ids = {n.need["id"] for n in analyse.oneline_needs}
+    assert "IMPL_VAR_A" in ids
+    assert "IMPL_VAR_B" not in ids
+
+
+def test_libclang_resilient_to_broken_code():
+    broken = FIXTURE.parent / "variants_broken.cpp"
+    cfg = SourceAnalyseConfig(
+        src_files=[broken],
+        src_dir=broken.parent,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(defines=[]),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()
+    ids = {n.need["id"] for n in analyse.oneline_needs}
+    assert ids == {"IMPL_DESPITE", "IMPL_AFTER_BROKEN"}
+
+
+def test_libclang_resilient_to_half_typed_code():
+    half = FIXTURE.parent / "half_typed.cpp"
+    cfg = SourceAnalyseConfig(
+        src_files=[half],
+        src_dir=half.parent,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(defines=[]),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()
+    ids = {n.need["id"] for n in analyse.oneline_needs}
+    # All 4 markers survive at the token level even though 2 decls don't parse.
+    assert {"IMPL_COMPLETE", "IMPL_HALF", "IMPL_AFTER", "IMPL_MID"} <= ids
+
+
+def test_libclang_active_matches_treesitter_when_all_active():
+    """When every branch is active, libclang output == tree-sitter output."""
+    # Tree-sitter path (no preprocessor block) sees ALL markers.
+    ts_cfg = SourceAnalyseConfig(
+        src_files=[FIXTURE], src_dir=FIXTURE.parent, get_oneline_needs=True
+    )
+    ts = SourceAnalyse(ts_cfg)
+    ts.git_remote_url = None
+    ts.git_commit_rev = None
+    ts.run()
+    ts_ids = {n.need["id"] for n in ts.oneline_needs}
+
+    # libclang with both variants' guards satisfied is impossible (#else is
+    # mutually exclusive), so compare the union over both variants instead.
+    a = _run_get_oneline_ids(["VARIANT_A=1", "PLATFORM_LINUX=1", "PROTOCOL_VERSION=3"])
+    b = _run_get_oneline_ids(["PROTOCOL_VERSION=1"])
+    assert ts_ids == (a | b)
