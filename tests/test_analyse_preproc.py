@@ -72,6 +72,8 @@ def test_libclang_engine_via_compile_commands(tmp_path):
     ids = {n.need["id"] for n in analyse.oneline_needs}
     assert "IMPL_VAR_A" in ids
     assert "IMPL_VAR_B" not in ids
+    assert "IMPL_PROTO_3" in ids
+    assert "IMPL_LINUX_A" not in ids
 
 
 def test_libclang_resilient_to_broken_code():
