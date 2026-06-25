@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import json
-import shlex
 from pathlib import Path
+import shlex
 
 _DB_NAME = "compile_commands.json"
 _BOUNDARY_MARKERS = (".git", "ubproject.toml", "pyproject.toml")
+
+# Flags that take a following value we must also drop.
+_DROP_WITH_VALUE = {"-o", "-MF", "-MT", "-MQ"}
+# Exact flags to drop.
+_DROP_EXACT = {"-c", "-MMD", "-MD", "-MG", "-MP"}
+# Minimum length for joined-form flags like -MFdep.d (prefix length = 3)
+_MIN_JOINED_FLAG_LEN = 3
 
 
 def find_compile_db(start: Path, project_root: Path | None = None) -> Path | None:
@@ -30,3 +37,57 @@ def find_compile_db(start: Path, project_root: Path | None = None) -> Path | Non
         if current.parent == current:  # filesystem root
             return None
         current = current.parent
+
+
+def filter_args(argv: list[str], input_file: str) -> list[str]:
+    """Keep only flags libclang needs; drop the compiler, -c/-o, depfiles, input."""
+    out: list[str] = []
+    skip_next = False
+    input_names = {input_file, str(Path(input_file).name), str(Path(input_file))}
+    for i, arg in enumerate(argv):
+        if i == 0:
+            continue  # argv[0] == compiler
+        if skip_next:
+            skip_next = False
+            continue
+        if arg in _DROP_WITH_VALUE:
+            skip_next = True
+            continue
+        if arg in _DROP_EXACT:
+            continue
+        if arg.startswith(("-MF", "-MT", "-MQ")) and len(arg) > _MIN_JOINED_FLAG_LEN:
+            continue  # joined form, e.g. -MFdep.d
+        if arg in input_names:
+            continue
+        out.append(arg)
+    return out
+
+
+def load_flags_map(db_path: Path) -> dict[Path, list[str]]:
+    """Parse compile_commands.json -> {absolute file path: filtered args}."""
+    entries = json.loads(db_path.read_text())
+    flags: dict[Path, list[str]] = {}
+    for entry in entries:
+        if "file" not in entry or "directory" not in entry:
+            continue  # malformed entry: skip, keep going
+        if "arguments" in entry:
+            argv = list(entry["arguments"])
+        elif "command" in entry:
+            argv = shlex.split(entry["command"])
+        else:
+            continue
+        directory = Path(entry["directory"])
+        file_field = entry["file"]
+        abs_file = (directory / file_field).resolve()
+        flags[abs_file] = filter_args(argv, str(abs_file))
+    return flags
+
+
+def defines_to_args(
+    defines: list[str], includes: list[Path], std: str = "c++17"
+) -> list[str]:
+    """Build a global flag list for the manual `defines` fallback."""
+    args = [f"-std={std}"]
+    args += [f"-D{d}" for d in defines]
+    args += [f"-I{inc}" for inc in includes]
+    return args
