@@ -38,6 +38,7 @@ def test_libclang_engine_excludes_inactive_markers():
 
 def test_libclang_engine_other_variant():
     ids = _run_get_oneline_ids(["PROTOCOL_VERSION=1"])
+    assert "IMPL_ALWAYS" in ids
     assert "IMPL_VAR_B" in ids
     assert "IMPL_VAR_A" not in ids
     assert "IMPL_PROTO_3" not in ids
@@ -126,3 +127,43 @@ def test_libclang_active_matches_treesitter_when_all_active():
     a = _run_get_oneline_ids(["VARIANT_A=1", "PLATFORM_LINUX=1", "PROTOCOL_VERSION=3"])
     b = _run_get_oneline_ids(["PROTOCOL_VERSION=1"])
     assert ts_ids == (a | b)
+
+
+def test_libclang_skip_file_absent_from_compile_commands(tmp_path):
+    """Files absent from a compile DB are skipped (spec §3.3)."""
+    # DB contains only FIXTURE; half_typed.cpp is intentionally absent.
+    other = FIXTURE.parent / "half_typed.cpp"
+    db = tmp_path / "compile_commands.json"
+    db.write_text(
+        json.dumps(
+            [
+                {
+                    "directory": str(FIXTURE.parent),
+                    "arguments": [
+                        "clang++", "-std=c++17", "-DVARIANT_A=1",
+                        "-DPROTOCOL_VERSION=3", "-c", str(FIXTURE),
+                    ],
+                    "file": str(FIXTURE),
+                }
+            ]
+        )
+    )
+    cfg = SourceAnalyseConfig(
+        src_files=[FIXTURE, other],
+        src_dir=FIXTURE.parent,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(compile_commands=db),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()
+    ids = {n.need["id"] for n in analyse.oneline_needs}
+    # FIXTURE is in the DB — its markers must appear.
+    assert "IMPL_VAR_A" in ids
+    assert "IMPL_PROTO_3" in ids
+    # half_typed.cpp is NOT in the DB — it must be skipped entirely.
+    assert "IMPL_COMPLETE" not in ids
+    assert "IMPL_HALF" not in ids
+    assert "IMPL_AFTER" not in ids
+    assert "IMPL_MID" not in ids

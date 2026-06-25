@@ -79,7 +79,7 @@ class SourceAnalyse:
             utils.get_current_rev(self.git_root) if self.git_root else None
         )
         self.project_path: Path = (
-            self.git_root if self.git_root else self.analyse_config.src_dir
+            self.git_root or self.analyse_config.src_dir
         )
         self.oneline_warnings: list[AnalyseWarning] = []
 
@@ -112,7 +112,7 @@ class SourceAnalyse:
             self.src_files.append(src_file)
             self.src_comments.extend(src_comments)
 
-    def _resolve_preproc_args(self, src_path: Path) -> list[str]:
+    def _resolve_preproc_args(self, src_path: Path) -> list[str] | None:
         from sphinx_codelinks.analyse.preproc import compile_db  # noqa: PLC0415
 
         preproc = self.analyse_config.preprocessor
@@ -126,7 +126,9 @@ class SourceAnalyse:
             args = flags.get(src_path.absolute().resolve())
             if args is not None:
                 return args
-        # Fallback: manual defines applied globally.
+            # File not in compile DB — skip it per spec §3.3.
+            return None
+        # No DB found at all — fall back to manual defines applied globally.
         return compile_db.defines_to_args(preproc.defines, preproc.includes)
 
     def create_src_objects_libclang(self) -> None:
@@ -136,6 +138,11 @@ class SourceAnalyse:
             if not utils.is_text_file(src_path):
                 continue
             args = self._resolve_preproc_args(src_path)
+            if args is None:
+                logger.debug(
+                    f"codelinks: skipping {src_path} — not found in compile_commands.json"
+                )
+                continue
             comments = libclang_parser.extract_active_comments(src_path, args)
             if not comments:
                 continue
