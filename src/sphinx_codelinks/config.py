@@ -120,6 +120,33 @@ class MarkedRstConfig:
         return self.check_schema() + self.check_sequence_mutually_exclusive()
 
 
+@dataclass
+class PreprocessorConfig:
+    """Opt-in libclang engine config. Presence => libclang engine for C/C++."""
+
+    compile_commands: Path | None = field(
+        default=None, metadata={"schema": {"type": ["string", "null"]}}
+    )
+    """Explicit path to compile_commands.json. If None, walk-up auto-discovery."""
+
+    defines: list[str] = field(
+        default_factory=list,
+        metadata={"schema": {"type": "array", "items": {"type": "string"}}},
+    )
+    """Fallback -D defines applied globally when no compile_commands.json applies."""
+
+    includes: list[Path] = field(
+        default_factory=list,
+        metadata={"schema": {"type": "array", "items": {"type": "string"}}},
+    )
+    """Fallback -I include dirs for the defines path."""
+
+    variant_name: str | None = field(
+        default=None, metadata={"schema": {"type": ["string", "null"]}}
+    )
+    """Label echoed into run-level output."""
+
+
 class FieldConfig(TypedDict, total=False):
     name: str
     type: Literal["str", "list[str]"]
@@ -329,6 +356,7 @@ class AnalyseSectionConfigType(TypedDict, total=False):
     need_id_refs: NeedIdRefsConfigType
     marked_rst: MarkedRstConfigType
     oneline_comment_style: OneLineCommentStyleType
+    preprocessor: dict[str, object]
 
 
 class SourceAnalyseConfigType(TypedDict, total=False):
@@ -344,6 +372,7 @@ class SourceAnalyseConfigType(TypedDict, total=False):
     need_id_refs_config: NeedIdRefsConfig
     marked_rst_config: MarkedRstConfig
     oneline_comment_style: OneLineCommentStyle
+    preprocessor: PreprocessorConfig | None
 
 
 class ProjectsAnalyseConfigType(TypedDict, total=False):
@@ -399,6 +428,11 @@ class SourceAnalyseConfig:
         default_factory=OneLineCommentStyle
     )
     """Configuration for extracting oneline needs from comments."""
+
+    preprocessor: PreprocessorConfig | None = field(
+        default=None, metadata={"schema": {"type": ["object", "null"]}}
+    )
+    """Opt-in libclang preprocessor engine. None => tree-sitter (default)."""
 
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
@@ -792,7 +826,7 @@ def convert_analyse_config(
     analyse_config_dict: SourceAnalyseConfigType = {}
     if config_dict:
         for k, v in config_dict.items():
-            if k not in {"online_comment_style", "need_id_refs", "marked_rst"}:
+            if k not in {"online_comment_style", "need_id_refs", "marked_rst", "preprocessor"}:
                 # Convert string paths to Path objects
                 if k in {"src_dir", "git_root"} and isinstance(v, str):
                     analyse_config_dict[k] = Path(v)  # type: ignore[literal-required]
@@ -822,6 +856,19 @@ def convert_analyse_config(
         analyse_config_dict["need_id_refs_config"] = need_id_refs_config
         analyse_config_dict["marked_rst_config"] = marked_rst_config
         analyse_config_dict["oneline_comment_style"] = oneline_comment_style
+
+        preprocessor_dict = config_dict.get("preprocessor")
+        if preprocessor_dict is not None:
+            analyse_config_dict["preprocessor"] = PreprocessorConfig(
+                compile_commands=(
+                    Path(str(preprocessor_dict["compile_commands"]))
+                    if preprocessor_dict.get("compile_commands")
+                    else None
+                ),
+                defines=list(preprocessor_dict.get("defines", [])),  # type: ignore[arg-type]
+                includes=[Path(str(p)) for p in preprocessor_dict.get("includes", [])],  # type: ignore[union-attr]
+                variant_name=preprocessor_dict.get("variant_name"),  # type: ignore[arg-type]
+            )
 
     if src_discover:
         analyse_config_dict["src_files"] = src_discover.source_paths
