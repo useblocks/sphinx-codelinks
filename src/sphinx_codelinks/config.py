@@ -429,10 +429,16 @@ class SourceAnalyseConfig:
     )
     """Configuration for extracting oneline needs from comments."""
 
-    preprocessor: PreprocessorConfig | None = field(
-        default=None, metadata={"schema": {"type": ["object", "null"]}}
-    )
-    """Opt-in libclang preprocessor engine. None => tree-sitter (default)."""
+    preprocessor: PreprocessorConfig | None = field(default=None)
+    """Opt-in libclang preprocessor engine. None => tree-sitter (default).
+
+    No flat ``metadata["schema"]`` here: this is a nested dataclass, like the
+    sibling ``need_id_refs_config`` / ``marked_rst_config`` /
+    ``oneline_comment_style`` fields. ``check_schema`` only validates fields that
+    declare a flat schema; giving this field one made it validate the constructed
+    ``PreprocessorConfig`` instance against JSON type ``object`` and fail at
+    ``config-inited``. Its structure is enforced by ``convert_analyse_config``.
+    """
 
     @classmethod
     def get_schema(cls, name: str) -> dict[str, Any] | None:  # type: ignore[explicit-any]
