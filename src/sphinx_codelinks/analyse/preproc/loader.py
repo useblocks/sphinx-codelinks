@@ -13,7 +13,7 @@ from typing import Any, NamedTuple
 
 _INSTALL_HINT = (
     "The libclang engine requires clang.cindex. Install the extra:\n"
-    "    pip install 'sphinx-codelinks[cpp]'"
+    "    pip install 'sphinx-codelinks[libclang]'"
 )
 
 

@@ -35,7 +35,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cpp = ["libclang>=18"]
+# libclang enables the preprocessor-aware C/C++ engine (skips comments inside
+# inactive #if/#ifdef regions). Plain tree-sitter C/C++ extraction needs none of
+# this, so libclang stays optional. Named after the backend, not "cpp": the
+# engine handles C and Objective-C too, and tree-sitter already covers C++.
+libclang = ["libclang>=18"]
 
 [build-system]
 requires = ["flit_core >=3.4,<4"]
