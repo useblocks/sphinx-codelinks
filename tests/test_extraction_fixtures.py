@@ -120,6 +120,11 @@ def test_extraction_fixture(case: dict, tmp_path: Path, snapshot_extraction) -> 
     markers = config.get("need_id_markers") if isinstance(config, dict) else None
     refs_config = NeedIdRefsConfig(markers=markers) if markers else NeedIdRefsConfig()
 
+    # Which extractors to run. Defaults to all; a fixture narrows this (e.g. a
+    # need-refs case sets ``extract: [need_refs]``) so unrelated markers — like
+    # ``@need-ids:`` matching the ``@`` one-line start — don't add noise.
+    extract = case.get("extract", ["oneline", "need_refs", "rst"])
+
     src_path = tmp_path / f"case.{ext}"
     src_path.write_text(case["source"], encoding="utf-8")
 
@@ -127,9 +132,9 @@ def test_extraction_fixture(case: dict, tmp_path: Path, snapshot_extraction) -> 
         src_files=[src_path],
         src_dir=tmp_path,
         comment_type=comment_type,
-        get_oneline_needs=True,
-        get_need_id_refs=True,
-        get_rst=True,
+        get_oneline_needs="oneline" in extract,
+        get_need_id_refs="need_refs" in extract,
+        get_rst="rst" in extract,
         oneline_comment_style=style,
         need_id_refs_config=refs_config,
     )

@@ -37,6 +37,10 @@ custom_brackets_c:
 - `config: default` uses the built-in `OneLineCommentStyle` default
   (`@` / newline / `,` with fields `title, id, type(default "impl"), links(list)`).
 - Field `type` is `str` or `list[str]`.
+- `extract` (optional): which extractors to run — a subset of
+  `[oneline, need_refs, rst]` (default: all three). Narrow it to keep a case
+  focused: a need-reference case sets `extract: [need_refs]` so the `@`-prefixed
+  `@need-ids:` marker isn't also parsed as a one-line need.
 
 ## Snapshot (expected output) — normalized contract
 
