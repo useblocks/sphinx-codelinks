@@ -242,3 +242,63 @@ def test_header_standalone_inactive_define():
     ids = _run_header_ids([])
     assert "IMPL_HDR_ALWAYS" in ids  # include-guard body still active
     assert "IMPL_HDR_VAR_A" not in ids  # #ifdef VARIANT_A inactive -> dropped
+
+
+# ---------------------------------------------------------------------------
+# Golden snapshots
+#
+# The extraction output is pinned to declarative JSON snapshots, one per engine.
+# `defines=None` omits the preprocessor block (tree-sitter path: every marker is
+# seen); a defines list activates the libclang path (inactive `#if` branches are
+# excluded). The snapshots are language-agnostic so any conforming implementation
+# can assert against the same fixtures.
+# ---------------------------------------------------------------------------
+
+
+def _projected_oneline_needs(defines):
+    """Run the analyse pipeline and project each one-line need to the golden schema."""
+    cfg = SourceAnalyseConfig(
+        src_files=[FIXTURE],
+        src_dir=FIXTURE.parent,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(defines=defines)
+        if defines is not None
+        else None,
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()
+    projected = [
+        {
+            "id": n.need["id"],
+            "title": n.need["title"],
+            "type": n.need["type"],
+            "links": n.need["links"],
+            "line": n.source_map["start"]["row"] + 1,
+        }
+        for n in analyse.oneline_needs
+    ]
+    projected.sort(key=lambda x: x["line"])
+    return projected
+
+
+def _load_golden(name):
+    with (FIXTURE.parent / name).open() as f:
+        golden = json.load(f)
+    golden.sort(key=lambda x: x["line"])
+    return golden
+
+
+def test_libclang_active_matches_golden():
+    """libclang active-set output matches the committed golden snapshot."""
+    projected = _projected_oneline_needs(
+        ["VARIANT_A=1", "PLATFORM_LINUX=1", "PROTOCOL_VERSION=3"]
+    )
+    assert projected == _load_golden("variants_branching.expected.json")
+
+
+def test_treesitter_matches_golden():
+    """Tree-sitter output (no preprocessor) matches the committed golden snapshot."""
+    projected = _projected_oneline_needs(None)
+    assert projected == _load_golden("variants_branching.treesitter.expected.json")
