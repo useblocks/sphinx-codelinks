@@ -110,3 +110,19 @@ def test_defines_to_args(tmp_path: Path):
     assert "-DX=2" in out
     assert f"-I{(tmp_path / 'inc')}" in out
     assert "-std=c++17" in out
+
+
+def test_is_translation_unit_source():
+    # Compiled translation-unit sources (skipped when build-excluded).
+    assert compile_db.is_translation_unit_source(Path("a.c"))
+    assert compile_db.is_translation_unit_source(Path("a.cpp"))
+    assert compile_db.is_translation_unit_source(Path("a.cc"))
+    assert compile_db.is_translation_unit_source(Path("a.cxx"))
+    assert compile_db.is_translation_unit_source(Path("A.CPP"))  # case-insensitive
+    # Header-like files (parsed standalone when absent from the DB).
+    assert not compile_db.is_translation_unit_source(Path("a.h"))
+    assert not compile_db.is_translation_unit_source(Path("a.hpp"))
+    assert not compile_db.is_translation_unit_source(Path("a.hxx"))
+    assert not compile_db.is_translation_unit_source(Path("a.hh"))
+    assert not compile_db.is_translation_unit_source(Path("a.ci"))
+    assert not compile_db.is_translation_unit_source(Path("a.ihl"))
