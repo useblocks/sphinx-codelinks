@@ -1,6 +1,0 @@
-[
-  {"id": "IMPL_ALWAYS", "title": "Always Present", "type": "impl", "links": ["REQ_BASE"], "line": 1},
-  {"id": "IMPL_VAR_A", "title": "Variant A Feature", "type": "impl", "links": ["REQ_FEAT_A"], "line": 5},
-  {"id": "IMPL_PROTO_3", "title": "Protocol V3", "type": "impl", "links": ["REQ_PROTO"], "line": 13},
-  {"id": "IMPL_LINUX_A", "title": "Linux And A", "type": "impl", "links": ["REQ_COMBO"], "line": 18}
-]
