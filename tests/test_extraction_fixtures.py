@@ -5,7 +5,6 @@ Each case in ``tests/data/extraction/*.yaml`` supplies an input (``lang`` +
 compared to a committed JSON snapshot. See ``tests/data/extraction/README.md``.
 """
 
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -86,8 +85,7 @@ def _normalize(analyse: SourceAnalyse, style: OneLineCommentStyle) -> dict:
     need_refs = []
     for ref in analyse.need_id_refs:
         line = ref.source_map["start"]["row"] + 1
-        for need_id in ref.need_ids:
-            need_refs.append({"need_id": need_id, "line": line})
+        need_refs.extend({"need_id": need_id, "line": line} for need_id in ref.need_ids)
     need_refs.sort(key=lambda d: (d["line"], d["need_id"]))
 
     marked_rst = [
@@ -116,11 +114,10 @@ def _normalize(analyse: SourceAnalyse, style: OneLineCommentStyle) -> dict:
 @pytest.mark.parametrize("case", _load_cases())
 def test_extraction_fixture(case: dict, tmp_path: Path, snapshot_extraction) -> None:
     comment_type, ext = LANG_MAP[case["lang"]]
-    style = _build_oneline_style(case.get("config"))
+    config = case.get("config")
+    style = _build_oneline_style(config)
 
-    markers = case.get("config", {}).get("need_id_markers") if isinstance(
-        case.get("config"), dict
-    ) else None
+    markers = config.get("need_id_markers") if isinstance(config, dict) else None
     refs_config = NeedIdRefsConfig(markers=markers) if markers else NeedIdRefsConfig()
 
     src_path = tmp_path / f"case.{ext}"
