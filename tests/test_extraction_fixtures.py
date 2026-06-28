@@ -14,6 +14,7 @@ from sphinx_codelinks.analyse.analyse import SourceAnalyse
 from sphinx_codelinks.config import (
     NeedIdRefsConfig,
     OneLineCommentStyle,
+    PreprocessorConfig,
     SourceAnalyseConfig,
 )
 from sphinx_codelinks.source_discover.config import CommentType
@@ -125,6 +126,15 @@ def test_extraction_fixture(case: dict, tmp_path: Path, snapshot_extraction) -> 
     # ``@need-ids:`` matching the ``@`` one-line start — don't add noise.
     extract = case.get("extract", ["oneline", "need_refs", "rst"])
 
+    # Engine selection. The default tree-sitter path sees every comment; the
+    # libclang path evaluates the preprocessor (``defines``) and excludes markers
+    # in inactive #if/#ifdef branches. libclang needs the clang bindings.
+    engine = case.get("engine", "treesitter")
+    preprocessor = None
+    if engine == "libclang":
+        pytest.importorskip("clang.cindex")
+        preprocessor = PreprocessorConfig(defines=case.get("defines", []))
+
     src_path = tmp_path / f"case.{ext}"
     src_path.write_text(case["source"], encoding="utf-8")
 
@@ -137,6 +147,7 @@ def test_extraction_fixture(case: dict, tmp_path: Path, snapshot_extraction) -> 
         get_rst="rst" in extract,
         oneline_comment_style=style,
         need_id_refs_config=refs_config,
+        preprocessor=preprocessor,
     )
     analyse = SourceAnalyse(cfg)
     analyse.git_remote_url = None
