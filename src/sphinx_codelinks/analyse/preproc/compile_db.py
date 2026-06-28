@@ -16,6 +16,11 @@ _DROP_EXACT = {"-c", "-MMD", "-MD", "-MG", "-MP"}
 # Minimum length for joined-form flags like -MFdep.d (prefix length = 3)
 _MIN_JOINED_FLAG_LEN = 3
 
+# Suffixes a compiler builds as a translation unit. A discovered C/C++ file
+# absent from compile_commands.json is skipped only when it is a TU source
+# (build-excluded); all other discovered files (headers) are parsed standalone.
+TU_SOURCE_SUFFIXES = {".c", ".cpp", ".cc", ".cxx"}
+
 
 def find_compile_db(start: Path, project_root: Path | None = None) -> Path | None:
     """Walk up from ``start`` looking for compile_commands.json.
@@ -91,3 +96,13 @@ def defines_to_args(
     args += [f"-D{d}" for d in defines]
     args += [f"-I{inc}" for inc in includes]
     return args
+
+
+def is_translation_unit_source(path: Path) -> bool:
+    """True if ``path`` is a compiled translation-unit source (not a header).
+
+    compile_commands.json lists one entry per compiled TU; headers are never
+    entries. So a discovered file absent from the DB is skipped only when it is
+    a TU source; header-like files are parsed standalone (see _resolve_preproc_args).
+    """
+    return path.suffix.lower() in TU_SOURCE_SUFFIXES
