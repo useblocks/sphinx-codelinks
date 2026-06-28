@@ -126,8 +126,13 @@ class SourceAnalyse:
             args = flags.get(src_path.absolute().resolve())
             if args is not None:
                 return args
-            # File not in compile DB — skip it per spec §3.3.
-            return None
+            # Absent from the DB. compile_commands.json lists only compiled
+            # translation units, never headers — so a header here is parsed
+            # standalone with the global defines (one run = one variant). A
+            # compiled source absent from the build is skipped (spec §3.3).
+            if compile_db.is_translation_unit_source(src_path):
+                return None
+            return compile_db.defines_to_args(preproc.defines, preproc.includes)
         # No DB found at all — fall back to manual defines applied globally.
         return compile_db.defines_to_args(preproc.defines, preproc.includes)
 

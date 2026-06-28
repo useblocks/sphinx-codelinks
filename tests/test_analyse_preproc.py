@@ -9,6 +9,7 @@ from sphinx_codelinks.analyse.analyse import SourceAnalyse
 from sphinx_codelinks.config import PreprocessorConfig, SourceAnalyseConfig
 
 FIXTURE = Path(__file__).parent / "data" / "preproc" / "variants_branching.cpp"
+HEADER = Path(__file__).parent / "data" / "preproc" / "header_standalone.hpp"
 
 
 def _run_get_oneline_ids(defines):
@@ -202,3 +203,63 @@ def test_libclang_active_matches_golden():
     golden.sort(key=lambda x: x["line"])
 
     assert projected == golden
+
+
+def test_header_extracted_when_absent_from_compile_commands(tmp_path):
+    """A header absent from the DB is parsed standalone, not skipped."""
+    db = tmp_path / "compile_commands.json"
+    db.write_text(
+        json.dumps(
+            [
+                {
+                    "directory": str(FIXTURE.parent),
+                    "arguments": [
+                        "clang++", "-std=c++17", "-DVARIANT_A=1", "-c", str(FIXTURE),
+                    ],
+                    "file": str(FIXTURE),
+                }
+            ]
+        )
+    )
+    cfg = SourceAnalyseConfig(
+        src_files=[FIXTURE, HEADER],
+        src_dir=FIXTURE.parent,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(compile_commands=db, defines=["VARIANT_A=1"]),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()
+    ids = {n.need["id"] for n in analyse.oneline_needs}
+    # The .cpp resolves its flags from the DB entry.
+    assert "IMPL_VAR_A" in ids
+    # The header is absent from the DB -> parsed standalone with global defines.
+    assert "IMPL_HDR_ALWAYS" in ids
+    assert "IMPL_HDR_VAR_A" in ids  # global defines carry VARIANT_A=1
+
+
+def _run_header_ids(defines):
+    cfg = SourceAnalyseConfig(
+        src_files=[HEADER],
+        src_dir=HEADER.parent,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(defines=defines),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()
+    return {n.need["id"] for n in analyse.oneline_needs}
+
+
+def test_header_standalone_active_define():
+    ids = _run_header_ids(["VARIANT_A=1"])
+    assert "IMPL_HDR_ALWAYS" in ids  # include-guard body is active
+    assert "IMPL_HDR_VAR_A" in ids  # #ifdef VARIANT_A active
+
+
+def test_header_standalone_inactive_define():
+    ids = _run_header_ids([])
+    assert "IMPL_HDR_ALWAYS" in ids  # include-guard body still active
+    assert "IMPL_HDR_VAR_A" not in ids  # #ifdef VARIANT_A inactive -> dropped
