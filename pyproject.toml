@@ -151,7 +151,8 @@ plugins = ["pydantic.mypy"]
 mypy_path = "typings"
 
 [[tool.mypy.overrides]]
-module = ["licensing.*", "tomlkit.*"]
+# clang.cindex ships no type stubs / py.typed; the libclang engine wraps it.
+module = ["licensing.*", "tomlkit.*", "clang.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

@@ -832,7 +832,12 @@ def convert_analyse_config(
     analyse_config_dict: SourceAnalyseConfigType = {}
     if config_dict:
         for k, v in config_dict.items():
-            if k not in {"online_comment_style", "need_id_refs", "marked_rst", "preprocessor"}:
+            if k not in {
+                "online_comment_style",
+                "need_id_refs",
+                "marked_rst",
+                "preprocessor",
+            }:
                 # Convert string paths to Path objects
                 if k in {"src_dir", "git_root"} and isinstance(v, str):
                     analyse_config_dict[k] = Path(v)  # type: ignore[literal-required]
@@ -865,14 +870,17 @@ def convert_analyse_config(
 
         preprocessor_dict = config_dict.get("preprocessor")
         if preprocessor_dict is not None:
+            # The preprocessor section has no TypedDict; its values are dynamic
+            # TOML (typed ``object``), so the list/iter/assign below need targeted
+            # ignores matching the concrete errors mypy reports for ``object``.
             analyse_config_dict["preprocessor"] = PreprocessorConfig(
                 compile_commands=(
                     Path(str(preprocessor_dict["compile_commands"]))
                     if preprocessor_dict.get("compile_commands")
                     else None
                 ),
-                defines=list(preprocessor_dict.get("defines", [])),  # type: ignore[arg-type]
-                includes=[Path(str(p)) for p in preprocessor_dict.get("includes", [])],  # type: ignore[union-attr]
+                defines=list(preprocessor_dict.get("defines", [])),  # type: ignore[call-overload]
+                includes=[Path(str(p)) for p in preprocessor_dict.get("includes", [])],  # type: ignore[attr-defined]
                 variant_name=preprocessor_dict.get("variant_name"),  # type: ignore[arg-type]
             )
 

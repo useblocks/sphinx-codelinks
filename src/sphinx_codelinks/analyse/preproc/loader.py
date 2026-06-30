@@ -29,7 +29,9 @@ def load_clang_cindex() -> Any:  # type: ignore[explicit-any]
 # Production parse flags (design "Parse flags codelinks should use").
 def _parse_options() -> int:
     cx = load_clang_cindex()
-    return (
+    # ``cx`` is untyped (clang ships no stubs), so the bit-or is ``Any``; coerce
+    # back to ``int`` to satisfy the declared return type.
+    return int(
         cx.TranslationUnit.PARSE_INCOMPLETE
         | cx.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES
         | cx.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD
@@ -86,9 +88,7 @@ def get_all_skipped_ranges(tu: Any) -> list[SkippedRange]:  # type: ignore[expli
             start = r.start
             end = r.end
             f = Path(start.file.name) if start.file else None
-            out.append(
-                SkippedRange(f, start.line, start.column, end.line, end.column)
-            )
+            out.append(SkippedRange(f, start.line, start.column, end.line, end.column))
         return out
     finally:
         cx.conf.lib.clang_disposeSourceRangeList(ptr)
