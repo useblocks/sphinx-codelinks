@@ -2,7 +2,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from tree_sitter import Node as TreeSitterNode
 
@@ -78,9 +78,7 @@ class SourceAnalyse:
         self.git_commit_rev: str | None = (
             utils.get_current_rev(self.git_root) if self.git_root else None
         )
-        self.project_path: Path = (
-            self.git_root or self.analyse_config.src_dir
-        )
+        self.project_path: Path = self.git_root or self.analyse_config.src_dir
         self.oneline_warnings: list[AnalyseWarning] = []
 
     def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
@@ -151,7 +149,11 @@ class SourceAnalyse:
             comments = libclang_parser.extract_active_comments(src_path, args)
             if not comments:
                 continue
-            src_comments = [SourceComment(c) for c in comments]
+            # ``c`` is a LibclangComment duck-typing the tree-sitter Node
+            # interface SourceComment reads (``.text`` / ``.start_point.row``);
+            # the Node-only path (find_associated_scope) is guarded by
+            # ``is_libclang`` so it never runs on these.
+            src_comments = [SourceComment(cast("TreeSitterNode", c)) for c in comments]
             src_file = SourceFile(src_path.absolute())
             src_file.add_comments(src_comments)
             self.src_files.append(src_file)
@@ -420,7 +422,7 @@ class SourceAnalyse:
             json.dump(to_dump, f)
 
     def run(self) -> None:
-        from sphinx_codelinks.config import CommentType  # noqa: PLC0415
+        from sphinx_codelinks.source_discover.config import CommentType  # noqa: PLC0415
 
         if (
             self.analyse_config.preprocessor is not None

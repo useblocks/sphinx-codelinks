@@ -28,12 +28,7 @@ def test_skipped_ranges_on_simple_ifdef(tmp_path: Path):
     import clang.cindex as cx
 
     src = tmp_path / "s.cpp"
-    src.write_text(
-        "#ifdef OFF\n"
-        "// inactive\n"
-        "#endif\n"
-        "// active\n"
-    )
+    src.write_text("#ifdef OFF\n// inactive\n#endif\n// active\n")
     idx = cx.Index.create()
     tu = idx.parse(str(src), args=["-std=c++17"], options=loader.PARSE_OPTIONS)
     skipped = loader.get_all_skipped_ranges(tu)
@@ -67,17 +62,17 @@ def test_extract_active_comments_variant_a_active():
     titles = _titles(comments)
     joined = "\n".join(titles)
     assert "IMPL_ALWAYS" in joined
-    assert "IMPL_VAR_A" in joined          # active branch
-    assert "IMPL_VAR_B" not in joined      # inactive #else -> EXCLUDED
-    assert "IMPL_PROTO_3" in joined        # PROTOCOL_VERSION >= 3 active
-    assert "IMPL_LINUX_A" in joined        # both defined
+    assert "IMPL_VAR_A" in joined  # active branch
+    assert "IMPL_VAR_B" not in joined  # inactive #else -> EXCLUDED
+    assert "IMPL_PROTO_3" in joined  # PROTOCOL_VERSION >= 3 active
+    assert "IMPL_LINUX_A" in joined  # both defined
 
 
 def test_extract_active_comments_variant_b_active():
     args = ["-std=c++17", "-DPROTOCOL_VERSION=1"]  # VARIANT_A undefined
     comments = libclang_parser.extract_active_comments(FIXTURE, args)
     joined = "\n".join(_titles(comments))
-    assert "IMPL_VAR_B" in joined          # #else branch now active
-    assert "IMPL_VAR_A" not in joined      # inactive -> EXCLUDED
-    assert "IMPL_PROTO_3" not in joined    # version < 3 -> EXCLUDED
-    assert "IMPL_LINUX_A" not in joined     # VARIANT_A undefined -> EXCLUDED
+    assert "IMPL_VAR_B" in joined  # #else branch now active
+    assert "IMPL_VAR_A" not in joined  # inactive -> EXCLUDED
+    assert "IMPL_PROTO_3" not in joined  # version < 3 -> EXCLUDED
+    assert "IMPL_LINUX_A" not in joined  # VARIANT_A undefined -> EXCLUDED

@@ -39,8 +39,16 @@ def test_find_compile_db_stops_at_git_root(tmp_path: Path):
 
 def test_filter_args_strips_compiler_and_output():
     argv = [
-        "clang++", "-std=c++17", "-c", "-o", "out.o",
-        "-DVARIANT_A=1", "-I/inc", "-MMD", "-MF", "dep.d",
+        "clang++",
+        "-std=c++17",
+        "-c",
+        "-o",
+        "out.o",
+        "-DVARIANT_A=1",
+        "-I/inc",
+        "-MMD",
+        "-MF",
+        "dep.d",
         "src/a.cpp",
     ]
     out = compile_db.filter_args(argv, "src/a.cpp")
