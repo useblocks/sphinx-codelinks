@@ -2,7 +2,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from tree_sitter import Node as TreeSitterNode
 
@@ -78,9 +78,7 @@ class SourceAnalyse:
         self.git_commit_rev: str | None = (
             utils.get_current_rev(self.git_root) if self.git_root else None
         )
-        self.project_path: Path = (
-            self.git_root if self.git_root else self.analyse_config.src_dir
-        )
+        self.project_path: Path = self.git_root or self.analyse_config.src_dir
         self.oneline_warnings: list[AnalyseWarning] = []
 
     def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
@@ -107,6 +105,80 @@ class SourceAnalyse:
                 SourceComment(node) for node in comments
             ]
 
+            src_file = SourceFile(src_path.absolute())
+            src_file.add_comments(src_comments)
+            self.src_files.append(src_file)
+            self.src_comments.extend(src_comments)
+
+    def _resolve_preproc_args(self, src_path: Path) -> list[str] | None:
+        from sphinx_codelinks.analyse.preproc import compile_db  # noqa: PLC0415
+
+        preproc = self.analyse_config.preprocessor
+        if preproc is None:
+            return []
+        db_path = preproc.compile_commands
+        if db_path is None:
+            db_path = compile_db.find_compile_db(src_path, self.project_path)
+        if db_path is not None and db_path.is_file():
+            flags = compile_db.load_flags_map(db_path)
+            args = flags.get(src_path.absolute().resolve())
+            if args is not None:
+                return args
+            # Absent from the DB. compile_commands.json lists only compiled
+            # translation units, never headers — so a header here is parsed
+            # standalone with the global defines (one run = one variant). A
+            # compiled source absent from the build is skipped (spec §3.3).
+            if compile_db.is_translation_unit_source(src_path):
+                return None
+            return compile_db.defines_to_args(preproc.defines, preproc.includes)
+        # No DB found at all — fall back to manual defines applied globally.
+        return compile_db.defines_to_args(preproc.defines, preproc.includes)
+
+    def create_src_objects_libclang(self) -> None:
+        from sphinx_codelinks.analyse.preproc import (  # noqa: PLC0415
+            libclang_parser,
+            loader,
+        )
+
+        # Resolve the exception via the loader (never a direct ``import
+        # clang.cindex``) so a missing ``libclang`` extra still surfaces the
+        # loader's friendly install hint rather than a bare ImportError.
+        translation_unit_load_error = (
+            loader.load_clang_cindex().TranslationUnitLoadError
+        )
+
+        for src_path in self.analyse_config.src_files:
+            if not utils.is_text_file(src_path):
+                continue
+            args = self._resolve_preproc_args(src_path)
+            if args is None:
+                logger.debug(
+                    f"codelinks: skipping {src_path} — not found in compile_commands.json"
+                )
+                continue
+            try:
+                comments = libclang_parser.extract_active_comments(src_path, args)
+            except translation_unit_load_error:
+                # Last-resort guard. Standalone parses pin ``-x`` to match the
+                # ``-std`` (see defines_to_args), so the common case — a ``.h``/
+                # ``.c`` header handed a C++ ``-std`` — now parses as C++ and its
+                # markers extract. This only fires if libclang still cannot load
+                # the file as a translation unit at all; skip it rather than
+                # aborting the whole Sphinx build. Logged at ``info`` (not
+                # ``warning``): under ``sphinx-build -W`` a warning would re-fail
+                # the very builds this guard keeps green.
+                logger.info(
+                    f"codelinks: skipping {src_path} — libclang could not load it "
+                    f"as a translation unit"
+                )
+                continue
+            if not comments:
+                continue
+            # ``c`` is a LibclangComment duck-typing the tree-sitter Node
+            # interface SourceComment reads (``.text`` / ``.start_point.row``);
+            # the Node-only path (find_associated_scope) is guarded by
+            # ``is_libclang`` so it never runs on these.
+            src_comments = [SourceComment(cast("TreeSitterNode", c)) for c in comments]
             src_file = SourceFile(src_path.absolute())
             src_file.add_comments(src_comments)
             self.src_files.append(src_file)
@@ -327,9 +399,12 @@ class SourceAnalyse:
             )
             if not filepath:
                 continue
-            tagged_scope: TreeSitterNode | None = utils.find_associated_scope(
-                src_comment.node, self.analyse_config.comment_type
-            )
+            if getattr(src_comment.node, "is_libclang", False):
+                tagged_scope: TreeSitterNode | None = None
+            else:
+                tagged_scope = utils.find_associated_scope(
+                    src_comment.node, self.analyse_config.comment_type
+                )
             if self.analyse_config.get_need_id_refs:
                 anchors = self.extract_anchors(
                     text, filepath, tagged_scope, src_comment
@@ -372,7 +447,15 @@ class SourceAnalyse:
             json.dump(to_dump, f)
 
     def run(self) -> None:
-        self.create_src_objects()
+        from sphinx_codelinks.source_discover.config import CommentType  # noqa: PLC0415
+
+        if (
+            self.analyse_config.preprocessor is not None
+            and self.analyse_config.comment_type == CommentType.cpp
+        ):
+            self.create_src_objects_libclang()
+        else:
+            self.create_src_objects()
         self.extract_marked_content()
         self.merge_marked_content()
         self._log_summary()
