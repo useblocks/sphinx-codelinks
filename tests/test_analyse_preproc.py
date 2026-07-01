@@ -250,3 +250,36 @@ def test_header_standalone_inactive_define():
 # inactive-branch exclusion via defines/compile_commands, resilience to broken or
 # half-typed code, compile-DB resolution, the spec §3.3 skip, and standalone
 # header handling.
+
+
+PLAIN_H = Path(__file__).parent / "data" / "preproc" / "plain_header.h"
+
+
+def test_libclang_extracts_c_extension_header_via_cpp_language():
+    """A ``.h`` header still extracts its oneline markers (not dropped/crashing).
+
+    Headers never appear in compile_commands.json, so they are parsed standalone
+    with the global defines. libclang infers C from the ``.h`` extension; without
+    pinning the language, ``-std=c++17`` makes clang reject the combo and return
+    a NULL translation unit (``TranslationUnitLoadError``) — which previously
+    aborted ``sphinx-build -b ubtrace -W``. The standalone flags now pin ``-x``
+    to the ``-std`` (see ``defines_to_args``), so the header parses as C++ and its
+    markers are extracted rather than lost.
+    """
+    cfg = SourceAnalyseConfig(
+        src_files=[FIXTURE, PLAIN_H],
+        src_dir=FIXTURE.parent,
+        get_need_id_refs=False,
+        get_oneline_needs=True,
+        get_rst=False,
+        preprocessor=PreprocessorConfig(
+            defines=["VARIANT_A=1", "PLATFORM_LINUX=1", "PROTOCOL_VERSION=3"]
+        ),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+    analyse.run()  # must not raise TranslationUnitLoadError
+    ids = {n.need["id"] for n in analyse.oneline_needs}
+    assert "IMPL_ALWAYS" in ids  # the .cpp translation unit extracts
+    assert "IMPL_HDR_PLAIN" in ids  # the .h header extracts too (parsed as C++)

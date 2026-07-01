@@ -135,7 +135,17 @@ class SourceAnalyse:
         return compile_db.defines_to_args(preproc.defines, preproc.includes)
 
     def create_src_objects_libclang(self) -> None:
-        from sphinx_codelinks.analyse.preproc import libclang_parser  # noqa: PLC0415
+        from sphinx_codelinks.analyse.preproc import (  # noqa: PLC0415
+            libclang_parser,
+            loader,
+        )
+
+        # Resolve the exception via the loader (never a direct ``import
+        # clang.cindex``) so a missing ``libclang`` extra still surfaces the
+        # loader's friendly install hint rather than a bare ImportError.
+        translation_unit_load_error = (
+            loader.load_clang_cindex().TranslationUnitLoadError
+        )
 
         for src_path in self.analyse_config.src_files:
             if not utils.is_text_file(src_path):
@@ -146,7 +156,22 @@ class SourceAnalyse:
                     f"codelinks: skipping {src_path} — not found in compile_commands.json"
                 )
                 continue
-            comments = libclang_parser.extract_active_comments(src_path, args)
+            try:
+                comments = libclang_parser.extract_active_comments(src_path, args)
+            except translation_unit_load_error:
+                # Last-resort guard. Standalone parses pin ``-x`` to match the
+                # ``-std`` (see defines_to_args), so the common case — a ``.h``/
+                # ``.c`` header handed a C++ ``-std`` — now parses as C++ and its
+                # markers extract. This only fires if libclang still cannot load
+                # the file as a translation unit at all; skip it rather than
+                # aborting the whole Sphinx build. Logged at ``info`` (not
+                # ``warning``): under ``sphinx-build -W`` a warning would re-fail
+                # the very builds this guard keeps green.
+                logger.info(
+                    f"codelinks: skipping {src_path} — libclang could not load it "
+                    f"as a translation unit"
+                )
+                continue
             if not comments:
                 continue
             # ``c`` is a LibclangComment duck-typing the tree-sitter Node

@@ -91,8 +91,18 @@ def load_flags_map(db_path: Path) -> dict[Path, list[str]]:
 def defines_to_args(
     defines: list[str], includes: list[Path], std: str = "c++17"
 ) -> list[str]:
-    """Build a global flag list for the manual `defines` fallback."""
-    args = [f"-std={std}"]
+    """Build a global flag list for parsing a file standalone.
+
+    Used for headers and files absent from a compile DB. libclang infers the
+    language from the file extension, so a C-inferred file (``.h`` / ``.c`` /
+    ``.inc``) handed a C++ ``-std`` makes clang reject the combination and return
+    a NULL translation unit (surfacing as ``TranslationUnitLoadError``). Pin the
+    language to match ``std`` with ``-x`` so such files — e.g. a ``.h`` header
+    carrying oneline need markers — parse and extract instead of failing. (C
+    sources parse as C++ well enough for comment/marker extraction.)
+    """
+    lang = "c++" if std.startswith("c++") else "c"
+    args = ["-x", lang, f"-std={std}"]
     args += [f"-D{d}" for d in defines]
     args += [f"-I{inc}" for inc in includes]
     return args
