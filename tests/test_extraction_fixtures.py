@@ -25,6 +25,9 @@ FIXTURE_DIR = Path(__file__).parent / "data" / "extraction"
 LANG_MAP: dict[str, tuple[CommentType, str]] = {
     "cpp": (CommentType.cpp, "cpp"),
     "c": (CommentType.cpp, "c"),
+    # A C/C++ header (.h): libclang infers C from the extension, so the engine
+    # must pin the language to the -std or -std=c++17 yields a NULL TU.
+    "cpp_header": (CommentType.cpp, "h"),
     "python": (CommentType.python, "py"),
     "csharp": (CommentType.cs, "cs"),
     "rust": (CommentType.rust, "rs"),
