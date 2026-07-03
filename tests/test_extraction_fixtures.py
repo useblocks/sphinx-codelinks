@@ -5,6 +5,7 @@ Each case in ``tests/data/extraction/*.yaml`` supplies an input (``lang`` +
 compared to a committed JSON snapshot. See ``tests/data/extraction/README.md``.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -115,6 +116,30 @@ def _normalize(analyse: SourceAnalyse, style: OneLineCommentStyle) -> dict:
     }
 
 
+def _build_preprocessor(case: dict, tmp_path: Path) -> PreprocessorConfig:
+    """Build the libclang ``PreprocessorConfig`` for a case.
+
+    ``compile_commands`` (a list of ``{file, arguments}`` entries) is materialized
+    into a real ``compile_commands.json`` under ``tmp_path`` so the engine resolves
+    per-file flags from it. ``compile_commands_path`` instead points at an explicit
+    path (which may be intentionally absent, to exercise the fallback). Otherwise
+    only the global ``defines`` apply.
+    """
+    defines = case.get("defines", [])
+    compile_commands: Path | None = None
+    if "compile_commands" in case:
+        db = tmp_path / "compile_commands.json"
+        entries = [
+            {"directory": str(tmp_path), "file": e["file"], "arguments": e["arguments"]}
+            for e in case["compile_commands"]
+        ]
+        db.write_text(json.dumps(entries), encoding="utf-8")
+        compile_commands = db
+    elif "compile_commands_path" in case:
+        compile_commands = tmp_path / case["compile_commands_path"]
+    return PreprocessorConfig(defines=defines, compile_commands=compile_commands)
+
+
 @pytest.mark.parametrize("case", _load_cases())
 def test_extraction_fixture(case: dict, tmp_path: Path, snapshot_extraction) -> None:
     comment_type, ext = LANG_MAP[case["lang"]]
@@ -136,7 +161,7 @@ def test_extraction_fixture(case: dict, tmp_path: Path, snapshot_extraction) -> 
     preprocessor = None
     if engine == "libclang":
         pytest.importorskip("clang.cindex")
-        preprocessor = PreprocessorConfig(defines=case.get("defines", []))
+        preprocessor = _build_preprocessor(case, tmp_path)
 
     src_path = tmp_path / f"case.{ext}"
     src_path.write_text(case["source"], encoding="utf-8")
