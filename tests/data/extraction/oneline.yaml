@@ -40,3 +40,10 @@ default_oneliner_yaml:
   source: |
     # @Yaml Title, IMPL_YAML, impl, [REQ_YAML]
     key: value
+
+default_oneliner_bash:
+  lang: bash
+  config: default
+  source: |
+    # @Bash Title, IMPL_BASH, impl, [REQ_BASH]
+    greet() { echo hi; }
