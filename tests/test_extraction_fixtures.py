@@ -121,9 +121,11 @@ def _build_preprocessor(case: dict, tmp_path: Path) -> PreprocessorConfig:
 
     ``compile_commands`` (a list of ``{file, arguments}`` entries) is materialized
     into a real ``compile_commands.json`` under ``tmp_path`` so the engine resolves
-    per-file flags from it. ``compile_commands_path`` instead points at an explicit
-    path (which may be intentionally absent, to exercise the fallback). Otherwise
-    only the global ``defines`` apply.
+    per-file flags from it. ``compile_commands_raw`` instead writes a verbatim
+    string as the DB (to exercise a present-but-malformed DB).
+    ``compile_commands_path`` instead points at an explicit path (which may be
+    intentionally absent, to exercise the fallback). Otherwise only the global
+    ``defines`` apply.
     """
     defines = case.get("defines", [])
     compile_commands: Path | None = None
@@ -135,9 +137,17 @@ def _build_preprocessor(case: dict, tmp_path: Path) -> PreprocessorConfig:
         ]
         db.write_text(json.dumps(entries), encoding="utf-8")
         compile_commands = db
+    elif "compile_commands_raw" in case:
+        db = tmp_path / "compile_commands.json"
+        db.write_text(case["compile_commands_raw"], encoding="utf-8")
+        compile_commands = db
     elif "compile_commands_path" in case:
         compile_commands = tmp_path / case["compile_commands_path"]
-    return PreprocessorConfig(defines=defines, compile_commands=compile_commands)
+    return PreprocessorConfig(
+        defines=defines,
+        compile_commands=compile_commands,
+        std=case.get("std", "c++17"),
+    )
 
 
 @pytest.mark.parametrize("case", _load_cases())

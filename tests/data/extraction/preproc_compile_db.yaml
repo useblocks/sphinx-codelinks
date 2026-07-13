@@ -75,3 +75,44 @@ unreadable_db_path_falls_back_libclang:
     #endif
   # The explicit compile_commands path does not exist, so extraction falls back to
   # the global defines rather than skipping every file: IMPL_BASE, IMPL_FALLBACK.
+
+db_flags_replace_global_defines_libclang:
+  lang: cpp
+  engine: libclang
+  config: default
+  defines: ["FLAVOR=1", "GLOBAL_ONLY=1"]
+  extract: [oneline]
+  compile_commands:
+    - file: case.cpp
+      arguments: ["clang++", "-std=c++17", "-DFLAVOR=2", "-c", "case.cpp"]
+  source: |
+    #if FLAVOR == 1
+    // @Global flavor, IMPL_GLOBAL_FLAVOR, impl, [REQ]
+    #endif
+    #if FLAVOR == 2
+    // @DB flavor, IMPL_DB_FLAVOR, impl, [REQ]
+    #endif
+    #ifdef GLOBAL_ONLY
+    // @Global only, IMPL_GLOBAL_ONLY, impl, [REQ]
+    #endif
+  # The file IS in the DB, so its DB flags (-DFLAVOR=2) fully REPLACE the global
+  # defines (FLAVOR=1, GLOBAL_ONLY=1) instead of merging. Only FLAVOR==2 is active
+  # (IMPL_DB_FLAVOR); IMPL_GLOBAL_FLAVOR (needs FLAVOR==1) and IMPL_GLOBAL_ONLY
+  # (GLOBAL_ONLY is not in the DB entry) are both excluded. This discriminates
+  # "DB replaces defines" from a merge — a merge would surface IMPL_GLOBAL_ONLY.
+
+malformed_db_falls_back_to_defines_libclang:
+  lang: cpp
+  engine: libclang
+  config: default
+  defines: ["FALLBACK=1"]
+  extract: [oneline]
+  compile_commands_raw: "{ this is not valid json"
+  source: |
+    // @Base, IMPL_BASE, impl, [REQ]
+    #ifdef FALLBACK
+    // @Fallback, IMPL_FALLBACK, impl, [REQ]
+    #endif
+  # The compile_commands.json is present but MALFORMED. Extraction must warn and
+  # fall back to the global defines (rather than crash or skip every file), so the
+  # #ifdef branch is active via the fallback: IMPL_BASE + IMPL_FALLBACK.

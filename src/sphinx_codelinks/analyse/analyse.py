@@ -120,7 +120,19 @@ class SourceAnalyse:
         if db_path is None:
             db_path = compile_db.find_compile_db(src_path, self.project_path)
         if db_path is not None and db_path.is_file():
-            flags = compile_db.load_flags_map(db_path)
+            try:
+                flags = compile_db.load_flags_map(db_path)
+            except (OSError, ValueError, TypeError) as exc:
+                # A present-but-malformed compile_commands.json must not crash or
+                # skip every file: warn and fall back to the configured defines so
+                # extraction still runs.
+                logger.warning(
+                    f"codelinks: failed to read {db_path} ({exc}); "
+                    f"falling back to the configured defines"
+                )
+                return compile_db.defines_to_args(
+                    preproc.defines, preproc.includes, preproc.std
+                )
             args = flags.get(src_path.absolute().resolve())
             if args is not None:
                 return args
@@ -130,9 +142,22 @@ class SourceAnalyse:
             # compiled source absent from the build is skipped (spec §3.3).
             if compile_db.is_translation_unit_source(src_path):
                 return None
-            return compile_db.defines_to_args(preproc.defines, preproc.includes)
-        # No DB found at all — fall back to manual defines applied globally.
-        return compile_db.defines_to_args(preproc.defines, preproc.includes)
+            return compile_db.defines_to_args(
+                preproc.defines, preproc.includes, preproc.std
+            )
+        # No readable DB. `find_compile_db` only ever returns a real file, so a
+        # non-None `db_path` that reaches here is an explicit `compile_commands`
+        # path that is not a readable file (typo/missing): warn and fall back
+        # rather than skip silently. A genuinely absent DB (db_path is None) just
+        # falls back to the manual defines applied globally.
+        if db_path is not None:
+            logger.warning(
+                f"codelinks: compile_commands path {db_path} is not a readable "
+                f"file; falling back to the configured defines"
+            )
+        return compile_db.defines_to_args(
+            preproc.defines, preproc.includes, preproc.std
+        )
 
     def create_src_objects_libclang(self) -> None:
         from sphinx_codelinks.analyse.preproc import (  # noqa: PLC0415
@@ -164,10 +189,10 @@ class SourceAnalyse:
                 # ``.c`` header handed a C++ ``-std`` — now parses as C++ and its
                 # markers extract. This only fires if libclang still cannot load
                 # the file as a translation unit at all; skip it rather than
-                # aborting the whole Sphinx build. Logged at ``info`` (not
-                # ``warning``): under ``sphinx-build -W`` a warning would re-fail
-                # the very builds this guard keeps green.
-                logger.info(
+                # aborting the whole run. Surfaced as a ``warning`` so the silent
+                # data-loss (a file's markers dropped) is visible — accepting that
+                # this fails ``sphinx-build -W``.
+                logger.warning(
                     f"codelinks: skipping {src_path} — libclang could not load it "
                     f"as a translation unit"
                 )

@@ -5,7 +5,9 @@ import pytest
 
 pytest.importorskip("clang.cindex")
 
+from sphinx_codelinks.analyse import analyse as analyse_module
 from sphinx_codelinks.analyse.analyse import SourceAnalyse
+from sphinx_codelinks.analyse.preproc import libclang_parser
 from sphinx_codelinks.config import PreprocessorConfig, SourceAnalyseConfig
 
 FIXTURE = Path(__file__).parent / "data" / "preproc" / "variants_branching.cpp"
@@ -115,6 +117,61 @@ def test_libclang_resilient_to_half_typed_code():
     ids = {n.need["id"] for n in analyse.oneline_needs}
     # All 4 markers survive at the token level even though 2 decls don't parse.
     assert {"IMPL_COMPLETE", "IMPL_HALF", "IMPL_AFTER", "IMPL_MID"} <= ids
+
+
+def test_null_tu_warns_and_skips_but_batch_continues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A file whose translation unit cannot be loaded at all is skipped with a
+    WARNING (not silently), and the rest of the batch still extracts.
+
+    Real sources are recoverable under ``incomplete`` parsing, so the NULL-TU
+    guard is exercised by forcing ``extract_active_comments`` to raise the
+    ``TranslationUnitLoadError`` libclang would raise for an unloadable TU."""
+    import clang.cindex
+
+    good = tmp_path / "good.cpp"
+    good.write_text("// @Good, IMPL_GOOD, impl, [REQ]\n")
+    bad = tmp_path / "bad.cpp"
+    bad.write_text("// @Bad, IMPL_BAD, impl, [REQ]\n")
+    cfg = SourceAnalyseConfig(
+        src_files=[bad, good],
+        src_dir=tmp_path,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(defines=[]),
+    )
+    analyse = SourceAnalyse(cfg)
+    analyse.git_remote_url = None
+    analyse.git_commit_rev = None
+
+    real = libclang_parser.extract_active_comments
+
+    def fake(src_path, args):
+        if Path(src_path).name == "bad.cpp":
+            raise clang.cindex.TranslationUnitLoadError("forced NULL TU")
+        return real(src_path, args)
+
+    monkeypatch.setattr(libclang_parser, "extract_active_comments", fake)
+
+    warnings: list[str] = []
+
+    class _Rec:
+        def warning(self, *_a: object, **_k: object) -> None:
+            warnings.append("w")
+
+        def info(self, *_a: object, **_k: object) -> None:
+            pass
+
+        def debug(self, *_a: object, **_k: object) -> None:
+            pass
+
+    monkeypatch.setattr(analyse_module, "logger", _Rec())
+
+    analyse.run()
+
+    ids = {n.need["id"] for n in analyse.oneline_needs}
+    assert ids == {"IMPL_GOOD"}, "bad file skipped, good file survives"
+    assert warnings, "a NULL translation unit must warn, not skip silently"
 
 
 def test_libclang_active_matches_treesitter_when_all_active():

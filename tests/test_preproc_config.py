@@ -21,6 +21,7 @@ def test_convert_analyse_config_builds_preprocessor():
                 "defines": ["VARIANT_A", "PLATFORM_LINUX=1"],
                 "includes": ["include"],
                 "variant_name": "linux",
+                "std": "c++20",
             },
         }
     )
@@ -29,6 +30,15 @@ def test_convert_analyse_config_builds_preprocessor():
     assert cfg.preprocessor.defines == ["VARIANT_A", "PLATFORM_LINUX=1"]
     assert cfg.preprocessor.includes == [Path("include")]
     assert cfg.preprocessor.variant_name == "linux"
+    assert cfg.preprocessor.std == "c++20"
+
+
+def test_convert_analyse_config_preprocessor_std_defaults_to_cpp17():
+    cfg = convert_analyse_config(
+        {"get_oneline_needs": True, "preprocessor": {"defines": []}}
+    )
+    assert cfg.preprocessor is not None
+    assert cfg.preprocessor.std == "c++17"
 
 
 def test_convert_analyse_config_no_preprocessor_block():

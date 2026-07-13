@@ -1,7 +1,33 @@
 import json
 from pathlib import Path
 
+import pytest
+
+from sphinx_codelinks.analyse import analyse as analyse_module
+from sphinx_codelinks.analyse.analyse import SourceAnalyse
 from sphinx_codelinks.analyse.preproc import compile_db
+from sphinx_codelinks.config import PreprocessorConfig, SourceAnalyseConfig
+
+
+class _RecordingLogger:
+    """Stand-in for the module logger that records warning calls.
+
+    The real ``CodelinksLogger`` is slotted, so its methods can't be
+    monkeypatched on the instance; tests swap the module-level ``logger`` for
+    one of these instead.
+    """
+
+    def __init__(self) -> None:
+        self.warnings: list[str] = []
+
+    def warning(self, *_a: object, **_k: object) -> None:
+        self.warnings.append("warning")
+
+    def info(self, *_a: object, **_k: object) -> None:
+        pass
+
+    def debug(self, *_a: object, **_k: object) -> None:
+        pass
 
 
 def test_find_compile_db_in_build_dir(tmp_path: Path):
@@ -118,6 +144,61 @@ def test_defines_to_args(tmp_path: Path):
     assert "-DX=2" in out
     assert f"-I{(tmp_path / 'inc')}" in out
     assert "-std=c++17" in out
+
+
+def test_malformed_compile_commands_warns_and_falls_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A present-but-malformed compile_commands.json must not crash or skip every
+    file: the resolver warns and falls back to the global defines."""
+    db = tmp_path / "compile_commands.json"
+    db.write_text("{ this is not valid json")
+    src = tmp_path / "case.cpp"
+    src.write_text("// @X, IMPL_X, impl, [REQ]\n")
+    cfg = SourceAnalyseConfig(
+        src_files=[src],
+        src_dir=tmp_path,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(defines=["FALLBACK=1"], compile_commands=db),
+    )
+    analyse = SourceAnalyse(cfg)
+
+    rec = _RecordingLogger()
+    monkeypatch.setattr(analyse_module, "logger", rec)
+
+    args = analyse._resolve_preproc_args(src)  # noqa: SLF001
+
+    assert args is not None, "malformed DB should fall back, not skip the file"
+    assert "-DFALLBACK=1" in args, "should fall back to the global defines"
+    assert rec.warnings, "expected a warning about the malformed compile_commands.json"
+
+
+def test_missing_explicit_compile_commands_warns_and_falls_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """An explicit compile_commands path that is not a readable file must warn
+    and fall back to the global defines (not silently, not skip every file)."""
+    missing = tmp_path / "does_not_exist.json"
+    src = tmp_path / "case.cpp"
+    src.write_text("// @X, IMPL_X, impl, [REQ]\n")
+    cfg = SourceAnalyseConfig(
+        src_files=[src],
+        src_dir=tmp_path,
+        get_oneline_needs=True,
+        preprocessor=PreprocessorConfig(
+            defines=["FALLBACK=1"], compile_commands=missing
+        ),
+    )
+    analyse = SourceAnalyse(cfg)
+
+    rec = _RecordingLogger()
+    monkeypatch.setattr(analyse_module, "logger", rec)
+
+    args = analyse._resolve_preproc_args(src)  # noqa: SLF001
+
+    assert args is not None, "missing DB path should fall back, not skip the file"
+    assert "-DFALLBACK=1" in args, "should fall back to the global defines"
+    assert rec.warnings, "expected a warning about the missing compile_commands path"
 
 
 def test_is_translation_unit_source():

@@ -141,6 +141,14 @@ class PreprocessorConfig:
     )
     """Fallback -I include dirs for the defines path."""
 
+    std: str = field(
+        default="c++17",
+        metadata={"schema": {"type": "string"}},
+    )
+    """C/C++ standard for the standalone/defines parse path (e.g. ``c++17``,
+    ``c++20``, ``c11``); libclang pins ``-x`` to match it. Files resolved from a
+    ``compile_commands.json`` entry use that entry's own ``-std`` instead."""
+
     variant_name: str | None = field(
         default=None, metadata={"schema": {"type": ["string", "null"]}}
     )
@@ -882,6 +890,7 @@ def convert_analyse_config(
                 defines=list(preprocessor_dict.get("defines", [])),  # type: ignore[call-overload]
                 includes=[Path(str(p)) for p in preprocessor_dict.get("includes", [])],  # type: ignore[attr-defined]
                 variant_name=preprocessor_dict.get("variant_name"),  # type: ignore[arg-type]
+                std=str(preprocessor_dict.get("std", "c++17")),
             )
 
     if src_discover:
