@@ -15,7 +15,15 @@ _DROP_WITH_VALUE = {"-o", "-MF", "-MT", "-MQ"}
 _DROP_EXACT = {"-c", "-MMD", "-MD", "-MG", "-MP"}
 # Separate-form flags whose following VALUE token must be kept verbatim (never
 # treated as the input source and stripped by basename).
-_KEEP_WITH_VALUE = {"-include", "-isystem", "-iquote", "-idirafter", "-isysroot", "-x", "-I"}
+_KEEP_WITH_VALUE = {
+    "-include",
+    "-isystem",
+    "-iquote",
+    "-idirafter",
+    "-isysroot",
+    "-x",
+    "-I",
+}
 # Minimum length for joined-form flags like -MFdep.d (prefix length = 3)
 _MIN_JOINED_FLAG_LEN = 3
 

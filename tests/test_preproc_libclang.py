@@ -80,13 +80,11 @@ def test_extract_active_comments_variant_b_active():
 
 def test_extract_active_comments_normalizes_crlf(tmp_path: Path):
     """A block comment from a CRLF-saved source must not carry embedded CR into
-    the extracted text (it would corrupt e.g. multi-line @rst content), matching
+    the extracted text (it would corrupt e.g. multi-line reST-block content),
     the tree-sitter path's CRLF->LF normalization."""
     src = tmp_path / "crlf.cpp"
     src.write_bytes(b"/* line1\r\n@rst\r\nbody\r\n@endrst\r\n*/\r\nint x = 0;\r\n")
-    comments = libclang_parser.extract_active_comments(
-        src, ["-x", "c++", "-std=c++17"]
-    )
+    comments = libclang_parser.extract_active_comments(src, ["-x", "c++", "-std=c++17"])
     assert comments, "expected the block comment to be extracted"
     for c in comments:
         assert b"\r" not in c.text, f"CR leaked into extracted comment: {c.text!r}"
@@ -96,8 +94,8 @@ def test_extract_active_comments_tolerates_non_utf8(tmp_path: Path):
     """A non-UTF-8 byte (past is_text_file's 2 KB sample) must not raise
     UnicodeDecodeError and abort the whole run; the marker must still extract."""
     src = tmp_path / "latin1.cpp"
-    src.write_bytes(b'// @Marker, IMPL_LATIN1, impl, [REQ]\nconst char* s = "caf\xe9";\n')
-    comments = libclang_parser.extract_active_comments(
-        src, ["-x", "c++", "-std=c++17"]
+    src.write_bytes(
+        b'// @Marker, IMPL_LATIN1, impl, [REQ]\nconst char* s = "caf\xe9";\n'
     )
+    comments = libclang_parser.extract_active_comments(src, ["-x", "c++", "-std=c++17"])
     assert comments, "non-UTF-8 source must still yield comments, not raise"

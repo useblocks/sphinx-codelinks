@@ -69,7 +69,7 @@ def extract_active_comments(file_path: Path, args: list[str]) -> list[LibclangCo
         if _is_in_skipped(str(loc.file.name), loc.line, skipped):
             continue  # inactive branch -> excluded
         # Normalize CRLF/CR -> LF, matching get_src_strings on the tree-sitter
-        # path: a block comment (e.g. an @rst span) from a CRLF-saved file would
+        # path: a multi-line block comment (e.g. a reST block) from a CRLF-saved file
         # otherwise carry embedded \r into the extracted marker text.
         spelling = (tok.spelling or "").replace("\r\n", "\n").replace("\r", "\n")
         out.append(LibclangComment(spelling.encode("utf-8"), loc.line - 1))
