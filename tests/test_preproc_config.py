@@ -69,3 +69,24 @@ def test_preprocessor_config_passes_analyse_schema_validation():
     assert cfg.preprocessor is not None
     schema_errors = cfg.check_schema()
     assert not any("preprocessor" in err for err in schema_errors), schema_errors
+
+
+def test_anchor_preproc_paths_resolves_relative_against_base(tmp_path):
+    """Relative compile_commands / include dirs resolve against the config dir
+    (the ``base``), not the process CWD; absolute paths are left unchanged."""
+    from pathlib import Path
+
+    from sphinx_codelinks.config import PreprocessorConfig, anchor_preproc_paths
+
+    base = tmp_path / "cfgdir"
+    abs_inc = tmp_path / "abs_keep"
+    preproc = PreprocessorConfig(
+        compile_commands=Path("build/compile_commands.json"),
+        includes=[Path("include"), abs_inc],
+        defines=["X=1"],
+    )
+    out = anchor_preproc_paths(preproc, base)
+    assert out.compile_commands == (base / "build/compile_commands.json").resolve()
+    assert out.includes[0] == (base / "include").resolve()
+    assert out.includes[1] == abs_inc.resolve()  # already absolute -> unchanged
+    assert out.defines == ["X=1"]  # non-path fields untouched

@@ -13,6 +13,9 @@ _BOUNDARY_MARKERS = (".git", "ubproject.toml", "pyproject.toml")
 _DROP_WITH_VALUE = {"-o", "-MF", "-MT", "-MQ"}
 # Exact flags to drop.
 _DROP_EXACT = {"-c", "-MMD", "-MD", "-MG", "-MP"}
+# Separate-form flags whose following VALUE token must be kept verbatim (never
+# treated as the input source and stripped by basename).
+_KEEP_WITH_VALUE = {"-include", "-isystem", "-iquote", "-idirafter", "-isysroot", "-x", "-I"}
 # Minimum length for joined-form flags like -MFdep.d (prefix length = 3)
 _MIN_JOINED_FLAG_LEN = 3
 
@@ -48,12 +51,27 @@ def filter_args(argv: list[str], input_file: str) -> list[str]:
     """Keep only flags libclang needs; drop the compiler, -c/-o, depfiles, input."""
     out: list[str] = []
     skip_next = False
-    input_names = {input_file, str(Path(input_file).name), str(Path(input_file))}
-    for i, arg in enumerate(argv):
-        if i == 0:
-            continue  # argv[0] == compiler
+    keep_next_value = False
+    input_base = Path(input_file).name
+    # Skip leading non-flag tokens. argv[0] is the compiler, but a build may prefix
+    # it with a launcher (ccache/sccache/distcc), so drop every leading non-flag
+    # token up to the first flag — otherwise the real compiler leaks in as a
+    # positional and libclang treats it as a second input (a NULL TU that silently
+    # drops the file). The input source (also a non-flag positional) is stripped by
+    # name below.
+    in_leading = True
+    for arg in argv:
+        if in_leading:
+            if not arg.startswith("-"):
+                continue
+            in_leading = False
         if skip_next:
             skip_next = False
+            continue
+        if keep_next_value:
+            # Value of a separate-form -include/-isystem/-I/... — keep verbatim.
+            keep_next_value = False
+            out.append(arg)
             continue
         if arg in _DROP_WITH_VALUE:
             skip_next = True
@@ -62,7 +80,14 @@ def filter_args(argv: list[str], input_file: str) -> list[str]:
             continue
         if arg.startswith(("-MF", "-MT", "-MQ")) and len(arg) > _MIN_JOINED_FLAG_LEN:
             continue  # joined form, e.g. -MFdep.d
-        if arg in input_names:
+        if arg in _KEEP_WITH_VALUE:
+            out.append(arg)
+            keep_next_value = True
+            continue
+        # Strip the TU source positional (exact match, or same basename).
+        if not arg.startswith("-") and (
+            arg in (input_file, input_base) or Path(arg).name == input_base
+        ):
             continue
         out.append(arg)
     return out
@@ -101,7 +126,7 @@ def defines_to_args(
     carrying oneline need markers — parse and extract instead of failing. (C
     sources parse as C++ well enough for comment/marker extraction.)
     """
-    lang = "c++" if std.startswith("c++") else "c"
+    lang = "c++" if std.startswith(("c++", "gnu++")) else "c"
     args = ["-x", lang, f"-std={std}"]
     args += [f"-D{d}" for d in defines]
     args += [f"-I{inc}" for inc in includes]

@@ -80,6 +80,9 @@ class SourceAnalyse:
         )
         self.project_path: Path = self.git_root or self.analyse_config.src_dir
         self.oneline_warnings: list[AnalyseWarning] = []
+        # Per-run memo of parsed compile_commands.json, keyed by DB path, so the
+        # database is read once per run instead of once per source file.
+        self._flags_map_cache: dict[Path, dict[Path, list[str]] | None] = {}
 
     def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
         """Load source files and extract their content."""
@@ -110,6 +113,30 @@ class SourceAnalyse:
             self.src_files.append(src_file)
             self.src_comments.extend(src_comments)
 
+    def _flags_map_for(self, db_path: Path) -> dict[Path, list[str]] | None:
+        """Return the parsed compile_commands.json for ``db_path``, memoized.
+
+        The database is read and parsed once per run instead of once per source
+        file (O(files x entries) -> O(entries)). A present-but-malformed or
+        unreadable database is warned once and cached as ``None`` so callers fall
+        back to the configured defines without re-reading or re-warning per file.
+        """
+        from sphinx_codelinks.analyse.preproc import compile_db  # noqa: PLC0415
+
+        if db_path in self._flags_map_cache:
+            return self._flags_map_cache[db_path]
+        try:
+            flags = compile_db.load_flags_map(db_path)
+        except (OSError, ValueError, TypeError) as exc:
+            logger.warning(
+                f"codelinks: failed to read {db_path} ({exc}); "
+                f"falling back to the configured defines"
+            )
+            self._flags_map_cache[db_path] = None
+            return None
+        self._flags_map_cache[db_path] = flags
+        return flags
+
     def _resolve_preproc_args(self, src_path: Path) -> list[str] | None:
         from sphinx_codelinks.analyse.preproc import compile_db  # noqa: PLC0415
 
@@ -120,16 +147,10 @@ class SourceAnalyse:
         if db_path is None:
             db_path = compile_db.find_compile_db(src_path, self.project_path)
         if db_path is not None and db_path.is_file():
-            try:
-                flags = compile_db.load_flags_map(db_path)
-            except (OSError, ValueError, TypeError) as exc:
-                # A present-but-malformed compile_commands.json must not crash or
-                # skip every file: warn and fall back to the configured defines so
-                # extraction still runs.
-                logger.warning(
-                    f"codelinks: failed to read {db_path} ({exc}); "
-                    f"falling back to the configured defines"
-                )
+            flags = self._flags_map_for(db_path)
+            if flags is None:
+                # Present-but-malformed/unreadable DB (warned once in the helper):
+                # fall back to the configured defines so extraction still runs.
                 return compile_db.defines_to_args(
                     preproc.defines, preproc.includes, preproc.std
                 )

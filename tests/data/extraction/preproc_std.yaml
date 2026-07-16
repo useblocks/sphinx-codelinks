@@ -64,3 +64,14 @@ c11_static_assert_std_c11:
   source: |
     // @C11 _Static_assert, IMPL_C11, impl, [REQ]
     _Static_assert(sizeof(int) >= 2, "int too small");
+
+gnucpp17_std_gnu_cpp17:
+  lang: cpp
+  engine: libclang
+  config: default
+  defines: []
+  std: "gnu++17"
+  extract: [oneline]
+  source: |
+    // @GNU C++17 dialect, IMPL_GNUCPP17, impl, [REQ]
+    inline int global_counter = 0;

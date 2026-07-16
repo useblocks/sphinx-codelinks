@@ -116,3 +116,25 @@ malformed_db_falls_back_to_defines_libclang:
   # The compile_commands.json is present but MALFORMED. Extraction must warn and
   # fall back to the global defines (rather than crash or skip every file), so the
   # #ifdef branch is active via the fallback: IMPL_BASE + IMPL_FALLBACK.
+
+launcher_prefix_uses_db_flags_libclang:
+  lang: cpp
+  engine: libclang
+  config: default
+  defines: []
+  extract: [oneline]
+  compile_commands:
+    - file: case.cpp
+      arguments: ["ccache", "clang++", "-std=c++17", "-DVARIANT_A=1", "-c", "case.cpp"]
+  source: |
+    // @Always, IMPL_ALWAYS, impl, [REQ]
+    #ifdef VARIANT_A
+    // @Variant A, IMPL_VAR_A, impl, [REQ]
+    #else
+    // @Variant B, IMPL_VAR_B, impl, [REQ]
+    #endif
+  # A compiler-launcher prefix (ccache) precedes the real compiler. filter_args
+  # must drop BOTH leading tokens so libclang receives a single input; -DVARIANT_A
+  # from the DB then activates the #ifdef branch: IMPL_ALWAYS, IMPL_VAR_A. With the
+  # launcher bug (dropping only argv[0]) the compiler leaks in as a second input
+  # and the TU fails to load, dropping every marker.

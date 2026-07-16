@@ -1,5 +1,5 @@
 from collections import deque
-from dataclasses import MISSING, dataclass, field, fields
+from dataclasses import MISSING, dataclass, field, fields, replace
 from enum import Enum
 from pathlib import Path
 from typing import Any, Literal, TypedDict, cast
@@ -153,6 +153,23 @@ class PreprocessorConfig:
         default=None, metadata={"schema": {"type": ["string", "null"]}}
     )
     """Label echoed into run-level output."""
+
+
+def anchor_preproc_paths(preproc: PreprocessorConfig, base: Path) -> PreprocessorConfig:
+    """Resolve a preprocessor config's ``compile_commands`` and ``includes``
+    against ``base`` (the config file's directory), so a relative path resolves
+    against the TOML file rather than the process CWD — matching ``src_dir`` /
+    ``git_root``. Absolute paths are left unchanged.
+    """
+    return replace(
+        preproc,
+        compile_commands=(
+            (base / preproc.compile_commands).resolve()
+            if preproc.compile_commands is not None
+            else None
+        ),
+        includes=[(base / inc).resolve() for inc in preproc.includes],
+    )
 
 
 class FieldConfig(TypedDict, total=False):

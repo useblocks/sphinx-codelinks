@@ -146,6 +146,40 @@ def test_defines_to_args(tmp_path: Path):
     assert "-std=c++17" in out
 
 
+def test_filter_args_strips_compiler_launcher_prefix():
+    """A launcher prefix (ccache/sccache/distcc) precedes the real compiler.
+
+    Both leading non-flag tokens must be dropped; leaving the compiler in makes
+    libclang treat it as a second input and return a NULL translation unit.
+    """
+    argv = ["ccache", "/usr/bin/g++", "-DA=1", "-c", "a.cpp"]
+    assert compile_db.filter_args(argv, "a.cpp") == ["-DA=1"]
+
+
+def test_filter_args_keeps_separate_form_value_matching_input_basename():
+    """The value of a separate-form flag (-include/-isystem/-I/...) must be kept
+    even when it shares the input's basename; only the positional input is
+    stripped."""
+    argv = ["clang++", "-DA=1", "-include", "/compat/foo.cpp", "-c", "foo.cpp"]
+    assert compile_db.filter_args(argv, "foo.cpp") == [
+        "-DA=1",
+        "-include",
+        "/compat/foo.cpp",
+    ]
+
+
+def test_defines_to_args_pins_cpp_for_gnu_cpp_dialect():
+    """A GNU C++ dialect (gnu++17/gnu++20) is a C++ standard; pairing it with
+    ``-x c`` makes clang reject it and return a NULL TU. It must resolve to C++."""
+    assert compile_db.defines_to_args([], [], "gnu++17") == [
+        "-x",
+        "c++",
+        "-std=gnu++17",
+    ]
+    # A GNU C dialect stays C.
+    assert compile_db.defines_to_args([], [], "gnu11") == ["-x", "c", "-std=gnu11"]
+
+
 def test_malformed_compile_commands_warns_and_falls_back(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
