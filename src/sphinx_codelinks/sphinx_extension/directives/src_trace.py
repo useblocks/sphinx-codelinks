@@ -128,6 +128,13 @@ class SourceTracingDirective(SphinxDirective):
         preprocessor = base_analyse_config.preprocessor
         if preprocessor is not None:
             preprocessor = anchor_preproc_paths(preprocessor, conf_dir)
+            # Editing an explicitly-configured compile_commands.json changes the
+            # flags (hence which #if branches are active, hence the extracted
+            # markers), so register it as a build dependency to trigger a rebuild.
+            # (Auto-discovered databases are located per-file inside the analysis
+            # and are not tracked here.)
+            if preprocessor.compile_commands is not None:
+                self.env.note_dependency(str(preprocessor.compile_commands))
         analyse_config = replace(
             base_analyse_config,
             src_dir=src_dir,

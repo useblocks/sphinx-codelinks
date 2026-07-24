@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 
 from sphinx_codelinks.analyse.preproc import loader
+from sphinx_codelinks.analyse.preproc.loader import SkippedRange
 
 
 @dataclass
@@ -28,9 +30,14 @@ class LibclangComment:
         self.start_point = _Point(row)
 
 
-def _is_in_skipped(file_path: str, line: int, skipped) -> bool:  # type: ignore[no-untyped-def]
+def _is_in_skipped(file_path: str, line: int, skipped: list[SkippedRange]) -> bool:
+    # Normalise both sides before comparing: clang can spell the same file
+    # differently for a skipped-range boundary vs a token location (e.g. ``./x``
+    # vs ``x``, or ``a/../b``), which would make a naive string compare miss and
+    # wrongly treat an inactive comment as active.
+    target = os.path.normpath(file_path)
     for sr in skipped:
-        if sr.file is None or str(sr.file) != file_path:
+        if sr.file is None or os.path.normpath(str(sr.file)) != target:
             continue
         if sr.start_line <= line <= sr.end_line:
             return True
