@@ -22,7 +22,6 @@ def test_convert_analyse_config_builds_preprocessor():
                 "compile_commands": "build/compile_commands.json",
                 "defines": ["VARIANT_A", "PLATFORM_LINUX=1"],
                 "includes": ["include"],
-                "variant_name": "linux",
                 "std": "c++20",
             },
         }
@@ -31,7 +30,6 @@ def test_convert_analyse_config_builds_preprocessor():
     assert cfg.preprocessor.compile_commands == Path("build/compile_commands.json")
     assert cfg.preprocessor.defines == ["VARIANT_A", "PLATFORM_LINUX=1"]
     assert cfg.preprocessor.includes == [Path("include")]
-    assert cfg.preprocessor.variant_name == "linux"
     assert cfg.preprocessor.std == "c++20"
 
 

@@ -153,11 +153,6 @@ class PreprocessorConfig:
     ``c++20``, ``c11``); libclang pins ``-x`` to match it. Files resolved from a
     ``compile_commands.json`` entry use that entry's own ``-std`` instead."""
 
-    variant_name: str | None = field(
-        default=None, metadata={"schema": {"type": ["string", "null"]}}
-    )
-    """Label echoed into run-level output."""
-
 
 def anchor_preproc_paths(preproc: PreprocessorConfig, base: Path) -> PreprocessorConfig:
     """Resolve a preprocessor config's ``compile_commands`` and ``includes``
@@ -874,7 +869,7 @@ def _validate_preprocessor_dict(preproc: dict[str, object]) -> None:
                 f"[preprocessor] {key} must be a list of strings, "
                 f"got {type(value).__name__}: {value!r}"
             )
-    for key in ("compile_commands", "variant_name", "std"):
+    for key in ("compile_commands", "std"):
         value = preproc.get(key)
         if value is not None and not isinstance(value, str):
             raise TypeError(
@@ -941,7 +936,6 @@ def convert_analyse_config(
                 ),
                 defines=list(preprocessor_dict.get("defines", [])),  # type: ignore[call-overload]
                 includes=[Path(str(p)) for p in preprocessor_dict.get("includes", [])],  # type: ignore[attr-defined]
-                variant_name=preprocessor_dict.get("variant_name"),  # type: ignore[arg-type]
                 std=str(preprocessor_dict.get("std", DEFAULT_CPP_STD)),
             )
 

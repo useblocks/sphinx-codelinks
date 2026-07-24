@@ -599,7 +599,6 @@ limitations.
    compile_commands = "build/compile_commands.json"
    defines = ["VARIANT_A", "PLATFORM_LINUX"]
    includes = ["include", "third_party/include"]
-   variant_name = "variant_a"
 
 **Configuration fields:**
 
@@ -613,4 +612,3 @@ limitations.
   database) and to all files when no database is found.
 - ``includes`` (``list[str]``) - ``-I`` include directories used together with
   ``defines`` on the fallback path.
-- ``variant_name`` (``str``) - Optional label echoed into the run-level output.
