@@ -291,3 +291,29 @@ With ``defines = ["VARIANT_A"]`` both ``IMPL_BASE`` and ``IMPL_VAR_A`` are extra
 With ``defines = []`` only ``IMPL_BASE`` is extracted — the ``#ifdef VARIANT_A`` block is
 inactive, so its need is dropped. The include guard (``#ifndef FEATURE_HPP``) is always
 active when the header is parsed on its own, so ``IMPL_BASE`` is never suppressed by it.
+
+Variant handling is the caller's job
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Which preprocessor branches are active — and therefore which need markers are in
+scope — is decided entirely by the ``-D`` macros libclang sees (from
+``compile_commands.json`` for a compiled source, or from ``defines`` for headers
+and the standalone path). **Sphinx-CodeLinks** does not model, generate, or
+reconcile build variants itself.
+
+For the result to be meaningful, the macros fed to the extractor and the macros
+that select the variant in the code must come from the **same source of truth** —
+whatever drives your variant management (Kconfig, pure::variants, a home-grown
+generator). Generate the ``compile_commands.json`` / ``defines`` for one variant
+from that source, run the analysis once, and the extracted markers are exactly
+the ones active in that variant. Keeping the inputs consistent is the caller's
+responsibility.
+
+Limitations
+~~~~~~~~~~~
+
+The command line of a ``compile_commands.json`` entry is parsed for Clang/GCC-style
+flags (``-D``, ``-I``, ``-std=`` …). MSVC ``cl.exe`` slash-style flags (``/D``,
+``/I``, ``/std:`` …) are **not** recognised, so a database generated for the MSVC
+compiler driver yields no defines or include dirs. Generate the database with
+``clang`` / ``clang-cl`` (which emit Clang-style flags) for use with this engine.
