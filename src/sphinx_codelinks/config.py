@@ -29,6 +29,10 @@ COMMENT_MARKERS = {
 }
 ESCAPE = "\\"
 
+# Default C/C++ standard for the standalone/defines parse path when no
+# compile_commands.json entry supplies one.
+DEFAULT_CPP_STD = "c++17"
+
 
 class CommentCategory(str, Enum):
     comment = "comment"
@@ -142,7 +146,7 @@ class PreprocessorConfig:
     """Fallback -I include dirs for the defines path."""
 
     std: str = field(
-        default="c++17",
+        default=DEFAULT_CPP_STD,
         metadata={"schema": {"type": "string"}},
     )
     """C/C++ standard for the standalone/defines parse path (e.g. ``c++17``,
@@ -938,7 +942,7 @@ def convert_analyse_config(
                 defines=list(preprocessor_dict.get("defines", [])),  # type: ignore[call-overload]
                 includes=[Path(str(p)) for p in preprocessor_dict.get("includes", [])],  # type: ignore[attr-defined]
                 variant_name=preprocessor_dict.get("variant_name"),  # type: ignore[arg-type]
-                std=str(preprocessor_dict.get("std", "c++17")),
+                std=str(preprocessor_dict.get("std", DEFAULT_CPP_STD)),
             )
 
     if src_discover:

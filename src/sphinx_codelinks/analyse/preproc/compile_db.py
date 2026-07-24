@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import shlex
 
+from sphinx_codelinks.config import DEFAULT_CPP_STD
+
 _DB_NAME = "compile_commands.json"
 _BOUNDARY_MARKERS = (".git", "ubproject.toml", "pyproject.toml")
 
@@ -122,7 +124,7 @@ def load_flags_map(db_path: Path) -> dict[Path, list[str]]:
 
 
 def defines_to_args(
-    defines: list[str], includes: list[Path], std: str = "c++17"
+    defines: list[str], includes: list[Path], std: str = DEFAULT_CPP_STD
 ) -> list[str]:
     """Build a global flag list for parsing a file standalone.
 

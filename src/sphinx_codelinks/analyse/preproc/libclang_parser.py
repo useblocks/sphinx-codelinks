@@ -30,18 +30,30 @@ class LibclangComment:
         self.start_point = _Point(row)
 
 
-def _is_in_skipped(file_path: str, line: int, skipped: list[SkippedRange]) -> bool:
-    # Normalise both sides before comparing: clang can spell the same file
-    # differently for a skipped-range boundary vs a token location (e.g. ``./x``
-    # vs ``x``, or ``a/../b``), which would make a naive string compare miss and
-    # wrongly treat an inactive comment as active.
-    target = os.path.normpath(file_path)
+def _group_skipped(skipped: list[SkippedRange]) -> dict[str, list[tuple[int, int]]]:
+    """Group skipped ranges by normalised file path, built once per TU.
+
+    A per-comment membership test then scans only its own file's ranges instead
+    of every range in the translation unit (headers included). Normalising the
+    key (``os.path.normpath``) also fixes clang spelling the same file two ways
+    (``./x`` vs ``x``, ``a/../b``), which a naive compare would miss.
+    """
+    grouped: dict[str, list[tuple[int, int]]] = {}
     for sr in skipped:
-        if sr.file is None or os.path.normpath(str(sr.file)) != target:
-            continue
-        if sr.start_line <= line <= sr.end_line:
-            return True
-    return False
+        if sr.file is not None:
+            grouped.setdefault(os.path.normpath(str(sr.file)), []).append(
+                (sr.start_line, sr.end_line)
+            )
+    return grouped
+
+
+def _is_in_skipped(
+    file_path: str, line: int, grouped: dict[str, list[tuple[int, int]]]
+) -> bool:
+    return any(
+        start <= line <= end
+        for start, end in grouped.get(os.path.normpath(file_path), ())
+    )
 
 
 def extract_active_comments(file_path: Path, args: list[str]) -> list[LibclangComment]:
@@ -52,7 +64,7 @@ def extract_active_comments(file_path: Path, args: list[str]) -> list[LibclangCo
     cx = loader.load_clang_cindex()
     index = cx.Index.create()
     tu = index.parse(str(file_path), args=args, options=loader.PARSE_OPTIONS)
-    skipped = loader.get_all_skipped_ranges(tu)
+    skipped = _group_skipped(loader.get_all_skipped_ranges(tu))
 
     # Read the raw source bytes once. We derive the token extent from them
     # (lossily, so a non-UTF-8 byte can't raise and abort the run) AND slice each

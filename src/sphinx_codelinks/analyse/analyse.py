@@ -26,6 +26,7 @@ from sphinx_codelinks.config import (
     SourceAnalyseConfig,
 )
 from sphinx_codelinks.logger import get_logger
+from sphinx_codelinks.source_discover.config import CommentType
 
 logger = get_logger(__name__)
 
@@ -140,6 +141,9 @@ class SourceAnalyse:
     def _resolve_preproc_args(self, src_path: Path) -> list[str] | None:
         from sphinx_codelinks.analyse.preproc import compile_db  # noqa: PLC0415
 
+        # `run()` calls this (via create_src_objects_libclang) only when
+        # `preprocessor is not None`, but keep the guard: it narrows the type for
+        # the checker and is a cheap defense (an `assert` would trip bandit S101).
         preproc = self.analyse_config.preprocessor
         if preproc is None:
             return []
@@ -493,8 +497,6 @@ class SourceAnalyse:
             json.dump(to_dump, f)
 
     def run(self) -> None:
-        from sphinx_codelinks.source_discover.config import CommentType  # noqa: PLC0415
-
         if (
             self.analyse_config.preprocessor is not None
             and self.analyse_config.comment_type == CommentType.cpp
