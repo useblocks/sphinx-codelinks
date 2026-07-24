@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from sphinx_codelinks.config import (
     PreprocessorConfig,
     SourceAnalyseConfig,
@@ -44,6 +46,37 @@ def test_convert_analyse_config_preprocessor_std_defaults_to_cpp17():
 def test_convert_analyse_config_no_preprocessor_block():
     cfg = convert_analyse_config({"get_oneline_needs": True})
     assert cfg.preprocessor is None
+
+
+def test_preprocessor_bare_string_defines_is_rejected():
+    """A mistyped scalar must error, not silently coerce to per-character flags.
+
+    Without validation, ``defines = "cpp17"`` becomes ``list("cpp17")`` →
+    ``["c", "p", "p", "1", "7"]`` → five bogus ``-D`` flags.
+    """
+    with pytest.raises(TypeError, match="defines must be a list of strings"):
+        convert_analyse_config(
+            {"get_oneline_needs": True, "preprocessor": {"defines": "cpp17"}}
+        )
+
+
+def test_preprocessor_non_string_list_entries_are_rejected():
+    with pytest.raises(TypeError, match="defines must be a list of strings"):
+        convert_analyse_config(
+            {"get_oneline_needs": True, "preprocessor": {"defines": ["OK", 1]}}
+        )
+
+
+def test_preprocessor_bare_string_includes_is_rejected():
+    with pytest.raises(TypeError, match="includes must be a list of strings"):
+        convert_analyse_config(
+            {"get_oneline_needs": True, "preprocessor": {"includes": "include"}}
+        )
+
+
+def test_preprocessor_non_string_std_is_rejected():
+    with pytest.raises(TypeError, match="std must be a string"):
+        convert_analyse_config({"get_oneline_needs": True, "preprocessor": {"std": 17}})
 
 
 def test_preprocessor_config_passes_analyse_schema_validation():

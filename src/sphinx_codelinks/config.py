@@ -850,6 +850,35 @@ def convert_src_discovery_config(
     return src_discover_config
 
 
+def _validate_preprocessor_dict(preproc: dict[str, object]) -> None:
+    """Validate the schema-less ``[preprocessor]`` TOML section.
+
+    The section has no ``TypedDict``, so a mistyped scalar would otherwise be
+    coerced into garbage instead of reported: e.g. ``defines = "X"`` (a bare
+    string) becomes ``list("X") == ["X"]`` — or worse, ``defines = "cpp17"``
+    becomes ``["c", "p", "p", "1", "7"]`` → five bogus ``-D`` flags. Fail loud.
+
+    :param preproc: the raw ``[preprocessor]`` mapping from TOML.
+    :raises TypeError: if a key has the wrong type.
+    """
+    for key in ("defines", "includes"):
+        value = preproc.get(key)
+        if value is not None and (
+            not isinstance(value, list) or not all(isinstance(x, str) for x in value)
+        ):
+            raise TypeError(
+                f"[preprocessor] {key} must be a list of strings, "
+                f"got {type(value).__name__}: {value!r}"
+            )
+    for key in ("compile_commands", "variant_name", "std"):
+        value = preproc.get(key)
+        if value is not None and not isinstance(value, str):
+            raise TypeError(
+                f"[preprocessor] {key} must be a string, "
+                f"got {type(value).__name__}: {value!r}"
+            )
+
+
 def convert_analyse_config(
     config_dict: AnalyseSectionConfigType | None,
     src_discover: SourceDiscover | None = None,
@@ -896,8 +925,10 @@ def convert_analyse_config(
         preprocessor_dict = config_dict.get("preprocessor")
         if preprocessor_dict is not None:
             # The preprocessor section has no TypedDict; its values are dynamic
-            # TOML (typed ``object``), so the list/iter/assign below need targeted
-            # ignores matching the concrete errors mypy reports for ``object``.
+            # TOML (typed ``object``), so validate the shapes up front (a mistyped
+            # scalar would otherwise coerce into garbage flags) and keep the
+            # targeted ignores matching the concrete errors mypy reports.
+            _validate_preprocessor_dict(preprocessor_dict)
             analyse_config_dict["preprocessor"] = PreprocessorConfig(
                 compile_commands=(
                     Path(str(preprocessor_dict["compile_commands"]))
