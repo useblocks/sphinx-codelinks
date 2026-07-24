@@ -54,12 +54,13 @@ def extract_active_comments(file_path: Path, args: list[str]) -> list[LibclangCo
     tu = index.parse(str(file_path), args=args, options=loader.PARSE_OPTIONS)
     skipped = loader.get_all_skipped_ranges(tu)
 
-    # Read lossily (errors="replace") purely to bound the token extent: a
-    # non-UTF-8 byte (e.g. a Latin-1 comment) must not raise UnicodeDecodeError
-    # and abort the whole run — is_text_file only sampled the first 2 KB.
-    line_count = len(
-        file_path.read_text(encoding="utf-8", errors="replace").splitlines()
-    )
+    # Read the raw source bytes once. We derive the token extent from them
+    # (lossily, so a non-UTF-8 byte can't raise and abort the run) AND slice each
+    # comment's text out of them by byte offset below — never via ``tok.spelling``,
+    # which decodes the comment as strict UTF-8 and raises UnicodeDecodeError on a
+    # non-UTF-8 byte inside a comment.
+    raw = file_path.read_bytes()
+    line_count = len(raw.decode("utf-8", errors="replace").splitlines())
     main = tu.get_file(str(file_path))
     extent = cx.SourceRange.from_locations(
         cx.SourceLocation.from_position(tu, main, 1, 1),
@@ -75,9 +76,14 @@ def extract_active_comments(file_path: Path, args: list[str]) -> list[LibclangCo
             continue
         if _is_in_skipped(str(loc.file.name), loc.line, skipped):
             continue  # inactive branch -> excluded
-        # Normalize CRLF/CR -> LF, matching get_src_strings on the tree-sitter
-        # path: a multi-line block comment (e.g. a reST block) from a CRLF-saved file
-        # otherwise carry embedded \r into the extracted marker text.
-        spelling = (tok.spelling or "").replace("\r\n", "\n").replace("\r", "\n")
+        # Slice the comment text from the raw bytes by offset and decode lossily
+        # (not via tok.spelling, which raises on a non-UTF-8 byte in the comment).
+        # Then normalize CRLF/CR -> LF, matching get_src_strings on the tree-sitter
+        # path: a multi-line block comment (e.g. a reST block) from a CRLF-saved
+        # file otherwise carries embedded \r into the extracted marker text.
+        text = raw[tok.extent.start.offset : tok.extent.end.offset].decode(
+            "utf-8", errors="replace"
+        )
+        spelling = text.replace("\r\n", "\n").replace("\r", "\n")
         out.append(LibclangComment(spelling.encode("utf-8"), loc.line - 1))
     return out

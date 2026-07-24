@@ -99,3 +99,19 @@ def test_extract_active_comments_tolerates_non_utf8(tmp_path: Path):
     )
     comments = libclang_parser.extract_active_comments(src, ["-x", "c++", "-std=c++17"])
     assert comments, "non-UTF-8 source must still yield comments, not raise"
+
+
+def test_extract_active_comments_tolerates_non_utf8_inside_comment(tmp_path: Path):
+    """A non-UTF-8 byte INSIDE a comment must not raise UnicodeDecodeError.
+
+    ``tok.spelling`` decodes the comment token as strict UTF-8 and raises on the
+    0xE9 byte; slicing the text from the raw source bytes and decoding lossily
+    keeps the (ASCII) marker id intact.
+    """
+    src = tmp_path / "latin1_comment.cpp"
+    # 0xE9 (Latin-1 'é') lives in the marker comment's title, not the code.
+    src.write_bytes(b"// @Caf\xe9 need, IMPL_CMT, impl, [REQ]\nint x;\n")
+    comments = libclang_parser.extract_active_comments(src, ["-x", "c++", "-std=c++17"])
+    assert comments, "a non-UTF-8 byte in a comment must not drop the comment"
+    joined = b" ".join(c.text for c in comments)
+    assert b"IMPL_CMT" in joined, f"marker id lost: {joined!r}"
