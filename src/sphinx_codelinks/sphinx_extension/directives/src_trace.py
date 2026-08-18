@@ -6,13 +6,15 @@ from typing import Any, ClassVar, cast
 
 from docutils import nodes
 from docutils.parsers.rst import directives
+from docutils.statemachine import StringList
 from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
+from sphinx.util.nodes import nested_parse_with_titles
 from sphinx_needs.api import add_need  # type: ignore[import-untyped]
 from sphinx_needs.utils import add_doc  # type: ignore[import-untyped]
 
 from sphinx_codelinks.analyse.analyse import SourceAnalyse
-from sphinx_codelinks.analyse.models import OneLineNeed
+from sphinx_codelinks.analyse.models import MarkedRst, OneLineNeed
 from sphinx_codelinks.config import (
     CodeLinksConfig,
     CodeLinksProjectConfigType,
@@ -340,4 +342,72 @@ class SourceTracingDirective(SphinxDirective):
                             oneline_need.source_map["start"]["row"] + 1
                         ] = f"{docs_href}#{oneline_need.need['id']}"
 
+        for marked_rst in src_analyse.marked_rst:
+            rendered_needs.extend(
+                self._render_marked_rst(marked_rst, src_analyse, local_url_field, dirs)
+            )
+
         return rendered_needs
+
+    def _render_marked_rst(
+        self,
+        marked_rst: MarkedRst,
+        src_analyse: SourceAnalyse,
+        local_url_field: str | None,
+        dirs: dict[str, Path],
+    ) -> list[nodes.Node]:
+        """Parse a marked-RST block inline into the doctree.
+
+        The RST content extracted from the source comment is parsed with
+        ``nested_parse_with_titles`` so the author has full control over what
+        nodes are produced (needs, cross-references, admonitions, ...). The
+        block is also registered in :data:`file_lineno_href.mappings` so the
+        generated source-code page links the marker line back to the current
+        document.
+
+        :param marked_rst: The extracted marked-RST block.
+        :param src_analyse: The active source analysis instance.
+        :param local_url_field: Configured local URL field name, or ``None``.
+        :param dirs: Directory mapping used by :meth:`render_needs`.
+        :return: The docutils nodes produced by parsing the RST block.
+        """
+        filepath = src_analyse.analyse_config.src_dir / marked_rst.filepath
+        target_filepath = dirs["target_dir"] / filepath.relative_to(dirs["src_dir"])
+
+        if local_url_field:
+            # Copy the source file to the build tree so the generated source
+            # page (see ``generate_code_page`` on ``html-collect-pages``) can
+            # render it. Mirrors the one-line-need branch above.
+            target_filepath.parent.mkdir(parents=True, exist_ok=True)
+            target_filepath.write_text(filepath.read_text())
+
+        container = nodes.container()
+        container["classes"].append("src-trace-marked-rst")
+
+        # ``StringList`` requires a per-line source anchor so warnings emitted
+        # by nested_parse point back to the original source file/line.
+        source_ref = str(filepath)
+        start_row = marked_rst.source_map["start"]["row"]
+        rst_lines = marked_rst.rst.splitlines()
+        string_list = StringList(
+            rst_lines,
+            items=[
+                (source_ref, start_row + offset) for offset in range(len(rst_lines))
+            ],
+        )
+
+        nested_parse_with_titles(self.state, string_list, container)
+
+        if local_url_field:
+            # Point the source page anchor at the current document so users can
+            # navigate from the highlighted source line back to the rendered
+            # RST. Marked-RST blocks are not guaranteed to define a need id, so
+            # we deliberately link to the containing doc only.
+            _, docs_href = get_rel_path(
+                Path(self.env.docname), target_filepath, dirs["out_dir"]
+            )
+            file_lineno_href.mappings.setdefault(str(target_filepath), {})[
+                start_row + 1
+            ] = str(docs_href)
+
+        return list(container.children)

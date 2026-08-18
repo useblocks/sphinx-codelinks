@@ -1,0 +1,5 @@
+<document source="<source>">
+    <target anonymous="" ids="IMPL_MRST_BASIC_1" refid="IMPL_MRST_BASIC_1">
+    <Need classes="need need-impl" ids="IMPL_MRST_BASIC_1" refid="IMPL_MRST_BASIC_1">
+        <paragraph>
+            Body paragraph inside the marked RST block.

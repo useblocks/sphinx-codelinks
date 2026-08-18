@@ -3,8 +3,6 @@
 Directive
 =========
 
-.. attention:: ``src-trace`` directive currently only supports :ref:`one-line need definition <oneline>`.
-
 ``CodeLinks`` provides ``src-trace`` directive and it can be used in the following ways:
 
 .. code-block:: rst
@@ -76,3 +74,37 @@ The needs defined in source code are extracted and rendered to:
    :directory: ./discharge
 
 To have a more customized configuration of ``CodeLinks``, please refer to :ref:`configuration <configuration>`.
+
+Marked reStructuredText
+-----------------------
+
+In addition to :ref:`one-line needs <oneline>`, the ``src-trace`` directive can
+render :ref:`marked reStructuredText <marked_rst>` blocks extracted from source
+code comments. Marked-RST support is opt-in and requires enabling
+``get_rst = true`` for the project in your ``src_trace.toml`` (or via
+``src_trace_projects`` in ``conf.py``).
+
+.. code-block:: toml
+   :caption: src_trace.toml
+
+   [codelinks.projects.dcdc.analyse]
+   get_rst = true
+
+Each marked block is parsed inline into the current document, so the author has
+full control over what is emitted — including custom directives such as
+``.. impl::`` from sphinx-needs, cross-references, admonitions, or plain
+paragraphs. Example marker in C++:
+
+.. code-block:: cpp
+
+   /*
+   @rst
+   .. impl:: implement dummy function 1
+      :id: IMPL_71
+   @endrst
+   */
+   void dummy_func1() {}
+
+When source page generation is enabled (``set_local_url = true``), the source
+file line containing the marker is linked back to the document that hosts the
+``src-trace`` directive.
