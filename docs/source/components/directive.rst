@@ -75,11 +75,13 @@ The needs defined in source code are extracted and rendered to:
 
 To have a more customized configuration of ``CodeLinks``, please refer to :ref:`configuration <configuration>`.
 
+.. _marked_rst:
+
 Marked reStructuredText
 -----------------------
 
 In addition to :ref:`one-line needs <oneline>`, the ``src-trace`` directive can
-render :ref:`marked reStructuredText <marked_rst>` blocks extracted from source
+render marked reStructuredText blocks extracted from source
 code comments. Marked-RST support is opt-in and requires enabling
 ``get_rst = true`` for the project in your ``src_trace.toml`` (or via
 ``src_trace_projects`` in ``conf.py``).
