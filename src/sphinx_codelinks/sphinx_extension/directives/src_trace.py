@@ -9,7 +9,7 @@ from docutils.parsers.rst import directives
 from docutils.statemachine import StringList
 from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
-from sphinx.util.nodes import nested_parse_with_titles
+from sphinx.util.parsing import nested_parse_to_nodes
 from sphinx_needs.api import add_need  # type: ignore[import-untyped]
 from sphinx_needs.utils import add_doc  # type: ignore[import-untyped]
 
@@ -359,7 +359,7 @@ class SourceTracingDirective(SphinxDirective):
         """Parse a marked-RST block inline into the doctree.
 
         The RST content extracted from the source comment is parsed with
-        ``nested_parse_with_titles`` so the author has full control over what
+        ``nested_parse_to_nodes`` so the author has full control over what
         nodes are produced (needs, cross-references, admonitions, ...). The
         block is also registered in :data:`file_lineno_href.mappings` so the
         generated source-code page links the marker line back to the current
@@ -371,6 +371,24 @@ class SourceTracingDirective(SphinxDirective):
         :param dirs: Directory mapping used by :meth:`render_needs`.
         :return: The docutils nodes produced by parsing the RST block.
         """
+        # Marked-RST blocks are parsed through the host document's state, which
+        # means the content is interpreted by whatever parser owns that document.
+        # In a MyST (.md) host the block would be parsed as Markdown — silently
+        # producing wrong output.  Guard against this by checking the file
+        # extension of the hosting document; warn and skip for non-RST hosts.
+        host_suffix = Path(self.env.doc2path(self.env.docname)).suffix.lower()
+        if host_suffix != ".rst":
+            logger.warning(
+                "marked-RST block in %s (line %d) skipped: "
+                "the hosting document '%s' is not an RST file (%s). "
+                "Marked-RST blocks can only be rendered correctly in RST documents.",
+                marked_rst.filepath,
+                marked_rst.source_map["start"]["row"] + 1,
+                self.env.docname,
+                host_suffix,
+            )
+            return []
+
         filepath = src_analyse.analyse_config.src_dir / marked_rst.filepath
         target_filepath = dirs["target_dir"] / filepath.relative_to(dirs["src_dir"])
 
@@ -396,7 +414,14 @@ class SourceTracingDirective(SphinxDirective):
             ],
         )
 
-        nested_parse_with_titles(self.state, string_list, container)
+        parsed = nested_parse_to_nodes(
+            self.state,
+            string_list,
+            source=source_ref,
+            offset=start_row,
+            allow_section_headings=False,
+        )
+        container += parsed
 
         if local_url_field:
             # Point the source page anchor at the current document so users can
