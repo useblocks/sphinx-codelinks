@@ -9,6 +9,24 @@ Unreleased
 New and Improved
 ................
 
+- ‼️ Sphinx-Needs 8.5 or newer is now required (previously 5.0 or newer).
+
+  Sphinx-CodeLinks is being imported into the Sphinx-Needs repository as a package of its
+  uv workspace, where there is exactly one Sphinx-Needs and the manifest is required to
+  track it tightly — ``sphinx-needs>=8.5.0,<9`` — so a wheel can never claim compatibility
+  with a release it was not tested against. The ``needs{5,6,7,8}`` tox factor is gone with
+  it, and the two compatibility shims the old floor needed have been deleted: the
+  ``add_field`` import fallback for Sphinx-Needs < 8, and the ``add_extra_option``
+  signature probe that chose between a schema-aware and a schema-less registration. Both
+  already took the modern branch on Sphinx-Needs 8.5, so behaviour there is unchanged.
+
+- ✨ Python 3.11 is now supported; the floor moves down from 3.12.
+
+  The full test suite passes on 3.11 unchanged, and the floor now equals the one the
+  Sphinx-Needs workspace declares. The test matrix runs ``py{311,312,313,314}`` against
+  ``sphinx{7,8,9}``; ``py311-sphinx9`` is deliberately not a valid environment, since
+  Sphinx 9.1 requires Python 3.12.
+
 - ✨ The default configuration file is now ``ubproject.toml``.
 
   :ref:`src_trace_config_from_toml` now defaults to ``"ubproject.toml"`` and the
