@@ -22,7 +22,7 @@ COMMENT_FILETYPE = {
 }
 
 
-class CommentType(str, Enum):  # noqa: UP042  # StrEnum changes str(member) and typer's --help rendering
+class CommentType(str, Enum):  # noqa: UP042  # StrEnum changes str(member), which reaches CLI warnings and error messages
     python = "python"
     cpp = "cpp"
     cs = "cs"

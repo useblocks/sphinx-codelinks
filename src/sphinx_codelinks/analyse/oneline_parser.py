@@ -4,7 +4,7 @@ from enum import Enum
 from sphinx_codelinks.config import ESCAPE, UNIX_NEWLINE, OneLineCommentStyle
 
 
-class WarningSubTypeEnum(str, Enum):  # noqa: UP042  # StrEnum changes str(member) and typer's --help rendering
+class WarningSubTypeEnum(str, Enum):  # noqa: UP042  # StrEnum changes str(member), which reaches CLI warnings and error messages
     """Enum for warning sub types."""
 
     too_many_fields = "too_many_fields"

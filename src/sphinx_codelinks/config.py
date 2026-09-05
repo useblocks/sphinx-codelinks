@@ -34,7 +34,7 @@ ESCAPE = "\\"
 DEFAULT_CPP_STD = "c++17"
 
 
-class CommentCategory(str, Enum):  # noqa: UP042  # StrEnum changes str(member) and typer's --help rendering
+class CommentCategory(str, Enum):  # noqa: UP042  # StrEnum changes str(member), which reaches CLI warnings and error messages
     comment = "comment"
     docstring = "expression_statement"
 

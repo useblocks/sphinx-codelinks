@@ -82,7 +82,6 @@ testing = [
   # tests/test_extraction_fixtures.py imports it directly. It used to arrive by accident,
   # through moto -> responses -> pyyaml; with moto gone it has to be declared
   "pyyaml>=6.0",
-  "psutil>=7.0.0",
   "toml>=0.10.2",
   # not a docs dependency here: tests/data/sphinx and tests/data/needextend_demo set
   # `html_theme = "furo"`, and test_src_trace.py builds the first of them
@@ -108,13 +107,14 @@ build = ["simple-build>=0.0.2", "shiv>=1.0.8"]
 [project.scripts]
 codelinks = "sphinx_codelinks.cmd:app"
 
-# THE WORKSPACE ROOT'S RULESET, copied. sphinx-codelinks is being imported into the
-# sphinx-needs uv workspace, where `check_workspace.py` check (7) refuses a `[tool.ruff]`
-# table in a member -- because ruff resolves configuration per file by walking up to the
-# NEAREST pyproject.toml carrying one, so a member table does not extend the root's, it
-# REPLACES it. These tables therefore disappear at import and the root's take over; keeping
-# them identical now means the import is lint-neutral instead of landing a tree-wide
-# reformat in the same commit.
+# THE WORKSPACE ROOT'S RULESET, copied verbatim except for `src` below and for the
+# per-file-ignores table further down, which the root does not have at all. sphinx-codelinks
+# is being imported into the sphinx-needs uv workspace, where `check_workspace.py` check (7)
+# refuses a `[tool.ruff]` table in a member -- because ruff resolves configuration per file
+# by walking up to the NEAREST pyproject.toml carrying one, so a member table does not
+# extend the root's, it REPLACES it. These tables therefore disappear at import and the
+# root's take over; keeping them identical now means the import is lint-neutral instead of
+# landing a tree-wide reformat in the same commit.
 [tool.ruff]
 # isort decides an import is first-party by finding the module under one of these roots.
 # The root of the workspace names `packages/<dist>` and `packages/<dist>/src`; here the
@@ -143,17 +143,18 @@ extend-select = [
 # literal and its only fix is unsafe, so adopting it belongs with the wider ruleset review
 extend-ignore = ["B904", "ISC001", "ISC004", "ICN001", "N818", "RUF012"]
 
-# What survives of this repository's own per-file-ignores: the entries whose rule is still
-# in the ruleset above. The ones that named S101, ARG0*, PLC0415, PLR2004 and T201 went with
-# the rules they suppressed. At import these two entries move to the workspace root, which
-# is the only place a member's ruff configuration can live.
+# The ONE table above that is not the root's: the root has no per-file-ignores at all, so
+# this rides alongside its ruleset rather than being part of it. What survives of this
+# repository's own entries is the rules the ruleset still selects -- the ones that named
+# S101, ARG0*, PLC0415, PLR2004 and T201 went with the rules they suppressed, and the
+# `debug.py` UP047 entry went because UP047 is silent at the 3.11 target this package now
+# declares. Measured cost if this last entry were dropped instead: 2 findings, both in
+# `tests/test_preproc_libclang.py`. At import it moves to the workspace root, which is then
+# the only place a member's ruff configuration can live.
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*" = [
   "E402",   # module-import-not-at-top - pytest.importorskip guard pattern
   "SIM300", # yoda-conditions - assert order in tests is intentional
-]
-"src/sphinx_codelinks/sphinx_extension/debug.py" = [
-  "UP047", # on-pep695-generic-function - it's generic
 ]
 
 [tool.ruff.format]
