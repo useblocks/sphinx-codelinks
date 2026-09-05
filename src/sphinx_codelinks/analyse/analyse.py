@@ -1,6 +1,6 @@
+import json
 from collections.abc import Generator
 from dataclasses import dataclass
-import json
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
@@ -122,7 +122,7 @@ class SourceAnalyse:
         unreadable database is warned once and cached as ``None`` so callers fall
         back to the configured defines without re-reading or re-warning per file.
         """
-        from sphinx_codelinks.analyse.preproc import compile_db  # noqa: PLC0415
+        from sphinx_codelinks.analyse.preproc import compile_db
 
         if db_path in self._flags_map_cache:
             return self._flags_map_cache[db_path]
@@ -139,7 +139,7 @@ class SourceAnalyse:
         return flags
 
     def _resolve_preproc_args(self, src_path: Path) -> list[str] | None:
-        from sphinx_codelinks.analyse.preproc import compile_db  # noqa: PLC0415
+        from sphinx_codelinks.analyse.preproc import compile_db
 
         # `run()` calls this (via create_src_objects_libclang) only when
         # `preprocessor is not None`, but keep the guard: it narrows the type for
@@ -186,7 +186,7 @@ class SourceAnalyse:
 
     # @Extract traceability objects with the preprocessor-aware libclang engine, IMPL_PREPROC_1, impl, [FE_PREPROC]
     def create_src_objects_libclang(self) -> None:
-        from sphinx_codelinks.analyse.preproc import (  # noqa: PLC0415
+        from sphinx_codelinks.analyse.preproc import (
             libclang_parser,
             loader,
         )

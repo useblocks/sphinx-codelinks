@@ -21,7 +21,7 @@ class LineFormatter(HtmlFormatter):  # type: ignore[type-arg]
             if is_line:
                 lineno += 1
                 if lineno in self.lineno_href:
-                    lineno_achor, inline_lineno, code_span = line_html.split("</a>")
+                    lineno_achor, inline_lineno, _code_span = line_html.split("</a>")
                     # Ensure the anchor is closed
                     inline_lineno = inline_lineno + "</a>"
                     lineno_achor = lineno_achor + "</a>"

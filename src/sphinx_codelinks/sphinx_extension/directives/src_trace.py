@@ -1,6 +1,6 @@
+import os
 from collections.abc import Callable
 from dataclasses import replace
-import os
 from pathlib import Path
 from typing import Any, ClassVar, cast
 

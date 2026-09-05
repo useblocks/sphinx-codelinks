@@ -21,7 +21,7 @@ _INSTALL_HINT = (
 def load_clang_cindex() -> Any:  # type: ignore[explicit-any]
     """Return the clang.cindex module or raise a clear install error."""
     try:
-        import clang.cindex as cx  # noqa: PLC0415
+        import clang.cindex as cx
     except ImportError as exc:  # pragma: no cover - exercised via patched import
         raise ImportError(_INSTALL_HINT) from exc
     return cx
@@ -58,7 +58,7 @@ _BOUND = False
 
 
 def _bind() -> None:
-    global _BOUND  # noqa: PLW0603
+    global _BOUND
     if _BOUND:
         return
     cx = load_clang_cindex()

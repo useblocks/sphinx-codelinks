@@ -1,8 +1,8 @@
-from collections.abc import Iterator  # only in python 3.11 afterwards
 import contextlib
+import tomllib
+from collections.abc import Iterator  # only in python 3.11 afterwards
 from pathlib import Path
 from timeit import default_timer as timer  # Used for timing measurements
-import tomllib
 from typing import Any, cast
 
 from sphinx.application import Sphinx
@@ -219,7 +219,9 @@ def update_sn_types(app: Sphinx, _config: _SphinxConfig) -> None:
     add_need_type(app, "srctrace", "Src-Trace", "ST_", "#ffffff", "node")
 
 
-def prepare_env(app: Sphinx, env: BuildEnvironment, _docnames: list[str]) -> None:  # noqa: ARG001  # required by Sphinx
+def prepare_env(
+    app: Sphinx, env: BuildEnvironment, _docnames: list[str]
+) -> None:  # required by Sphinx
     """
     Prepares the sphinx environment to store stc-trace internal data.
     """
