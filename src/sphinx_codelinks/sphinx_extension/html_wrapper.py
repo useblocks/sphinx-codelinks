@@ -7,15 +7,15 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import CLexer
 
 
-class LineFormatter(HtmlFormatter):  # type: ignore[type-arg]
-    def __init__(self, lineno_href: dict[int, str], *args: Any, **kwargs: Any) -> None:  # type: ignore[explicit-any]
+class LineFormatter(HtmlFormatter):
+    def __init__(self, lineno_href: dict[int, str], *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.lineno_href = lineno_href
 
-    def wrap(self, source: Generator[Any]) -> Generator[Any]:  # type: ignore[explicit-any]
-        return self._wrap_custom_lines(super().wrap(source))  # type: ignore[no-untyped-call]
+    def wrap(self, source: Generator[Any]) -> Generator[Any]:
+        return self._wrap_custom_lines(super().wrap(source))
 
-    def _wrap_custom_lines(self, source: Generator[Any]) -> Generator[Any]:  # type: ignore[explicit-any]
+    def _wrap_custom_lines(self, source: Generator[Any]) -> Generator[Any]:
         lineno = 0
         for is_line, line_html in source:
             if is_line:

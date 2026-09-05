@@ -78,25 +78,31 @@ build-backend = "flit_core.buildapi"
 testing = [
   "pytest>=8.2.2",
   "pytest-cov>=5.0.0",
-  "pytest-docker>=3.1.2",
   "syrupy>=4.9.1",
+  # tests/test_extraction_fixtures.py imports it directly. It used to arrive by accident,
+  # through moto -> responses -> pyyaml; with moto gone it has to be declared
+  "pyyaml>=6.0",
   "psutil>=7.0.0",
-  "moto ~= 5.0",
   "toml>=0.10.2",
   # not a docs dependency here: tests/data/sphinx and tests/data/needextend_demo set
   # `html_theme = "furo"`, and test_src_trace.py builds the first of them
   "furo>=2024.5.6",
   "libclang>=18",
 ]
-mypy = [
-  "mypy>=1.12.1",
-  "pydantic ~= 2.9",
-  "types-docutils",
+# modelled on the sphinx-needs workspace root's `typing` group: ty at the root's series,
+# plus the OLDEST supported sphinx and docutils, so the gate checks the floor rather than
+# whatever happens to be newest. `pydantic` is gone with the mypy plugin that needed it --
+# nothing in `src/` or `tests/` imports pydantic.
+typing = [
+  "ty~=0.0.77",
+  "sphinx~=7.4",
+  "docutils~=0.20.0",
+  "types-docutils~=0.20.0",
   "types-Pygments",
-  "types-psutil>=7.0.0.20250218",
   "types-jsonschema>=4.23.0.20241208",
 ]
-ruff = ["ruff>=0.8.0"]
+# the rev .pre-commit-config.yaml pins, which is the sphinx-needs workspace's
+ruff = ["ruff>=0.16.5"]
 build = ["simple-build>=0.0.2", "shiv>=1.0.8"]
 
 [project.scripts]
@@ -156,51 +162,34 @@ extend-ignore = ["B904", "ISC001", "ISC004", "ICN001", "N818", "RUF012"]
 # about how this repository's own markdown is treated.
 exclude = ["*.md"]
 
-[tool.mypy]
-exclude = ["tests/", "dist/", "docs/_build/", "docs/conf.py"]
-show_error_codes = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-strict = true
-# disallow dynamic typing
-disallow_any_unimported = true
-disallow_any_expr = true
-# disallow_any_decorated = true
-disallow_any_explicit = true
-disallow_any_generics = true
-disallow_subclassing_any = true
-# dissallow untyped definitions and calls
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-disallow_untyped_decorators = true
+# ty, configured the way the sphinx-needs workspace root configures it. `check_workspace.py`
+# check (7) refuses a `[tool.ty]` table in a member, so at import this moves to the root; the
+# point of having it here now is that the same rules and the same floor are in force before
+# and after, and the import lands no new diagnostics.
+[tool.ty.src]
+include = ["src/sphinx_codelinks"]
 
-plugins = ["pydantic.mypy"]
-mypy_path = "typings"
+[tool.ty.environment]
+# the floor, as the root does it: the oldest interpreter this package supports
+python-version = "3.11"
+# so a bare `ty check` and an editor extension see the same environment as the gate.
+# The workspace uses `.venvs/typing`; here the gate is `tox -e ty`, whose virtualenv is
+# `.tox/ty` -- create it with `tox -e ty` (or `tox devenv -e ty .tox/ty`) before running
+# `ty check` by hand.
+python = ".tox/ty"
 
-[[tool.mypy.overrides]]
-# clang.cindex ships no type stubs / py.typed; the libclang engine wraps it.
-module = ["licensing.*", "tomlkit.*", "clang.*"]
-ignore_missing_imports = true
+[tool.ty.analysis]
+# modules with no type information that the typing environment does not install
+allowed-unresolved-imports = [
+  # the optional libclang engine; `clang.cindex` ships no py.typed and is not in the
+  # `typing` group, exactly as at runtime it is behind the `libclang` extra
+  "clang.**",
+]
 
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_any_explicit = false
-disallow_any_unimported = false
-disallow_untyped_defs = false
-disallow_any_expr = false
-
-[[tool.mypy.overrides]]
-module = "sphinx_codelinks.*"
-disallow_any_unimported = false
-disallow_untyped_defs = false
-disallow_any_expr = false
-
-
-[tool.pydantic-mypy]
-init_forbid_extra = true
-init_typed = true
-warn_required_dynamic_aliases = true
+[tool.ty.terminal]
+# the unused-ignore ratchet: `unused-ignore-comment` is a warning by default, so without
+# this a suppression that stopped suppressing anything would pass
+error-on-warning = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

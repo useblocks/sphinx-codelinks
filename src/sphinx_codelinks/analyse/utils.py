@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TypedDict
 from urllib.request import pathname2url
 
-from giturlparse import parse  # type: ignore[import-untyped]
+from giturlparse import parse
 from tree_sitter import Language, Parser, Point, Query, QueryCursor
 from tree_sitter import Node as TreeSitterNode
 
@@ -186,7 +186,7 @@ def find_enclosing_scope(
     while current:
         if current.type in scope_types:
             return current
-        current: TreeSitterNode | None = current.parent  # type: ignore[no-redef]  # required for node traversal
+        current: TreeSitterNode | None = current.parent  # required for node traversal
     return None
 
 
@@ -199,7 +199,9 @@ def find_next_scope(
     while current:
         if current.type in scope_types:
             return current
-        current: TreeSitterNode | None = current.next_named_sibling  # type: ignore[no-redef]  # required for node traversal
+        current: TreeSitterNode | None = (
+            current.next_named_sibling
+        )  # required for node traversal
         if current and current.type == "block":
             for child in current.named_children:
                 if child.type in scope_types:

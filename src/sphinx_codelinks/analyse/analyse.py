@@ -85,7 +85,7 @@ class SourceAnalyse:
         # database is read once per run instead of once per source file.
         self._flags_map_cache: dict[Path, dict[Path, list[str]] | None] = {}
 
-    def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:  # type: ignore[explicit-any]
+    def get_src_strings(self) -> Generator[tuple[Path, bytes], Any, None]:
         """Load source files and extract their content."""
         for src_path in self.analyse_config.src_files:
             if not utils.is_text_file(src_path):
@@ -365,11 +365,15 @@ class SourceAnalyse:
             source_map: SourceMap = {
                 "start": {
                     "row": lineno - 1,
-                    "column": resolved["start_column"],  # type: ignore[typeddict-item]  # dynamic keys
+                    "column": resolved[
+                        "start_column"
+                    ],  # dynamic keys  # ty: ignore[invalid-argument-type]
                 },
                 "end": {
                     "row": lineno - 1,
-                    "column": resolved["end_column"],  # type: ignore[typeddict-item]  # dynamic keys
+                    "column": resolved[
+                        "end_column"
+                    ],  # dynamic keys  # ty: ignore[invalid-argument-type]
                 },
             }
             del resolved["start_column"]
@@ -381,7 +385,7 @@ class SourceAnalyse:
                     source_map,
                     src_comment,
                     tagged_scope,
-                    resolved,  # type: ignore[arg-type] # int arguments were deleted
+                    resolved,  # int arguments were deleted  # ty: ignore[invalid-argument-type]
                 )
             )
         return oneline_needs

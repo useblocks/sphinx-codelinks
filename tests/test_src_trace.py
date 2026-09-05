@@ -271,7 +271,7 @@ def test_incremental_build_keeps_src_trace_projects_unchanged(
 
     captured: dict[str, object] = {}
 
-    def capture_config_status(_app, env, _added, _changed, _removed):  # type: ignore[no-untyped-def]
+    def capture_config_status(_app, env, _added, _changed, _removed):
         # ``env-get-outdated`` fires during read() after the config comparison
         # but before config_status is reset to CONFIG_OK at the end of read().
         captured["status"] = env.config_status
