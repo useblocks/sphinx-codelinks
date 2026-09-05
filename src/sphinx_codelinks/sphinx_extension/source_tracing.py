@@ -38,9 +38,9 @@ def _register_sn_field(name: str, description: str) -> None:
     """Register a typed string field with sphinx-needs.
 
     A typed field defaults to ``None`` and is stripped before schema validation,
-    whereas an untyped one (the deprecated ``add_extra_option``) defaults to
-    ``""`` and would trip a strict ``unevaluatedProperties: false`` schema on
-    needs that never set it.
+    whereas an untyped registration (``add_extra_option`` with no ``schema``)
+    defaults to ``""`` and would trip a strict ``unevaluatedProperties: false``
+    schema on needs that never set it.
     """
     add_field(name, description, schema={"type": "string"})
 

@@ -24,8 +24,14 @@ New and Improved
 
   The full test suite passes on 3.11 unchanged, and the floor now equals the one the
   Sphinx-Needs workspace declares. The test matrix runs ``py{311,312,313,314}`` against
-  ``sphinx{7,8,9}``; ``py311-sphinx9`` is deliberately not a valid environment, since
-  Sphinx 9.1 requires Python 3.12.
+  ``sphinx{7,8,9}``, with one corner left out: ``py311-sphinx9`` is deliberately not a
+  valid environment. Not because Sphinx 9 needs Python 3.12 -- Sphinx 9.0.x declares
+  ``requires-python >=3.11`` and is exactly what a Python 3.11 user resolves by default,
+  since 9.1 excludes itself for them -- but to align with the Sphinx-Needs workspace this
+  package is being imported into, whose ``sphinx-9`` dependency group is
+  ``sphinx~=9.1; python_version >= '3.12'`` and is therefore empty on 3.11. No package in
+  that workspace is tested on 3.11 against Sphinx 9, and this matrix is replaced by that
+  one at import, so the combination is left unexercised here too, deliberately.
 
 - ✨ The default configuration file is now ``ubproject.toml``.
 
