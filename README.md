@@ -1,5 +1,13 @@
 # Sphinx CodeLinks
 
+> [!IMPORTANT]
+> **This repository has moved.** Sphinx CodeLinks is now developed in
+> [useblocks/sphinx-needs](https://github.com/useblocks/sphinx-needs), under
+> [`packages/sphinx-codelinks`](https://github.com/useblocks/sphinx-needs/tree/master/packages/sphinx-codelinks),
+> with its full history. Please open issues and pull requests there. The package keeps
+> its name on PyPI, the documentation stays at https://codelinks.useblocks.com, and this repository
+> is archived (read-only).
+
 A Sphinx extension for discovering, linking, and documenting source code across projects.
 
 ## Features
